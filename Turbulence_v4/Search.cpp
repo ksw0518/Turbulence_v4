@@ -104,7 +104,128 @@ static inline void sort_moves(std::vector <Move> &moves, Board& board)
 
 }
 
+static int Quiescence(Board& board, int alpha, int beta)
+{
+	
+	auto now = std::chrono::steady_clock::now();
+	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+	if (elapsedMS > Searchtime_MS) {
+		is_search_stopped = true;
+		return 0; // Return a neutral score if time is exceeded
+	}
+	if (ply > 63)
+	{
+		return Evaluate(board);
+	}
+		// evaluate position
+		//std::cout << "fuck";
+		
 
+	int evaluation = Evaluate(board);
+
+	if (evaluation >= beta)
+	{
+		return beta;
+	}
+
+	if (evaluation > alpha)
+	{
+		alpha = evaluation;
+	}
+
+	std::vector<Move> moveList;
+	Generate_Legal_Moves(moveList, board, false);
+
+	sort_moves(moveList, board);
+
+	int bestValue = MINUS_INFINITY;
+	int legal_moves = 0;
+	for (Move& move : moveList)
+	{
+		if ((captureFlag & move.Type) == 0) continue; //skip non capture moves
+		nodes_for_time_checking++;
+
+		int lastEp = board.enpassent;
+		uint64_t lastCastle = board.castle;
+		int lastside = board.side;
+		int captured_piece = board.mailbox[move.To];
+
+		ply++;
+
+		MakeMove(board, move);
+		//u64 nodes_added
+		if (!isMoveValid(move, board))//isMoveValid(move, board)
+		{
+
+			ply--;
+			UnmakeMove(board, move, captured_piece);
+
+			board.enpassent = lastEp;
+			board.castle = lastCastle;
+			board.side = lastside;
+			continue;
+		}
+
+		negamax_nodecount++;
+
+
+
+
+
+
+
+
+		legal_moves++;
+		int score = -Quiescence(board, -beta, -alpha);
+
+		if (is_search_stopped) {
+			UnmakeMove(board, move, captured_piece);
+			board.enpassent = lastEp;
+			board.castle = lastCastle;
+			board.side = lastside;
+			return 0; // Return a neutral score if time is exceeded during recursive calls
+		}
+
+		ply--;
+		UnmakeMove(board, move, captured_piece);
+
+		board.enpassent = lastEp;
+		board.castle = lastCastle;
+		board.side = lastside;
+		if (score > bestValue)
+		{
+			bestValue = score;
+			if (score > alpha)
+			{
+				alpha = score;
+
+				//pv_table[ply][ply] = move;
+
+
+				////copy move from deeper ply into a current ply's line
+				//for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
+				//{
+				//	pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+				//}
+
+				//pv_length[ply] = pv_length[ply + 1];
+			}
+		}
+		if (score >= beta)
+		{
+			//killer_moves[1][ply] = killer_moves[0][ply];
+			//killer_moves[0][ply] = move;
+			return score;
+		}
+	}
+
+	if (legal_moves == 0) // quiet position
+	{
+		return evaluation;
+	}
+	return alpha;
+	//negamax_nodecount++;
+}
 
 static int Negamax(Board& board, int depth, int alpha, int beta)
 {
@@ -119,7 +240,8 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	pv_length[ply] = ply;
 	if (depth == 0)
 	{
-		return Evaluate(board);
+		return Quiescence(board, alpha, beta);
+		//return Evaluate(board);
 	}
 
 	
@@ -203,7 +325,7 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		{
 			killer_moves[1][ply] = killer_moves[0][ply];
 			killer_moves[0][ply] = move;
-			return beta;
+			return score;
 		}
 
 	}

@@ -489,22 +489,34 @@ void ProcessUCI(std::string input)
         }
         else if (Commands[1] == "wtime")
         {
+            int depth = TryGetLabelledValueInt(input, "depth", go_commands);
             int wtime = TryGetLabelledValueInt(input, "wtime", go_commands);
             int btime = TryGetLabelledValueInt(input, "btime", go_commands);
             int winc = TryGetLabelledValueInt(input, "winc", go_commands);
             int binc = TryGetLabelledValueInt(input, "binc", go_commands);
            
-            int searchtime;
 
-            if (main_board.side == White)
+            if (depth != 0)
             {
-                searchtime = CalculateTime(wtime, winc);
+                //int depth = std::stoi(Commands[2]);
+                IterativeDeepening(main_board, depth);
+                
             }
             else
             {
-                searchtime = CalculateTime(btime, binc);
+                int searchtime;
+
+                if (main_board.side == White)
+                {
+                    searchtime = CalculateTime(wtime, winc);
+                }
+                else
+                {
+                    searchtime = CalculateTime(btime, binc);
+                }
+                IterativeDeepening(main_board, 64, searchtime);
             }
-            IterativeDeepening(main_board, 64, searchtime);
+           
         }
         //else if (Commands[1] == "perft")
         //{
