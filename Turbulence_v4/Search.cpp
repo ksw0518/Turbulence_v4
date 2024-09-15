@@ -62,7 +62,7 @@ static inline int get_move_score(Move move, Board& board)
 
 		//std::cout << board.mailbox[move.To] << "\n";
 		//std::cout << attacker << "\n";
-		return mvv_lva[victim][attacker];
+		return mvv_lva[attacker][victim];
 	}
 	else
 	{
@@ -115,6 +115,7 @@ static int Quiescence(Board& board, int alpha, int beta)
 	}
 	if (ply > 63)
 	{
+		std::cout << "fuck";
 		return Evaluate(board);
 	}
 		// evaluate position
@@ -125,7 +126,7 @@ static int Quiescence(Board& board, int alpha, int beta)
 
 	if (evaluation >= beta)
 	{
-		return beta;
+		return evaluation;
 	}
 
 	if (evaluation > alpha)
