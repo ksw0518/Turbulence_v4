@@ -11,7 +11,7 @@
 #include <cmath>
 #include <algorithm>
 
-constexpr int UNIT_EVERYNODE = 4096; //check for things like time bound every 4096 nodes to balance speed and accuracy
+constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
 
 auto start = std::chrono::steady_clock::now();
 
@@ -22,8 +22,9 @@ int ply;
 int negamax_nodecount;
 int nodes_for_time_checking;
 int Searchtime_MS;
-
+int curr_depth;
 bool is_search_stopped;
+constexpr int MAX_HISTORY = 4096;
 
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -34,27 +35,33 @@ static int mvv_lva[6][6] = {
 	{100, 200, 300, 400, 500, 600}
 };
 
+static Move last_bestMove[64];
 Move killer_moves[2][64];
+
+int history_moves[12][64];
 
 
 
 static inline int get_move_score(Move move, Board& board)
 {
 
-	if (move.Type == ep_capture)
-	{
-		return mvv_lva[P][P];
-	}
+
+
 
 	/*int victim = get_piece(board.mailbox[move.To], White);
 	int attacker = get_piece(move.Piece, White);*/
-
+	
 
 	//std::cout<<(victim >= 0 && victim < 6);
 	//std::cout << (attacker >= 0 && attacker < 6);
 	//if (victim > 6 || attacker > 6) std::cout << ("fucked up");
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
+		if (move.Type == ep_capture)
+		{
+			return mvv_lva[P][P];
+		}
+
 		int victim = get_piece(board.mailbox[move.To], White);
 		int attacker = get_piece(move.Piece, White);
 		//score moves based on mvv-lva scheme
@@ -67,6 +74,10 @@ static inline int get_move_score(Move move, Board& board)
 	else
 	{
 		//1st killer
+		if (last_bestMove[curr_depth - 2] == move)
+		{
+			return 10000;
+		}
 		if (killer_moves[0][ply] == move)
 		{
 			return 9000;
@@ -78,11 +89,22 @@ static inline int get_move_score(Move move, Board& board)
 		}
 		else
 		{
+			return history_moves[move.Piece][move.To];
+			/*if (last_bestMove[curr_depth - 2] == move)
+			{
+				return 10000;
+			}
+			else
+			{
+				
+			}*/
+			
 			//return history score
 		}
 		// 
 		//history move
 	}
+
 
 	return 0;
 }
@@ -115,7 +137,7 @@ static int Quiescence(Board& board, int alpha, int beta)
 	}
 	if (ply > 63)
 	{
-		std::cout << "fuck";
+		//std::cout << "fuck";
 		return Evaluate(board);
 	}
 		// evaluate position
@@ -251,7 +273,13 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	Generate_Legal_Moves(moveList, board, false);
 
 	int legal_moves = 0;
+
+	//printMoveSort(board);
+	//PrintBoards(board);
+
 	sort_moves(moveList, board);
+
+	
 	for (Move& move : moveList)
 	{
 		nodes_for_time_checking++;
@@ -305,6 +333,9 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		board.side = lastside;
 		if (score > bestValue)
 		{
+			//store history moves
+
+			
 			bestValue = score;
 			if (score > alpha)
 			{
@@ -324,8 +355,22 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		}
 		if (score >= beta)
 		{
-			killer_moves[1][ply] = killer_moves[0][ply];
-			killer_moves[0][ply] = move;
+			if ((move.Type & captureFlag) == 0) //non capture
+			{
+				int clampedBonus = std::clamp(depth, MAX_HISTORY, -MAX_HISTORY);
+				history_moves[move.Piece][move.To] += clampedBonus - history_moves[move.Piece][move.To] * std::abs(clampedBonus) / MAX_HISTORY;
+				//if (negamax_nodecount % 1000000 == 0) { // For example, after every million nodes
+				//	for (int piece = 0; piece < 12; ++piece) {
+				//		for (int square = 0; square < 64; ++square) {
+				//			history_moves[piece][square] /= 10; // Halve the history values
+				//		}
+				//	}
+				//}
+
+
+				killer_moves[1][ply] = killer_moves[0][ply];
+				killer_moves[0][ply] = move;
+			}
 			return score;
 		}
 
@@ -354,16 +399,18 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 		Searchtime_MS = timeMS;
 	}
 	
+	
 	negamax_nodecount = 0;
 	Move bestmove;
 	start = std::chrono::steady_clock::now();
-	for (int curr_depth = 1; curr_depth <= depth; curr_depth++)
+	
+	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		ply = 0;
 
 		nodes_for_time_checking = 0;
 		is_search_stopped = false;
-
+		memset(last_bestMove, 0, 64 * sizeof(int));
 		int score = Negamax(board, curr_depth, MINUS_INFINITY, PLUS_INFINITY);
 
 		auto end = std::chrono::steady_clock::now();
@@ -379,6 +426,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 		if (!is_search_stopped)
 		{
 			bestmove = pv_table[0][0];
+			last_bestMove[curr_depth - 1] = bestmove;
 			std::cout << "info depth " << curr_depth << " score cp " << score << " time " << static_cast<int>(std::round(elapsedMS)) << " nodes " << negamax_nodecount << " nps " << static_cast<int>(std::round(nps)) << " pv ";
 			for (int count = 0; count < pv_length[0]; count++)
 			{
@@ -406,4 +454,18 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 
 }
 
+void printMoveSort(Board board)
+{
+	std::vector<Move> movelist;
+	Generate_Legal_Moves(movelist,board, false);
 
+	sort_moves(movelist, board);
+
+	for (int i = 0; i < movelist.size(); i++)
+	{
+		printMove(movelist[i]);
+		std::cout << " "<<get_move_score(movelist[i], board);
+		std::cout << "\n";
+	}
+	//PrintLegalMoves(movelist);
+}

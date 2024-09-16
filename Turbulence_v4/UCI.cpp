@@ -546,7 +546,10 @@ void ProcessUCI(std::string input)
 
 
     }
-
+    else if (main_command == "sort")
+    {
+        printMoveSort(main_board);
+    }
 }
 
 
