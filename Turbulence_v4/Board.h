@@ -12,6 +12,9 @@ public:
     int enpassent;
     uint64_t castle;
     int halfmove;
+    uint64_t Zobrist_key;
+
+    std::vector<uint64_t> history;
     //u64 Zobrist;
 
     // Constructor to initialize members
@@ -24,6 +27,7 @@ struct Move
     int To;
     int Type;
     int Piece;
+    
 
     Move(int from, int to, int type, int piece);
     Move();

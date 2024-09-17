@@ -100,3 +100,7 @@ void MakeMove(Board& board, Move move);
 void UnmakeMove(Board& board, Move move, int captured_piece);
 uint64_t get_attacked_squares(int side, Board board, uint64_t occupancy);
 bool isMoveValid(Move& move, Board& board);
+
+void init_random_keys();
+
+uint64_t generate_hash_key(Board& board);

@@ -1,10 +1,11 @@
 #include "Board.h"
 
+#include "MoveGeneration.h"
 #include "BitManipulation.h"
 #include "const.h"
 #include <iostream>
 Board::Board()
-    : side(0), enpassent((no_sq)), castle(0), halfmove(0) {
+    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0){
     // Initialize arrays
     for (int i = 0; i < 12; ++i) {
         bitboards[i] = 0;
@@ -15,11 +16,14 @@ Board::Board()
     for (int i = 0; i < 64; ++i) {
         mailbox[i] = 0;
     }
+
+    history.clear();
+    history.reserve(256);
 }
 
 // Move constructor
 Move::Move(int from, int to, int type, int piece)
-    : From(from), To(to), Type(type), Piece(piece) {
+    : From(from), To(to), Type(type), Piece(piece){
 
 }
 
@@ -80,6 +84,19 @@ std::string CoordinatesToChessNotation(int square)
     std::string str(1, File);
     return str + std::to_string(row);
 }
+static inline int get_castle(uint64_t castle)
+{
+    int number = 0;
+
+    // Set bits based on the presence of each castling right
+    if ((castle & WhiteKingCastle) != 0) number |= 1 << 0; // Bit 0
+    if ((castle & WhiteQueenCastle) != 0) number |= 1 << 1; // Bit 1
+    if ((castle & BlackKingCastle) != 0) number |= 1 << 2; // Bit 2
+    if ((castle & BlackQueenCastle) != 0) number |= 1 << 3; // Bit 3
+
+
+    return number;
+}
 void PrintBoards(Board board)
 {
     std::cout << ("\n");
@@ -112,6 +129,13 @@ void PrintBoards(Board board)
     std::cout << ("\n    Side :     ") << ((board.side == 0 ? "w" : "b"));
     std::cout << ("\n    Enpassent :     ") << (board.enpassent != no_sq ? CoordinatesToChessNotation(board.enpassent) : "no");
     std::cout << ("\n    Castling :     ") << (((board.castle & WhiteKingCastle) != 0) ? 'K' : '-') << (((board.castle & WhiteQueenCastle) != 0) ? 'Q' : '-') << (((board.castle & BlackKingCastle) != 0) ? 'k' : '-') << (((board.castle & BlackQueenCastle) != 0) ? 'q' : '-');
+    
+    std::cout << "\n\n";
+
+    std::cout << std::hex << "    Zobrist key:     " << generate_hash_key(board) << std::hex << "\n";
+    std::cout << std::hex << "    Zobrist key_incremental:     " << board.Zobrist_key << std::dec  << "\n";
+    std::cout <<"    castle_key:     " << get_castle(board.castle) << "\n";
+    
     //std::cout << ("\n    Number :     ") << ;
     std::cout << ("\n");
 }

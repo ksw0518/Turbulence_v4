@@ -11,6 +11,7 @@
 #include <cmath>
 #include <algorithm>
 
+
 constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
 
 auto start = std::chrono::steady_clock::now();
@@ -89,7 +90,7 @@ static inline int get_move_score(Move move, Board& board)
 		}
 		else
 		{
-			return history_moves[move.Piece][move.To];
+			//return history_moves[move.Piece][move.To];
 			/*if (last_bestMove[curr_depth - 2] == move)
 			{
 				return 10000;
@@ -357,8 +358,11 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		{
 			if ((move.Type & captureFlag) == 0) //non capture
 			{
-				int clampedBonus = std::clamp(depth, MAX_HISTORY, -MAX_HISTORY);
-				history_moves[move.Piece][move.To] += clampedBonus - history_moves[move.Piece][move.To] * std::abs(clampedBonus) / MAX_HISTORY;
+				//int clampedBonus = std::clamp(depth, MAX_HISTORY, -MAX_HISTORY);
+				//history_moves[move.Piece][move.To] += clampedBonus - history_moves[move.Piece][move.To] * std::abs(clampedBonus) / MAX_HISTORY;
+				
+				
+				
 				//if (negamax_nodecount % 1000000 == 0) { // For example, after every million nodes
 				//	for (int piece = 0; piece < 12; ++piece) {
 				//		for (int square = 0; square < 64; ++square) {

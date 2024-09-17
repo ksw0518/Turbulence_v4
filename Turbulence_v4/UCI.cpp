@@ -13,8 +13,17 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstdlib>
+#include <random>
+
+
+
+
+
+// generate 32-bit pseudo legal numbers
+
 
 const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const std::string kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
 
 std::vector<std::string> position_commands = { "position", "startpos", "fen", "moves" };
 std::vector<std::string> go_commands = { "go", "movetime", "wtime", "btime", "winc", "binc", "movestogo" };
@@ -131,8 +140,24 @@ uint64_t Perft(Board& board, int depth)
         uint64_t lastCastle = board.castle;
         int lastside = board.side;
         int captured_piece = board.mailbox[move.To];
+
+        uint64_t last_zobrist = board.Zobrist_key;
+
+
+
         //ulong lastZobrist = Zobrist;
         MakeMove(board, move);
+        uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
+
+        if (board.Zobrist_key != zobrist_generated_from_scratch)
+        {
+            std::cout << "CRITICAL ERROR: zobrist key doesn't match\n";
+            printMove(move);
+            std::cout << "ep " << CoordinatesToChessNotation(board.enpassent)<< board.enpassent;
+            std::cout << "\n\n";
+        }
+
+
         //u64 nodes_added
         if (isMoveValid(move, board))//isMoveValid(move, board)
         {
@@ -154,6 +179,7 @@ uint64_t Perft(Board& board, int depth)
         board.enpassent = lastEp;
         board.castle = lastCastle;
         board.side = lastside;
+        board.Zobrist_key = last_zobrist;
         //Zobrist = lastZobrist;
 
     }
@@ -194,12 +220,18 @@ void ProcessUCI(std::string input)
         {
             if (Commands.size() == 2)
             {
+
                 parse_fen(start_pos, main_board);
+                main_board.Zobrist_key = generate_hash_key(main_board);
+                main_board.history.push_back(main_board.Zobrist_key);
             }
             else
             {
                 //std::cout << ("fuck");
                 parse_fen(start_pos, main_board);
+                main_board.Zobrist_key = generate_hash_key(main_board);
+                main_board.history.push_back(main_board.Zobrist_key);
+
                 std::string moves_in_string = TryGetLabelledValue(input, "moves", position_commands);
                 //std::cout << (moves_in_string);
                 if (moves_in_string != "") // move is not empty
@@ -330,10 +362,14 @@ void ProcessUCI(std::string input)
             if (moves == "")
             {
                 parse_fen(fen, main_board);
+                main_board.Zobrist_key = generate_hash_key(main_board);
+                main_board.history.push_back(main_board.Zobrist_key);
             }
             else
             {
                 parse_fen(fen, main_board);
+                main_board.Zobrist_key = generate_hash_key(main_board);
+                main_board.history.push_back(main_board.Zobrist_key);
                 std::string moves_in_string = TryGetLabelledValue(input, "moves", position_commands);
                 if (moves_in_string != "") // move is not empty
                 {
@@ -550,6 +586,113 @@ void ProcessUCI(std::string input)
     {
         printMoveSort(main_board);
     }
+    else if (main_command == "move")
+    {
+        std::string From = std::string(1, Commands[1][0]) + std::string(1, Commands[1][1]);
+        std::string To = std::string(1, Commands[1][2]) + std::string(1, Commands[1][3]);
+        std::string promo = "";
+        if (Commands[1].size() > 4)
+        {
+            promo = std::string(1, (Commands[1][4]));
+        }
+        Move move_to_play;
+        move_to_play.From = GetSquare(From);
+        move_to_play.To = GetSquare(To);
+
+        //std::cout << CoordinatesToChessNotation(move_to_play.From);
+        //std::cout << CoordinatesToChessNotation(move_to_play.To);
+        //std::cout << promo;
+
+        std::vector<Move> moveList;
+        moveList.clear();
+        Generate_Legal_Moves(moveList, main_board, false);
+
+        for (int j = 0; j < moveList.size(); j++)
+        {
+            //Console.WriteLine("12");
+            //nodes = 0;
+
+            if ((move_to_play.From == moveList[j].From) && (move_to_play.To == moveList[j].To)) //found same move
+            {
+
+
+
+                if ((moveList[j].Type & knight_promo) != 0) // promo
+                {
+                    if (promo == "q")
+                    {
+                        if ((moveList[j].Type == queen_promo) || (moveList[j].Type == queen_promo_capture))
+                        {
+                            MakeMove(main_board, moveList[j]);
+                            break;
+
+                            //Move_to_do.Add(moveList[j]);
+                        }
+                    }
+                    else if (promo == "r")
+                    {
+                        if ((moveList[j].Type == rook_promo) || (moveList[j].Type == rook_promo_capture))
+                        {
+                            MakeMove(main_board, moveList[j]);
+                            break;
+                            //Move_to_do.Add(moveList[j]);
+                        }
+                    }
+                    else if (promo == "b")
+                    {
+                        if ((moveList[j].Type == bishop_promo) || (moveList[j].Type == bishop_promo_capture))
+                        {
+                            MakeMove(main_board, moveList[j]);
+                            break;
+                            //Move_to_do.Add(moveList[j]);
+                        }
+                    }
+                    else if (promo == "n")
+                    {
+                        if ((moveList[j].Type == knight_promo) || (moveList[j].Type == knight_promo_capture))
+                        {
+                            MakeMove(main_board, moveList[j]);
+                            break;
+                            //Move_to_do.Add(moveList[j]);
+                        }
+                    }
+                }
+                else
+                {
+                    //Console.WriteLine(MoveType[moveList[j].Type]);
+                    //Console.WriteLine(ascii_pieces[moveList[j].Piece]);
+                   // printMove(moveList[j]);
+                    //Console.Write(" ");
+                    //Move_to_do.Add(moveList[j]); 
+                    MakeMove(main_board, moveList[j]);
+                    //if (isMoveIrreversible(moveList[j]))
+                    //{
+                    //    //Console.WriteLine("aaa");
+                    //    Repetition_table.Clear();
+                    //    main_board.halfmove = 0;
+                    //}
+                    //Repetition_table.Add(main_Zobrist);
+                    main_board.halfmove++;
+
+
+                    break;
+                }
+
+
+
+            }
+        }
+
+        //main_board.history.push_back(main_board.)
+
+        uint64_t hash_debug = generate_hash_key(main_board);
+
+        PrintBoards(main_board);
+        if (hash_debug != main_board.Zobrist_key)
+        {
+            std::cout << "warning:zobrist key doesn't match";
+        }
+    }
 }
 
 
@@ -560,18 +703,26 @@ static void InitAll()
     init_sliders_attacks(1);
     init_sliders_attacks(0);
     init_tables();
-
+    init_random_keys();
 }
 int main()
 {
     InitAll();
     
     parse_fen(start_pos, main_board);
+    main_board.Zobrist_key = generate_hash_key(main_board);
+    main_board.history.push_back(main_board.Zobrist_key);
     std::vector<Move> move_list;
     Generate_Legal_Moves(move_list, main_board, false);
     //PrintLegalMoves(move_list);
 
     //print_tables();
+    uint64_t hash_key = 0ULL;
+
+
+
+    //hash_key = generate_hash_key(main_board);
+    //std::cout << std::hex<<hash_key << std::dec;
     while (true)
     {
         std::string input;
@@ -583,4 +734,7 @@ int main()
         }
 
     }
+
+    
+
 }

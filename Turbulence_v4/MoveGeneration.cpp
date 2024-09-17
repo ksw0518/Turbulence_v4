@@ -24,6 +24,122 @@ static uint64_t rook_masks[64] = {};
 static uint64_t bishop_attacks[64][512] = {};
 static uint64_t rook_attacks[64][4096] = {};
 static uint64_t betweenTable[64][64] = {};
+uint32_t random_state = 1804289383;
+uint32_t get_random_U32_number()
+{
+    // get current state
+    uint32_t number = random_state;
+
+    // XOR shift algorithm
+    number ^= number << 13;
+    number ^= number >> 17;
+    number ^= number << 5;
+
+    // update random number state
+    random_state = number;
+
+    // return random number
+    return number;
+}
+
+// generate 64-bit pseudo legal numbers
+uint64_t get_random_U64_number()
+{
+    // define 4 random numbers
+    uint64_t n1, n2, n3, n4;
+
+    // init random numbers slicing 16 bits from MS1B side
+    n1 = (uint64_t)(get_random_U32_number()) & 0xFFFF;
+    n2 = (uint64_t)(get_random_U32_number()) & 0xFFFF;
+    n3 = (uint64_t)(get_random_U32_number()) & 0xFFFF;
+    n4 = (uint64_t)(get_random_U32_number()) & 0xFFFF;
+
+    // return random number
+    return n1 | (n2 << 16) | (n3 << 32) | (n4 << 48);
+}
+
+
+uint64_t piece_keys[12][64];
+uint64_t enpassant_keys[64];
+uint64_t castle_keys[16];
+
+uint64_t side_key;
+//init random hash keys
+void init_random_keys()
+{
+    random_state = 1804289383;
+
+    for (int piece = P; piece <= k; piece++)
+    {
+        for (int square = 0; square < 64; square++)
+        {
+            piece_keys[piece][square] = get_random_U64_number();
+            //std::cout << std::hex << piece_keys[piece][square] << "\n";
+        }
+    }
+
+
+    for (int square = 0; square < 64; square++)
+    {
+        enpassant_keys[square] = get_random_U64_number();
+        //std::cout << std::hex << piece_keys[piece][square] << "\n";
+    }
+
+    for (int castle = 0; castle < 16; castle++)
+    {
+        castle_keys[castle] = get_random_U64_number();
+        //std::cout << std::hex << piece_keys[piece][square] << "\n";
+    }
+
+    side_key = get_random_U64_number();
+}
+static inline int get_castle(uint64_t castle)
+{
+    int number = 0;
+
+    // Set bits based on the presence of each castling right
+    if ((castle & WhiteKingCastle) != 0) number |= 1 << 0; // Bit 0
+    if ((castle & WhiteQueenCastle) != 0) number |= 1 << 1; // Bit 1
+    if ((castle & BlackKingCastle) != 0 ) number |= 1 << 2; // Bit 2
+    if ((castle & BlackQueenCastle) != 0) number |= 1 << 3; // Bit 3
+
+
+    return number;
+}
+uint64_t generate_hash_key(Board& board)
+{
+    uint64_t final_key = 0ULL;
+
+    uint64_t bitboard;
+
+    for (int piece = P; piece <= k; piece++)
+    {
+        bitboard = board.bitboards[piece];
+
+        while (bitboard)
+        {
+            int square = get_ls1b(bitboard);
+
+            final_key ^= piece_keys[piece][square];
+            Pop_bit(bitboard, square);
+        }
+    }
+
+
+    if (board.enpassent != no_sq)
+    {
+        final_key ^= enpassant_keys[board.enpassent];
+    }
+    final_key ^= castle_keys[get_castle(board.castle)];
+    //std::cout << get_castle(board.castle);
+
+    if (board.side == Black)
+    {
+        //std::cout << std::hex << side_key << std::hex << "\n";
+        final_key ^= side_key;
+    }
+    return final_key;
+}
 
 
 static int bishop_relevant_bits[] =
@@ -1342,64 +1458,82 @@ void Generate_Legal_Moves(std::vector<Move>& MoveList, Board& board, bool isCapt
     //Generate_King_Moves(ref MoveList, board, check_attackers, isCapture);
 
 }
-inline int get_castle(uint64_t castle, int side)
+//inline int get_castle(uint64_t castle, int side)
+//{
+//    if (side == White)
+//    {
+//        if ((castle & (WhiteKingCastle | WhiteQueenCastle)) != 0)
+//        {
+//            return 0;
+//        }
+//        else if ((castle & WhiteKingCastle) != 0)
+//        {
+//            return 1;
+//        }
+//        else if ((castle & WhiteQueenCastle) != 0)
+//        {
+//            return 2;
+//        }
+//        else
+//        {
+//            return 3;
+//        }
+//    }
+//    else
+//    {
+//        if ((castle & (BlackKingCastle | BlackQueenCastle)) != 0)
+//        {
+//            return 0;
+//        }
+//        else if ((castle & BlackKingCastle) != 0)
+//        {
+//            return 1;
+//        }
+//        else if ((castle & BlackQueenCastle) != 0)
+//        {
+//            return 2;
+//        }
+//        else
+//        {
+//            return 3;
+//        }
+//    }
+//
+//}
+bool is_move_irreversible(Move& move)
 {
-    if (side == White)
+    if (((move.Type & captureFlag) != 0) || move.Piece == p || move.Piece == P)
     {
-        if ((castle & (WhiteKingCastle | WhiteQueenCastle)) != 0)
-        {
-            return 0;
-        }
-        else if ((castle & WhiteKingCastle) != 0)
-        {
-            return 1;
-        }
-        else if ((castle & WhiteQueenCastle) != 0)
-        {
-            return 2;
-        }
-        else
-        {
-            return 3;
-        }
+        return true;
     }
-    else
-    {
-        if ((castle & (BlackKingCastle | BlackQueenCastle)) != 0)
-        {
-            return 0;
-        }
-        else if ((castle & BlackKingCastle) != 0)
-        {
-            return 1;
-        }
-        else if ((castle & BlackQueenCastle) != 0)
-        {
-            return 2;
-        }
-        else
-        {
-            return 3;
-        }
-    }
-
+    return false;
 }
+
 void MakeMove(Board& board, Move move)
 {
     //Console.WriteLine(board.side);
 
     uint64_t lastCastle = board.castle;
     int lastEp = board.enpassent;
-    board.enpassent = no_sq;
+
+
+    
+    if (board.enpassent != no_sq)
+    {
+        board.Zobrist_key ^= enpassant_keys[board.enpassent];
+        board.enpassent = no_sq;
+    }
+   
     int side = board.side;
     // change castling flag
     if (get_piece(move.Piece, White) == K) //if king moved
     {
         if (side == White)
         {
+            board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             board.castle &= ~WhiteKingCastle;
             board.castle &= ~WhiteQueenCastle;
-
+            board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             //PIECES
 
             //Zobrist ^= W_CASTLING_RIGHTS[get_castle(WhiteKingCastle | WhiteQueenCastle, side)];
@@ -1407,25 +1541,30 @@ void MakeMove(Board& board, Move move)
         }
         else
         {
+            board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             board.castle &= ~BlackKingCastle;
             board.castle &= ~BlackQueenCastle;
-
+            board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             //Zobrist ^= B_CASTLING_RIGHTS[get_castle(BlackKingCastle | BlackQueenCastle, side)];
 
         }
     }
-    if (get_piece(move.Piece, White) == R) //if rook moved
+    else if (get_piece(move.Piece, White) == R) //if rook moved
     {
         if (side == White)
         {
             if ((board.castle & WhiteQueenCastle) != 0 && move.From == a1) // no q castle
             {
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                 board.castle &= ~WhiteQueenCastle;
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                 //Zobrist ^= B_CASTLING_RIGHTS[get_castle(BlackKingCastle | BlackQueenCastle, side)];
             }
             else if ((board.castle & WhiteKingCastle) != 0 && move.From == h1) // no k castle
             {
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                 board.castle &= ~WhiteKingCastle;
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             }
 
 
@@ -1435,11 +1574,15 @@ void MakeMove(Board& board, Move move)
         {
             if ((board.castle & BlackQueenCastle) != 0 && move.From == a8) // no q castle
             {
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                 board.castle &= ~BlackQueenCastle;
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             }
             else if ((board.castle & BlackKingCastle) != 0 && move.From == h8) // no k castle
             {
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                 board.castle &= ~BlackKingCastle;
+                board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
             }
         }
     }
@@ -1448,6 +1591,7 @@ void MakeMove(Board& board, Move move)
     {
     case double_pawn_push:
     {
+
         board.bitboards[move.Piece] &= ~(1ULL << move.From);
         board.bitboards[move.Piece] |= (1ULL << move.To);
 
@@ -1460,17 +1604,25 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+
+        //remove previous place
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
         board.mailbox[move.To] = move.Piece;
+
+        board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 
         //update enpassent square
 
         if (side == White)
         {
             board.enpassent = move.To + 8;
+            board.Zobrist_key ^= enpassant_keys[board.enpassent];
         }
         else
         {
             board.enpassent = move.To - 8;
+            board.Zobrist_key ^= enpassant_keys[board.enpassent];
         }
 
 
@@ -1478,6 +1630,13 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[move.Piece][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case quiet_move:
@@ -1493,9 +1652,12 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] &= ~(1ULL << move.From);
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
-        board.mailbox[move.From] = NO_PIECE;
-        board.mailbox[move.To] = move.Piece;
 
+        board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
+        board.mailbox[move.To] = move.Piece;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.To];
         //update enpassent square
         //if (move.Type == double_pawn_push)
         //{
@@ -1513,6 +1675,13 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[move.Piece][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case capture:
@@ -1525,7 +1694,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                     //Console.WriteLine("here");
@@ -1534,7 +1705,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1546,7 +1719,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1554,7 +1729,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1583,7 +1760,13 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] &= ~(1ULL << move.From);
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
+
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
         board.mailbox[move.From] = NO_PIECE;
+        
+        board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+        board.Zobrist_key ^= piece_keys[move.Piece][move.To];
+
         board.mailbox[move.To] = move.Piece;
 
 
@@ -1596,10 +1779,32 @@ void MakeMove(Board& board, Move move)
 
         //Console.WriteLine(get_piece(Piece.r, side));
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
-    case king_castle:
+    case king_castle: // 
     {
+
+        //DO FROM HERE
+
+        //    DO FROM HERE
+        //    DO FROM HERE
+        //    DO FROM HERE
+        //    DO FROM HERE
+        //    DO FROM HERE
+        //    DO FROM HERE
+        //    DO FROM HERE
+        //    DO FROM HERE
+        // 
+        // 
+        // 
+        // 
+        // 
         //update castling right & find rook square
 
 
@@ -1639,17 +1844,27 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << (rookSquare - 2));
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
         board.mailbox[move.To] = move.Piece;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 
+        board.Zobrist_key ^= piece_keys[board.mailbox[rookSquare]][rookSquare];
         board.mailbox[rookSquare] = NO_PIECE;
+        
         board.mailbox[rookSquare - 2] = get_piece(r, side);
-
+        board.Zobrist_key ^= piece_keys[get_piece(r, side)][rookSquare - 2];
 
         /*Zobrist ^= PIECES[move.Piece][move.From];
         Zobrist ^= PIECES[move.Piece][move.To];
         Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare];
         Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare - 2];*/
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case queen_castle:
@@ -1692,17 +1907,30 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] &= ~(1ULL << rookSquare);
         board.occupancies[Both] |= (1ULL << (rookSquare + 3));
         //update mailbox
+        
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
         board.mailbox[move.To] = move.Piece;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 
+        board.Zobrist_key ^= piece_keys[board.mailbox[rookSquare]][rookSquare];
         board.mailbox[rookSquare] = NO_PIECE;
+        
         board.mailbox[rookSquare + 3] = get_piece(r, side);
-
+        board.Zobrist_key ^= piece_keys[get_piece(r, side)][rookSquare + 3];
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[move.Piece][move.To];
         //Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare];
         //Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare + 3];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case queen_promo:
@@ -1719,11 +1947,18 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
         board.mailbox[move.To] = get_piece(q, side);
-
+        board.Zobrist_key ^= piece_keys[get_piece(q, side)][move.To];
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[get_piece(q, side)][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case rook_promo:
@@ -1740,10 +1975,18 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
         board.mailbox[move.To] = get_piece(r, side);
+        board.Zobrist_key ^= piece_keys[get_piece(r, side)][move.To];
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[get_piece(Piece.r, side)][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case bishop_promo:
@@ -1760,10 +2003,20 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
         board.mailbox[move.To] = get_piece(b, side);
+        board.Zobrist_key ^= piece_keys[get_piece(b, side)][move.To];
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[get_piece(b, side)][move.To];
         board.side = 1 - board.side;
+
+        board.Zobrist_key ^= side_key;
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
+        
         break;
     }
     case knight_promo:
@@ -1780,10 +2033,19 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
         board.mailbox[move.To] = get_piece(n, side);
+        board.Zobrist_key ^= piece_keys[get_piece(n, side)][move.To];
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[get_piece(Piece.n, side)][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case queen_promo_capture:
@@ -1796,7 +2058,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                     //Console.WriteLine("here");
@@ -1805,7 +2069,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1817,7 +2083,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1825,7 +2093,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1850,13 +2120,23 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
 
         //update mailbox
-        board.mailbox[move.From] = NO_PIECE;
+        board.mailbox[move.From] = NO_PIECE; 
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
+        board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
         board.mailbox[move.To] = get_piece(q, side);
+        board.Zobrist_key ^= piece_keys[get_piece(q, side)][move.To];
 
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
         //Zobrist ^= PIECES[captured_piece][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case rook_promo_capture:
@@ -1869,7 +2149,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                     //Console.WriteLine("here");
@@ -1878,7 +2160,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1890,7 +2174,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1898,7 +2184,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1924,12 +2212,23 @@ void MakeMove(Board& board, Move move)
 
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
+        board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
         board.mailbox[move.To] = get_piece(r, side);
+        board.Zobrist_key ^= piece_keys[get_piece(r, side)][move.To];
 
         //Zobrist ^= PIECES[move.Piece][move.From];
-        //Zobrist ^= PIECES[get_piece(Piece.r, side)][move.To];
+        //Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
         //Zobrist ^= PIECES[captured_piece][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case bishop_promo_capture:
@@ -1942,7 +2241,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                     //Console.WriteLine("here");
@@ -1951,7 +2252,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1963,7 +2266,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1971,7 +2276,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -1997,13 +2304,24 @@ void MakeMove(Board& board, Move move)
 
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
-        board.mailbox[move.To] = get_piece(b, side);
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
 
+
+        board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+        board.mailbox[move.To] = get_piece(b, side);
+        board.Zobrist_key ^= piece_keys[get_piece(b, side)][move.To];
 
         //Zobrist ^= PIECES[move.Piece][move.From];
-        //Zobrist ^= PIECES[get_piece(Piece.b, side)][move.To];
+        //Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
         //Zobrist ^= PIECES[captured_piece][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case knight_promo_capture:
@@ -2016,7 +2334,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                     //Console.WriteLine("here");
@@ -2025,7 +2345,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteQueenCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -2037,7 +2359,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 7)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(BlackKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -2045,7 +2369,9 @@ void MakeMove(Board& board, Move move)
                 {
                     if (getRank(move.To) == 0)
                     {
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                         board.castle &= ~(WhiteKingCastle);
+                        board.Zobrist_key ^= castle_keys[get_castle(board.castle)];
                     }
 
                 }
@@ -2071,12 +2397,23 @@ void MakeMove(Board& board, Move move)
 
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
+        board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
         board.mailbox[move.To] = get_piece(n, side);
+        board.Zobrist_key ^= piece_keys[get_piece(n, side)][move.To];
 
         //Zobrist ^= PIECES[move.Piece][move.From];
-        //Zobrist ^= PIECES[get_piece(Piece.n, side)][move.To];
+        //Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
         //Zobrist ^= PIECES[captured_piece][move.To];
         board.side = 1 - board.side;
+        board.Zobrist_key ^= side_key;
+
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
     case ep_capture:
@@ -2112,13 +2449,27 @@ void MakeMove(Board& board, Move move)
         board.occupancies[Both] |= (1ULL << move.To);
 
         //update mailbox
+
+        board.Zobrist_key ^= piece_keys[board.mailbox[move.From]][move.From];
         board.mailbox[move.From] = NO_PIECE;
+        
         board.mailbox[move.To] = move.Piece;
+        board.Zobrist_key ^= piece_keys[move.Piece][move.To];
+
+        board.Zobrist_key ^= piece_keys[board.mailbox[capture_square]][capture_square];
         board.mailbox[capture_square] = NO_PIECE;
+        
         board.side = 1 - board.side;
+
+        board.Zobrist_key ^= side_key;
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[move.Piece][move.To];
         //Zobrist ^= PIECES[captured_piece][capture_square];
+        if (is_move_irreversible)
+        {
+            board.history.clear();
+        }
+        board.history.push_back(board.Zobrist_key);
         break;
     }
 
