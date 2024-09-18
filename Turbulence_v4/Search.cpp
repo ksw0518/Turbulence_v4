@@ -262,6 +262,23 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	}
 
 	pv_length[ply] = ply;
+	//for (int i = 0; i < board.history.size(); i++)
+	//{
+	//	std::cout << std::hex << board.history[i] << std::dec << "\n";
+	//}
+	//std::cout << "\n";
+
+	if (is_threefold(board.history))
+	{
+		
+		//std::cout << "rep";
+		//PrintBoards(board);
+
+
+			return 0;
+		
+		
+	}
 	if (depth == 0)
 	{
 		return Quiescence(board, alpha, beta);
@@ -280,7 +297,17 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 	sort_moves(moveList, board);
 
-	
+	uint64_t last_zobrist = board.Zobrist_key;
+	std::vector<uint64_t> last_history;
+
+	last_history.clear();
+	last_history.reserve(board.history.size());
+
+	for (int i = 0; i < board.history.size(); i++)
+	{
+		last_history.push_back(board.history[i]);
+	}
+
 	for (Move& move : moveList)
 	{
 		nodes_for_time_checking++;
@@ -289,6 +316,9 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
+
+
+
 
 		ply++;
 
@@ -300,6 +330,16 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 			ply--;
 			UnmakeMove(board, move, captured_piece);
 
+
+			//std::vector<int> copy(last_history.size()); // Pre-allocate space
+
+			board.history.clear();
+			for (int i = 0; i < last_history.size(); i++)
+			{
+				board.history.push_back(last_history[i]);
+			}
+			//board.history = last_history;
+			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
@@ -320,6 +360,13 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
+			board.history.clear();
+			for (int i = 0; i < last_history.size(); i++)
+			{
+				board.history.push_back(last_history[i]);
+			}
+
+			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
@@ -329,6 +376,12 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		ply--;
 		UnmakeMove(board, move, captured_piece);
 
+		board.history.clear();
+		for (int i = 0; i < last_history.size(); i++)
+		{
+			board.history.push_back(last_history[i]);
+		}
+		board.Zobrist_key = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;

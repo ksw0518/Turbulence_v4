@@ -1,5 +1,6 @@
 #include "Board.h"
 
+#include "Search.h"
 #include "MoveGeneration.h"
 #include "BitManipulation.h"
 #include "const.h"
@@ -97,6 +98,8 @@ static inline int get_castle(uint64_t castle)
 
     return number;
 }
+
+
 void PrintBoards(Board board)
 {
     std::cout << ("\n");
@@ -134,10 +137,25 @@ void PrintBoards(Board board)
 
     std::cout << std::hex << "    Zobrist key:     " << generate_hash_key(board) << std::hex << "\n";
     std::cout << std::hex << "    Zobrist key_incremental:     " << board.Zobrist_key << std::dec  << "\n";
-    std::cout <<"    castle_key:     " << get_castle(board.castle) << "\n";
+
+
+    std::cout <<"    Castle_key:     " << get_castle(board.castle) << "\n";
+
+    std::cout << "History" << "\n";
+
     
+    
+
+    for (int i = 0; i < board.history.size(); i++)
+    {
+        std::cout << std::hex << board.history[i] << std::dec << "\n";
+    }
+    std::cout << "isThreeFold:" << (is_threefold(board.history) ? "True" : "False");
     //std::cout << ("\n    Number :     ") << ;
     std::cout << ("\n");
+
+
+
 }
 void print_mailbox(int mailbox[])
 {

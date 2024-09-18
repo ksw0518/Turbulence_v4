@@ -1516,7 +1516,7 @@ void MakeMove(Board& board, Move move)
     uint64_t lastCastle = board.castle;
     int lastEp = board.enpassent;
 
-
+    
     
     if (board.enpassent != no_sq)
     {
@@ -1632,7 +1632,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -1677,7 +1677,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -1780,7 +1780,7 @@ void MakeMove(Board& board, Move move)
         //Console.WriteLine(get_piece(Piece.r, side));
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -1860,7 +1860,7 @@ void MakeMove(Board& board, Move move)
         Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare - 2];*/
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -1926,7 +1926,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -1954,7 +1954,7 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[get_piece(q, side)][move.To];
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -1982,7 +1982,7 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[get_piece(Piece.r, side)][move.To];
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2011,7 +2011,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
 
         board.Zobrist_key ^= side_key;
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2041,7 +2041,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2132,7 +2132,7 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[captured_piece][move.To];
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2224,7 +2224,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2317,7 +2317,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2409,7 +2409,7 @@ void MakeMove(Board& board, Move move)
         board.side = 1 - board.side;
         board.Zobrist_key ^= side_key;
 
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }
@@ -2465,7 +2465,7 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[move.Piece][move.To];
         //Zobrist ^= PIECES[captured_piece][capture_square];
-        if (is_move_irreversible)
+        if (is_move_irreversible(move))
         {
             board.history.clear();
         }

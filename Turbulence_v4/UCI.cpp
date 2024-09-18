@@ -142,6 +142,8 @@ uint64_t Perft(Board& board, int depth)
         int captured_piece = board.mailbox[move.To];
 
         uint64_t last_zobrist = board.Zobrist_key;
+        std::vector<uint64_t> last_history(board.history);
+
 
 
 
@@ -174,8 +176,12 @@ uint64_t Perft(Board& board, int depth)
 
 
         }
+
+
         UnmakeMove(board, move, captured_piece);
 
+
+        board.history = last_history;
         board.enpassent = lastEp;
         board.castle = lastCastle;
         board.side = lastside;
@@ -216,6 +222,7 @@ void ProcessUCI(std::string input)
     }
     else if (main_command == "position")
     {
+        main_board.history.clear();
         if (Commands[1] == "startpos")
         {
             if (Commands.size() == 2)
