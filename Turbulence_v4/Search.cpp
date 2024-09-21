@@ -75,10 +75,10 @@ static inline int get_move_score(Move move, Board& board)
 	else
 	{
 		//1st killer
-		if (last_bestMove[curr_depth - 2] == move)
-		{
-			return 10000;
-		}
+		//if (last_bestMove[curr_depth - 2] == move)
+		//{
+		//	return 10000;
+		//}
 		if (killer_moves[0][ply] == move)
 		{
 			return 9000;
@@ -298,15 +298,10 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	sort_moves(moveList, board);
 
 	uint64_t last_zobrist = board.Zobrist_key;
-	std::vector<uint64_t> last_history;
+	//std::vector<uint64_t> last_history;
 
-	last_history.clear();
-	last_history.reserve(board.history.size());
-
-	for (int i = 0; i < board.history.size(); i++)
-	{
-		last_history.push_back(board.history[i]);
-	}
+	//last_history.clear();
+	size_t history_size_before = board.history.size();
 
 	for (Move& move : moveList)
 	{
@@ -333,11 +328,7 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 			//std::vector<int> copy(last_history.size()); // Pre-allocate space
 
-			board.history.clear();
-			for (int i = 0; i < last_history.size(); i++)
-			{
-				board.history.push_back(last_history[i]);
-			}
+			board.history.resize(history_size_before);
 			//board.history = last_history;
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
@@ -360,11 +351,7 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
-			board.history.clear();
-			for (int i = 0; i < last_history.size(); i++)
-			{
-				board.history.push_back(last_history[i]);
-			}
+			board.history.resize(history_size_before);
 
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
@@ -376,11 +363,7 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		ply--;
 		UnmakeMove(board, move, captured_piece);
 
-		board.history.clear();
-		for (int i = 0; i < last_history.size(); i++)
-		{
-			board.history.push_back(last_history[i]);
-		}
+		board.history.resize(history_size_before);
 		board.Zobrist_key = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;

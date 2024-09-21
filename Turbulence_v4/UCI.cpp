@@ -468,7 +468,7 @@ void ProcessUCI(std::string input)
                                     //    main_board.halfmove = 0;
                                     //}
                                     //Repetition_table.Add(main_Zobrist);
-                                    main_board.halfmove++;
+                                    //main_board.halfmove++;
 
 
                                     break;
