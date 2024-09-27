@@ -301,7 +301,15 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	//std::vector<uint64_t> last_history;
 
 	//last_history.clear();
-	size_t history_size_before = board.history.size();
+
+	std::vector<uint64_t> last_history;
+	last_history.clear();
+	last_history.reserve(board.history.size());
+
+	for (int i = 0; i < board.history.size(); i++)
+	{
+		last_history.push_back(board.history[i]);
+	}
 
 	for (Move& move : moveList)
 	{
@@ -328,7 +336,13 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 			//std::vector<int> copy(last_history.size()); // Pre-allocate space
 
-			board.history.resize(history_size_before);
+
+
+			board.history.clear();
+			for (int i = 0; i < last_history.size(); i++)
+			{
+				board.history.push_back(last_history[i]);
+			}
 			//board.history = last_history;
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
@@ -351,7 +365,11 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
-			board.history.resize(history_size_before);
+			board.history.clear();
+			for (int i = 0; i < last_history.size(); i++)
+			{
+				board.history.push_back(last_history[i]);
+			}
 
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
@@ -363,7 +381,11 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		ply--;
 		UnmakeMove(board, move, captured_piece);
 
-		board.history.resize(history_size_before);
+		board.history.clear();
+		for (int i = 0; i < last_history.size(); i++)
+		{
+			board.history.push_back(last_history[i]);
+		}
 		board.Zobrist_key = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
