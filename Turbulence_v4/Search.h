@@ -9,7 +9,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS = -1);
 
 void printMoveSort(Board board);
 
-inline bool is_threefold(std::vector<uint64_t> history_table)
+inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversible)
 {
 	//has to be called after allocating new position move
 
@@ -18,7 +18,7 @@ inline bool is_threefold(std::vector<uint64_t> history_table)
 	//std::cout << lastmove; 
 	//printMove(lastmove);
 	int repetition_count = 1;
-	for (int i = history_table.size() - 2; i >= 0; i--)
+	for (int i = history_table.size() - 2; i > last_irreversible; i--)
 	{
 		if (i < 0) break;
 
@@ -27,7 +27,7 @@ inline bool is_threefold(std::vector<uint64_t> history_table)
 			repetition_count++;
 		}
 
-		if (repetition_count >= 3)
+		if (repetition_count >= 2)
 		{
 			return true;
 		}

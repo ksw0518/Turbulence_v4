@@ -1634,7 +1634,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -1679,7 +1679,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -1782,7 +1782,7 @@ void MakeMove(Board& board, Move move)
         board.Zobrist_key ^= side_key;
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -1862,7 +1862,7 @@ void MakeMove(Board& board, Move move)
         board.Zobrist_key ^= side_key;
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -1928,7 +1928,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -1956,7 +1956,7 @@ void MakeMove(Board& board, Move move)
         board.Zobrist_key ^= side_key;
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -1984,7 +1984,7 @@ void MakeMove(Board& board, Move move)
         board.Zobrist_key ^= side_key;
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -2013,7 +2013,7 @@ void MakeMove(Board& board, Move move)
         board.Zobrist_key ^= side_key;
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         
@@ -2043,7 +2043,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -2134,7 +2134,7 @@ void MakeMove(Board& board, Move move)
         board.Zobrist_key ^= side_key;
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -2226,7 +2226,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -2319,7 +2319,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -2411,7 +2411,7 @@ void MakeMove(Board& board, Move move)
 
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;
@@ -2467,7 +2467,7 @@ void MakeMove(Board& board, Move move)
         //Zobrist ^= PIECES[captured_piece][capture_square];
         if (is_move_irreversible(move))
         {
-            board.history.clear();
+            board.last_irreversible_ply = board.history.size();
         }
         board.history.push_back(board.Zobrist_key);
         break;

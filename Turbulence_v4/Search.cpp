@@ -173,7 +173,7 @@ static int Quiescence(Board& board, int alpha, int beta)
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
-
+		int last_irreversible = board.last_irreversible_ply;
 		ply++;
 
 		MakeMove(board, move);
@@ -184,6 +184,8 @@ static int Quiescence(Board& board, int alpha, int beta)
 			ply--;
 			UnmakeMove(board, move, captured_piece);
 
+			board.history.pop_back();
+			board.last_irreversible_ply = last_irreversible;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
@@ -204,6 +206,8 @@ static int Quiescence(Board& board, int alpha, int beta)
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
+			board.history.pop_back();
+			board.last_irreversible_ply = last_irreversible;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
@@ -212,7 +216,8 @@ static int Quiescence(Board& board, int alpha, int beta)
 
 		ply--;
 		UnmakeMove(board, move, captured_piece);
-
+		board.history.pop_back();
+		board.last_irreversible_ply = last_irreversible;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
@@ -268,14 +273,24 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	//}
 	//std::cout << "\n";
 
-	if (is_threefold(board.history))
+	/*std::cout << "\n" <<board.last_irreversible_ply<<"\n";*/
+
+
+	
+	//std::cout << ("\n    Number :     ") << ;
+	//std::cout << ("\n");
+
+	if (is_threefold(board.history, board.last_irreversible_ply))
 	{
 		
 		//std::cout << "rep";
 		//PrintBoards(board);
 
-
+		if (ply != 0)
+		{
 			return 0;
+		}
+			
 		
 		
 	}
@@ -302,15 +317,16 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 	//last_history.clear();
 
-	std::vector<uint64_t> last_history;
-	last_history.clear();
-	last_history.reserve(board.history.size());
+	//std::vector<uint64_t> last_history;
+	//last_history.clear();
+	//last_history.reserve(board.history.size());
 
-	for (int i = 0; i < board.history.size(); i++)
-	{
-		last_history.push_back(board.history[i]);
-	}
+	//for (int i = 0; i < board.history.size(); i++)
+	//{
+	//	last_history.push_back(board.history[i]);
+	//}
 
+	
 	for (Move& move : moveList)
 	{
 		nodes_for_time_checking++;
@@ -319,13 +335,14 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
-
+		int last_irreversible = board.last_irreversible_ply;
 
 
 
 		ply++;
 
 		MakeMove(board, move);
+
 		//u64 nodes_added
 		if (!isMoveValid(move, board))//isMoveValid(move, board)
 		{
@@ -338,12 +355,11 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 
 
-			board.history.clear();
-			for (int i = 0; i < last_history.size(); i++)
-			{
-				board.history.push_back(last_history[i]);
-			}
+
 			//board.history = last_history;
+
+			board.history.pop_back();
+			board.last_irreversible_ply = last_irreversible;
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
@@ -353,10 +369,18 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 		negamax_nodecount++;
 		
+		//for (int i = 0; i < board.history.size(); i++)
+		//{
+		//	std::cout << std::hex << board.history[i] << std::dec << "\n";
+		//}
 
+		//printMove(move);
+		//
+		//std::cout << "\n";
 
+		//std::cout << ply;
 
-
+		//std::cout << "\n";
 
 
 
@@ -365,11 +389,9 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
-			board.history.clear();
-			for (int i = 0; i < last_history.size(); i++)
-			{
-				board.history.push_back(last_history[i]);
-			}
+
+			board.history.pop_back();
+			board.last_irreversible_ply = last_irreversible;
 
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
@@ -379,17 +401,27 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		}
 
 		ply--;
+//		for (int i = 0; i < board.history.size(); i++)
+//{
+//	std::cout << std::hex << board.history[i] << std::dec << "\n";
+//}
 		UnmakeMove(board, move, captured_piece);
 
-		board.history.clear();
-		for (int i = 0; i < last_history.size(); i++)
-		{
-			board.history.push_back(last_history[i]);
-		}
+		board.history.pop_back();
+		board.last_irreversible_ply = last_irreversible;
 		board.Zobrist_key = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
+
+		//std::cout << "\n";
+		//printMove(move);
+		//std::cout << "\n after_ \n";
+		//for (int i = 0; i < board.history.size(); i++)
+		//{
+		//	std::cout << std::hex << board.history[i] << std::dec << "\n";
+		//}
+		//std::cout << "\n";
 		if (score > bestValue)
 		{
 			//store history moves
@@ -466,6 +498,9 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 	Move bestmove;
 	start = std::chrono::steady_clock::now();
 	
+	std::vector<uint64_t> histcopy = board.history;
+	//int lastirr = board.last_irreversible_ply;
+
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		ply = 0;
@@ -474,6 +509,8 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 		is_search_stopped = false;
 		memset(last_bestMove, 0, 64 * sizeof(int));
 		int score = Negamax(board, curr_depth, MINUS_INFINITY, PLUS_INFINITY);
+		board.history = histcopy;
+		//board.last_irreversible_ply = lastirr;
 
 		auto end = std::chrono::steady_clock::now();
 
@@ -498,7 +535,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 		}
 
 
-		std::cout << "\n";
+		
 
 		if (elapsedMS > Searchtime_MS)
 		{
@@ -506,6 +543,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS)
 			//std::cout << Searchtime_MS << "\n";
 			break;
 		}
+		std::cout << "\n";
 	}
 	//auto end = std::chrono::high_resolution_clock::now();
 

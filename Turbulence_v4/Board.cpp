@@ -150,7 +150,7 @@ void PrintBoards(Board board)
     {
         std::cout << std::hex << board.history[i] << std::dec << "\n";
     }
-    std::cout << "isThreeFold:" << (is_threefold(board.history) ? "True" : "False");
+    std::cout << "isThreeFold:" << (is_threefold(board.history, board.last_irreversible_ply) ? "True" : "False");
     //std::cout << ("\n    Number :     ") << ;
     std::cout << ("\n");
 

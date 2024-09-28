@@ -15,6 +15,8 @@ public:
     uint64_t Zobrist_key;
 
     std::vector<uint64_t> history;
+
+    int last_irreversible_ply = 0;
     //u64 Zobrist;
 
     // Constructor to initialize members
