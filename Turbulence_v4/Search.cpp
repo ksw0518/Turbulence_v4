@@ -25,7 +25,7 @@ int nodes_for_time_checking;
 int Searchtime_MS;
 int curr_depth;
 bool is_search_stopped;
-constexpr int MAX_HISTORY = 4096;
+constexpr int MAX_HISTORY = 700;
 
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -36,33 +36,56 @@ static int mvv_lva[6][6] = {
 	{100, 200, 300, 400, 500, 600}
 };
 
+
 static Move last_bestMove[64];
 Move killer_moves[2][64];
 
 int history_moves[12][64];
+//struct Transposition_entry
+//{
+//	uint64_t zobrist_key;
+//	Move best_move;
+//	int depth;
+//	int score;
+//	int node_type;
+//};
 
-
+int TT_size = 1;
+Transposition_entry* TranspositionTable;
+void update_history(int piece, int to, int bonus)
+{
+	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * abs(clampedBonus) / MAX_HISTORY;
+}
 
 static inline int get_move_score(Move move, Board& board)
 {
 
-
-
+	if (move.Type == ep_capture)
+	{
+		return mvv_lva[P][P];
+	}
 
 	/*int victim = get_piece(board.mailbox[move.To], White);
 	int attacker = get_piece(move.Piece, White);*/
-	
+
 
 	//std::cout<<(victim >= 0 && victim < 6);
 	//std::cout << (attacker >= 0 && attacker < 6);
 	//if (victim > 6 || attacker > 6) std::cout << ("fucked up");
-	if ((move.Type & captureFlag) != 0) // if a move is a capture move
-	{
-		if (move.Type == ep_capture)
-		{
-			return mvv_lva[P][P];
-		}
+	Transposition_entry& entry = TranspositionTable[board.Zobrist_key % TT_size];
 
+	// Check if the entry is valid and matches the current Zobrist key
+	if (entry.node_type != 0 && entry.zobrist_key == board.Zobrist_key)
+	{
+		// If the best move from TT matches the current move, return a high score
+		if (entry.best_move == move)
+		{
+			return 10000;
+		}
+	}
+	else if ((move.Type & captureFlag) != 0) // if a move is a capture move
+	{
 		int victim = get_piece(board.mailbox[move.To], White);
 		int attacker = get_piece(move.Piece, White);
 		//score moves based on mvv-lva scheme
@@ -70,52 +93,50 @@ static inline int get_move_score(Move move, Board& board)
 
 		//std::cout << board.mailbox[move.To] << "\n";
 		//std::cout << attacker << "\n";
-		return mvv_lva[attacker][victim];
+		//return mvv_lva[victim][attacker];
+		return mvv_lva[attacker][victim] * 10;
 	}
 	else
 	{
 		//1st killer
-		//if (last_bestMove[curr_depth - 2] == move)
-		//{
-		//	return 10000;
-		//}
 		if (killer_moves[0][ply] == move)
 		{
-			return 9000;
+			return 900;
 		}
 		//2nd killer
 		else if (killer_moves[1][ply] == move)
 		{
-			return 8000;
+			return 800;
 		}
 		else
 		{
-			//return history_moves[move.Piece][move.To];
-			/*if (last_bestMove[curr_depth - 2] == move)
-			{
-				return 10000;
-			}
-			else
-			{
-				
-			}*/
-			
-			//return history score
+			// Return history score for non-capture and non-killer moves
+			int pieceType = get_piece(move.Piece, White); // Get piece type
+			int targetSquare = move.To; // Get target square
+
+			// Return the historical score from the history table
+
+			//if (ply == 0)
+			//{
+			//	std::cout << history_moves[pieceType][targetSquare]<<"\n";
+			//}
+			return history_moves[pieceType][targetSquare];
 		}
 		// 
 		//history move
 	}
 
-
 	return 0;
 }
-bool compareMoves(const Move& move1, const Move& move2, Board &board)
+
+
+bool compareMoves(const Move& move1, const Move& move2, Board& board)
 {
 	return (get_move_score(move1, board)) > (get_move_score(move2, board));
 }
 
 
-static inline void sort_moves(std::vector <Move> &moves, Board& board)
+static inline void sort_moves(std::vector <Move>& moves, Board& board)
 {
 	//int list_size = moves.size();
 	//int move_scores[list_size];
@@ -255,7 +276,11 @@ static int Quiescence(Board& board, int alpha, int beta)
 	return alpha;
 	//negamax_nodecount++;
 }
-
+Transposition_entry ttLookUp(uint64_t zobrist)
+{
+	int tt_index = zobrist % TT_size;
+	return TranspositionTable[tt_index];
+}
 static int Negamax(Board& board, int depth, int alpha, int beta)
 {
 	nodes_for_time_checking++;
@@ -294,6 +319,37 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 		
 		
 	}
+	//Transposition_entry ttEntry;
+	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+
+	// Only check TT for depths greater than zero (ply != 0)
+	if (ply != 0 && ttEntry.zobrist_key == board.Zobrist_key)
+	{
+		// Valid TT entry found
+		if (ttEntry.node_type != 0 && ttEntry.depth >= depth)
+		{
+			// Return immediately if exact score is found
+			if (ttEntry.node_type == EXACT_FLAG)
+			{
+				return ttEntry.score;
+			}
+			else if (ttEntry.node_type == LOWERBOUND)
+			{
+				alpha = std::max(alpha, ttEntry.score);
+			}
+			else if (ttEntry.node_type == UPPERBOUND)
+			{
+				beta = std::min(beta, ttEntry.score);
+			}
+
+			if (alpha >= beta)
+			{
+				return ttEntry.score;
+			}
+		}
+	}
+
+
 	if (depth == 0)
 	{
 		return Quiescence(board, alpha, beta);
@@ -326,7 +382,8 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 	//	last_history.push_back(board.history[i]);
 	//}
 
-	
+	int alpha_org = alpha;
+	int score = 0;
 	for (Move& move : moveList)
 	{
 		nodes_for_time_checking++;
@@ -385,7 +442,7 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 
 		legal_moves++;
-		int score = -Negamax(board, depth - 1, -beta, -alpha);
+		score = -Negamax(board, depth - 1, -beta, -alpha);
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
@@ -428,26 +485,27 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 
 			
 			bestValue = score;
-			if (score > alpha)
-			{
-				alpha = score;
 
-				pv_table[ply][ply] = move;
-
-
-				//copy move from deeper ply into a current ply's line
-				for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
-				{
-					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-				}
-
-				pv_length[ply] = pv_length[ply + 1];
-			}
 		}
-		if (score >= beta)
+		if (bestValue > alpha)
 		{
-			if ((move.Type & captureFlag) == 0) //non capture
+			alpha = score;
+
+
+			pv_table[ply][ply] = move;
+
+
+			//copy move from deeper ply into a current ply's line
+			for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
 			{
+				pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+			}
+
+			pv_length[ply] = pv_length[ply + 1];
+		}
+		if (alpha >= beta)
+		{
+			
 				//int clampedBonus = std::clamp(depth, MAX_HISTORY, -MAX_HISTORY);
 				//history_moves[move.Piece][move.To] += clampedBonus - history_moves[move.Piece][move.To] * std::abs(clampedBonus) / MAX_HISTORY;
 				
@@ -461,11 +519,14 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 				//	}
 				//}
 
-
+			if ((move.Type & captureFlag) == 0)
+			{
 				killer_moves[1][ply] = killer_moves[0][ply];
 				killer_moves[0][ply] = move;
+				update_history(move.Piece, move.To, depth);
 			}
-			return score;
+			break;
+			//return score;
 		}
 
 	}
@@ -480,6 +541,26 @@ static int Negamax(Board& board, int depth, int alpha, int beta)
 			return 0;
 		}
 	}
+	ttEntry.score = bestValue;
+	if (bestValue <= alpha_org)
+	{
+		ttEntry.node_type = UPPERBOUND;
+	}
+	else if (bestValue >= beta)
+	{
+		ttEntry.node_type = LOWERBOUND;
+	}
+	else
+	{
+		ttEntry.node_type = EXACT_FLAG;
+	}
+	ttEntry.depth = depth;
+	ttEntry.zobrist_key = board.Zobrist_key;
+	ttEntry.best_move = pv_table[ply][ply];
+
+
+	TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
+
 	return bestValue;
 }
 void IterativeDeepening(Board& board, int depth, int timeMS)

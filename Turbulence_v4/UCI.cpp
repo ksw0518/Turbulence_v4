@@ -27,6 +27,8 @@ const std::string kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/
 
 std::vector<std::string> position_commands = { "position", "startpos", "fen", "moves" };
 std::vector<std::string> go_commands = { "go", "movetime", "wtime", "btime", "winc", "binc", "movestogo" };
+std::vector<std::string> option_commands = { "setoption", "name",  "value" };
+
 Board main_board;
 
 int perft_depth;
@@ -197,7 +199,25 @@ int CalculateTime(int time, int incre)
 {
     return time / 20 + incre / 2;
 }
+void Initialize_TT(int size)
+{
+    int bytes = size * 1024 * 1024;
+    TT_size = bytes / sizeof(Transposition_entry);
 
+    if (TT_size % 2 != 0)
+    {
+        TT_size -= 1;
+    }
+    TranspositionTable = new Transposition_entry[TT_size]();
+
+    //std::cout<<"\n"<<TranspositionTable[1].zobrist_key << "a";
+    
+    //std::cout << TT_size;
+    //for (int i = 0; i < TT_size; ++i) {
+    //    TranspositionTable[i] = new Transposition_entry;  // 0 means empty entry
+    //}
+   
+}
 void ProcessUCI(std::string input)
 {
     //std::cout << (input) << "\n";
@@ -207,9 +227,27 @@ void ProcessUCI(std::string input)
 
     if (main_command == "uci")
     {
-        std::cout << "uciok" << "\n";
+        
         std::cout << "id name Turbulence" << "\n";;
         std::cout << "id author ksw0518" << "\n";;
+        std::cout << "\n";
+        std::cout << "option name Threads type spin default 1 min 1 max 1\n";
+        std::cout << "option name Hash type spin default 1 min 1 max 1024\n";
+        std::cout << "uciok" << "\n";
+    }
+    else if (main_command == "setoption")
+    {
+        std::string option = TryGetLabelledValue(input, "name", option_commands);
+        int value = TryGetLabelledValueInt(input, "value", option_commands);
+
+        //std::cout << TryGetLabelledValue(input, "name", option_commands);
+        //std::cout << option<<",";
+        if (option == "Hash")
+        {
+            //std::cout << ".";
+            Initialize_TT(value);
+        }
+
     }
     else if (main_command == "isready")
     {
@@ -721,6 +759,7 @@ int main()
     main_board.history.push_back(main_board.Zobrist_key);
     std::vector<Move> move_list;
     Generate_Legal_Moves(move_list, main_board, false);
+    Initialize_TT(1);
     //PrintLegalMoves(move_list);
 
     //print_tables();

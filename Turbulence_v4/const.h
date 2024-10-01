@@ -147,8 +147,14 @@ constexpr uint64_t BlackQueenCastleAttack = (1ULL << d8) | (1ULL << c8);
 constexpr int PLUS_INFINITY = 50000;
 constexpr int MINUS_INFINITY = -50000;
 
+constexpr int EXACT_FLAG = 1;
+constexpr int LOWERBOUND = 2;
+constexpr int UPPERBOUND = 3;
+
 static int Side_value[] = { 0, 6 };
 static int Get_Whitepiece[] = { 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5 };
+
+
 inline int get_piece(int piece, int col)
 {
     //std::cout << Get_Whitepiece[piece] << "\n";

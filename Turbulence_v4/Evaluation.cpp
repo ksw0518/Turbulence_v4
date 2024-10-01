@@ -1,21 +1,28 @@
 
 
 #include "Evaluation.h"
+#include "MoveGeneration.h"
 #include "Board.h"
+#include "BitManipulation.h"
 #include "const.h"
 
 #include <iostream>
 #include <iomanip>
 //#include "Movegen.h"
-inline int getFile(int square)
-{
-    return (square) % 8;
-}
+//inline int getFile(int square)
+//{
+//    return (square) % 8;
+//}
+//
+//inline int getRank(int square)
+//{
+//    return (square) != 0 ? 7 - (square) / 8 : 7;
+//}
+constexpr uint64_t A_file = 0x0101010101010101;
 
-inline int getRank(int square)
-{
-    return (square) != 0 ? 7 - (square) / 8 : 7;
-}
+static int history[12][64];
+
+//int pawn_mg_passed_bonus[8] = {}
 inline int getSide(int piece)
 {
     return (piece > 5) ? Black : White;
@@ -173,6 +180,9 @@ int* eg_pesto_table[6] =
     eg_king_table
 };
 
+uint64_t white_pawn_span[64];
+uint64_t black_pawn_span[64];
+
 //enum Piece {
 //    P = 0, N, B, R, Q, K, p, n, b, r, q, k, NO_PIECE
 //};
@@ -220,7 +230,65 @@ void print_tables() {
 }
 
 
+void precalculate_pawn_spans()
+{
+    //PrintBitboard(A_file);
+    for (int x = 0; x < 8; x++)
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            int square = 8 * y + x;
+            uint64_t occupancy = 18446744073709551615ULL;
+            
+            if (y == 0)
+            {
+                occupancy = 0ULL;
+            }
+            else
+            {
+                occupancy = occupancy >> (8 * (8 - y ));
+                uint64_t middlemask = (A_file << x);
+                uint64_t leftmask = (A_file << std::max(0, x-1));
+                uint64_t rightmask = (A_file << std::min(7, x+1));
+                
+                occupancy &= middlemask | leftmask | rightmask;
+                
+            }
+            //PrintBitboard(occupancy);
+            white_pawn_span[square] = occupancy;
+            
+        }
+    }
+    for (int x = 0; x < 8; x++)
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            int square = 8 * y + x;
+            uint64_t occupancy = 18446744073709551615ULL;
 
+            if (y == 0)
+            {
+                occupancy = 0ULL;
+            }
+            else
+            {
+                occupancy = occupancy << (8 * (y));
+                
+                uint64_t middlemask = (A_file << x);
+                uint64_t leftmask = (A_file << std::max(0, x - 1));
+                uint64_t rightmask = (A_file << std::min(7, x + 1));
+                
+
+                occupancy &= middlemask | leftmask | rightmask;
+                
+            }
+            
+            black_pawn_span[square] = occupancy;
+
+        }
+    }
+
+}
 void init_tables()
 {
     //int pc, sq;
@@ -245,6 +313,7 @@ void init_tables()
 
 
     }
+    precalculate_pawn_spans();
 }
 
 int Evaluate(Board& board)

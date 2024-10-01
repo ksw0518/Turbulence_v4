@@ -487,6 +487,8 @@ void PrintBitboard(uint64_t bitboard)
         }
         std::cout << ("\n");
     }
+
+
     std::cout << ("\n");
 }
 //static Dictionary<int, string> MoveType = new()

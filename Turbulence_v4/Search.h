@@ -5,6 +5,16 @@
 extern int pv_length[64];
 extern Move pv_table[64][64];
 
+extern int TT_size;
+struct Transposition_entry
+{
+	uint64_t zobrist_key;
+	Move best_move;
+	int depth;
+	int score;
+	int node_type;
+};
+extern Transposition_entry* TranspositionTable;
 void IterativeDeepening(Board& board, int depth, int timeMS = -1);
 
 void printMoveSort(Board board);
