@@ -2,10 +2,10 @@
 
 #include "Board.h"
 
-extern int pv_length[64];
-extern Move pv_table[64][64];
+extern int pv_length[99];
+extern Move pv_table[99][99];
 
-extern int TT_size;
+extern uint64_t TT_size;
 struct Transposition_entry
 {
 	uint64_t zobrist_key;
@@ -15,7 +15,7 @@ struct Transposition_entry
 	int node_type;
 };
 extern Transposition_entry* TranspositionTable;
-void IterativeDeepening(Board& board, int depth, int timeMS = -1);
+void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false);
 
 void printMoveSort(Board board);
 

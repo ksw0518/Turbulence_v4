@@ -1510,7 +1510,28 @@ bool is_move_irreversible(Move& move)
     }
     return false;
 }
-
+void Make_Nullmove(Board& board)
+{
+    if (board.enpassent != no_sq)
+    {
+        board.Zobrist_key ^= enpassant_keys[board.enpassent];
+        board.enpassent = no_sq;
+    }
+    //Zobrist ^= PIECES[move.Piece][move.To];
+    board.side = 1 - board.side;
+    board.Zobrist_key ^= side_key;
+}
+void Unmake_Nullmove(Board& board)
+{
+    //if (board.enpassent != no_sq)
+    //{
+    //    board.Zobrist_key ^= enpassant_keys[board.enpassent];
+    //    board.enpassent = no_sq;
+    //}
+    //Zobrist ^= PIECES[move.Piece][move.To];
+    board.side = 1 - board.side;
+    board.Zobrist_key ^= side_key;
+}
 void MakeMove(Board& board, Move move)
 {
     //Console.WriteLine(board.side);

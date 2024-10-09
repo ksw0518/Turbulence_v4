@@ -36,13 +36,18 @@ struct Move
 
 
     // Equality operator
-    bool operator==(const Move& other) const;
+    bool operator==(const Move& other) const {
+        return From == other.From &&
+            To == other.To &&
+            Type == other.Type &&
+            Piece == other.Piece;
+    }//bool operator==(const Move& other) const;
     //bool Equals(Move other);
 };
 
-inline bool Move::operator==(const Move& other) const {
-    return std::tie(From, To, Type, Piece) == std::tie(other.From, other.To, other.Type, other.Piece);
-}
+//inline bool Move::operator==(const Move& other) const {
+//    return std::tie(From, To, Type, Piece) == std::tie(other.From, other.To, other.Type, other.Piece);
+//}
 
 int getPieceFromChar(char pieceChar);
 

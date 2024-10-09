@@ -201,7 +201,10 @@ int CalculateTime(int time, int incre)
 }
 void Initialize_TT(int size)
 {
-    int bytes = size * 1024 * 1024;
+    //std::cout <<"size" << size << "\n";
+    uint64_t bytes = static_cast<uint64_t>(size) * 1024ULL * 1024ULL;
+
+    //std::cout << bytes<<"\n";
     TT_size = bytes / sizeof(Transposition_entry);
 
     if (TT_size % 2 != 0)
@@ -232,14 +235,14 @@ void ProcessUCI(std::string input)
         std::cout << "id author ksw0518" << "\n";;
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
-        std::cout << "option name Hash type spin default 1 min 1 max 1024\n";
+        std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
         std::cout << "uciok" << "\n";
     }
     else if (main_command == "setoption")
     {
         std::string option = TryGetLabelledValue(input, "name", option_commands);
         int value = TryGetLabelledValueInt(input, "value", option_commands);
-
+        //std::cout << value << "\n";
         //std::cout << TryGetLabelledValue(input, "name", option_commands);
         //std::cout << option<<",";
         if (option == "Hash")
@@ -525,6 +528,12 @@ void ProcessUCI(std::string input)
            
             //std::cout << TryGetLabelledValue(input, "fen", position_commands);
         }
+        else if ((Commands[1] == "kiwi"))
+        {
+            parse_fen(kiwipete, main_board);
+            main_board.Zobrist_key = generate_hash_key(main_board);
+            main_board.history.push_back(main_board.Zobrist_key);
+        }
 
 
     }
@@ -559,14 +568,26 @@ void ProcessUCI(std::string input)
         else if (Commands[1] == "depth")
         {
             //Negamax_nodecount = 0;
-            int depth = std::stoi(Commands[2]);
-            IterativeDeepening(main_board, depth);
+            if (Commands.size() == 3)
+            {
+                int depth = std::stoi(Commands[2]);
+                IterativeDeepening(main_board, depth);
+
+            }
+            else if (Commands.size() > 3)
+            {
+                if (Commands[3] == "root")
+                {
+                    int depth = std::stoi(Commands[2]);
+                    IterativeDeepening(main_board, depth, -1, true);
+                }
+            }
 
         }
         else if (Commands[1] == "movetime")
         {
             int movetime = std::stoi(Commands[2]);
-            IterativeDeepening(main_board, 64, movetime);
+            IterativeDeepening(main_board, 99, movetime);
         }
         else if (Commands[1] == "wtime")
         {
@@ -759,7 +780,7 @@ int main()
     main_board.history.push_back(main_board.Zobrist_key);
     std::vector<Move> move_list;
     Generate_Legal_Moves(move_list, main_board, false);
-    Initialize_TT(1);
+    Initialize_TT(16);
     //PrintLegalMoves(move_list);
 
     //print_tables();
