@@ -28,22 +28,15 @@ bool is_search_stopped;
 
 
 bool Print_Root = false;
-constexpr int MAX_HISTORY = 700;
+constexpr int MAX_HISTORY = 64000;
 
-static int mvv_lva[6][6] = {
-	{105, 205, 305, 405, 505, 605},
-	{104, 204, 304, 404, 504, 604},
-	{103, 203, 303, 403, 503, 603},
-	{102, 202, 302, 402, 502, 602},
-	{101, 201, 301, 401, 501, 601},
-	{100, 200, 300, 400, 500, 600}
-};
+
 
 
 static Move last_bestMove[99];
 Move killer_moves[2][99];
 
-int history_moves[12][99];
+int history_moves[12][64];
 //struct Transposition_entry
 //{
 //	uint64_t zobrist_key;
@@ -64,7 +57,14 @@ void update_history(int piece, int to, int bonus)
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * abs(clampedBonus) / MAX_HISTORY;
 }
-
+static int mvv_lva[6][6] = {
+	{105, 205, 305, 405, 505, 605},
+	{104, 204, 304, 404, 504, 604},
+	{103, 203, 303, 403, 503, 603},
+	{102, 202, 302, 402, 502, 602},
+	{101, 201, 301, 401, 501, 601},
+	{100, 200, 300, 400, 500, 600}
+};
 static inline int get_move_score(Move move, Board& board)
 {
 
@@ -88,7 +88,7 @@ static inline int get_move_score(Move move, Board& board)
 		// If the best move from TT matches the current move, return a high score
 		if (entry.best_move == move)
 		{
-			return 10000;
+			return 10000000;
 		}
 	}
 	else if ((move.Type & captureFlag) != 0) // if a move is a capture move
@@ -101,32 +101,30 @@ static inline int get_move_score(Move move, Board& board)
 		//std::cout << board.mailbox[move.To] << "\n";
 		//std::cout << attacker << "\n";
 		//return mvv_lva[victim][attacker];
-		return mvv_lva[attacker][victim] * 10;
+		return mvv_lva[attacker][victim] * 10000;
 	}
 	else
 	{
 		//1st killer
 		if (killer_moves[0][ply] == move)
 		{
-			return 900;
+			return 150000;
 		}
 		//2nd killer
 		else if (killer_moves[1][ply] == move)
 		{
-			return 800;
+			return 100000;
 		}
 		else
 		{
 			// Return history score for non-capture and non-killer moves
+
+
+
 			int pieceType = get_piece(move.Piece, White); // Get piece type
+
 			int targetSquare = move.To; // Get target square
 
-			// Return the historical score from the history table
-
-			//if (ply == 0)
-			//{
-			//	std::cout << history_moves[pieceType][targetSquare]<<"\n";
-			//}
 			return history_moves[pieceType][targetSquare];
 		}
 		// 
@@ -308,7 +306,7 @@ bool is_checking(Board& board)
 }
 static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP)
 {
-	
+	bool is_pv_node = beta - alpha > 1;
 	nodes_for_time_checking++;
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
@@ -318,6 +316,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 	pv_length[ply] = ply;
+	bool found_pv = false;
 	//for (int i = 0; i < board.history.size(); i++)
 	//{
 	//	std::cout << std::hex << board.history[i] << std::dec << "\n";
@@ -414,6 +413,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, false);
 
+
 	int legal_moves = 0;
 
 	//printMoveSort(board);
@@ -471,7 +471,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		//u64 nodes_added
 		if (!isMoveValid(move, board))//isMoveValid(move, board)
 		{
-			
+
 			ply--;
 			UnmakeMove(board, move, captured_piece);
 
@@ -492,8 +492,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			continue;
 		}
 
-		
-		
+
+
 		//for (int i = 0; i < board.history.size(); i++)
 		//{
 		//	std::cout << std::hex << board.history[i] << std::dec << "\n";
@@ -512,37 +512,53 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		legal_moves++;
 		depth_to_search = depth - 1;
 
+		int reduction = 0;
 		bool is_reduced = false;
-		if (depth >= 3)
-		{
-			if (legal_moves >= 2)//late move
-			{
-				if (!is_in_check(board) && !(killer_moves[0][ply] == move) && !(killer_moves[1][ply] == move))//do late move reduction
-				{
-					if (legal_moves <= 6)
-					{
-						depth_to_search -= 1;
-					}
-					else
-					{
-						depth_to_search -= std::max(1, depth / 6);
-					}
-
-					is_reduced = true;
-				}
-				
-			}
-		}
 
 		score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+		//score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+		//if (found_pv)
+		//{
+		//	score = -Negamax(board, depth_to_search, -alpha - 1, -alpha, true);
+		//	if ((score > alpha) && (score < beta))
+		//	{
+		//		score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+		//	}
+		//	
+		//}
+		//else
+		//{
+		//	score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+		//}
 
-		if (is_reduced && score > alpha)
-		{
 
-			//do a full research
-			score = -Negamax(board, depth_to_search + 1, -beta, -alpha, true);
-			
-		}
+
+		//if (legal_moves == 0)
+		//{
+		//	
+		//}
+		//else
+		//{
+		//	if (is_reduced)
+		//	{
+		//		score = -Negamax(board, depth_to_search, -(alpha + 1), -alpha, true);
+		//	}
+		//	else
+		//	{
+		//		score = alpha + 1;
+		//	}
+
+		//	if (score > alpha)
+		//	{
+		//		score = -Negamax(board, depth - 1, -(alpha + 1), -alpha, true);
+
+		//		if (score > alpha && score < beta)
+		//		{
+		//			score = -Negamax(board, depth - 1, -beta, -alpha, true);
+		//		}
+		//	}
+		//}
+
 
 
 		if (is_search_stopped) {
@@ -601,6 +617,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		if (bestValue > alpha)
 		{
+			found_pv = true;
 			ttFlag = ExactFlag;
 			alpha = score;
 
