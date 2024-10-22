@@ -28,7 +28,7 @@ bool is_search_stopped;
 
 
 bool Print_Root = false;
-constexpr int MAX_HISTORY = 64000;
+constexpr int MAX_HISTORY = 5000;
 
 
 
@@ -54,8 +54,11 @@ std::vector<Move> public_movelist;
 
 void update_history(int piece, int to, int bonus)
 {
-	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * abs(clampedBonus) / MAX_HISTORY;
+	/*int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * abs(clampedBonus) / MAX_HISTORY;*/
+
+
+	history_moves[piece][to] += bonus;
 }
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -68,10 +71,7 @@ static int mvv_lva[6][6] = {
 static inline int get_move_score(Move move, Board& board)
 {
 
-	if (move.Type == ep_capture)
-	{
-		return mvv_lva[P][P];
-	}
+
 
 	/*int victim = get_piece(board.mailbox[move.To], White);
 	int attacker = get_piece(move.Piece, White);*/
@@ -91,8 +91,12 @@ static inline int get_move_score(Move move, Board& board)
 			return 10000000;
 		}
 	}
-	else if ((move.Type & captureFlag) != 0) // if a move is a capture move
+	 if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
+		 if (move.Type == ep_capture)
+		 {
+			 return mvv_lva[P][P];
+		 }
 		int victim = get_piece(board.mailbox[move.To], White);
 		int attacker = get_piece(move.Piece, White);
 		//score moves based on mvv-lva scheme
@@ -105,29 +109,29 @@ static inline int get_move_score(Move move, Board& board)
 	}
 	else
 	{
+		 if (killer_moves[0][ply] == move)
+		 {
+			 return 150000;
+		 }
+		 //2nd killer
+		 else if (killer_moves[1][ply] == move)
+		 {
+			 return 100000;
+		 }
+		 else
+		 {
+			 // Return history score for non-capture and non-killer moves
+
+
+
+			 //int pieceType = get_piece(move.Piece, White); // Get piece type
+
+			 int targetSquare = move.To; // Get target square
+
+
+			 return history_moves[move.Piece][move.To] - 1000000;
+		 }
 		//1st killer
-		if (killer_moves[0][ply] == move)
-		{
-			return 150000;
-		}
-		//2nd killer
-		else if (killer_moves[1][ply] == move)
-		{
-			return 100000;
-		}
-		else
-		{
-			// Return history score for non-capture and non-killer moves
-
-
-
-			int pieceType = get_piece(move.Piece, White); // Get piece type
-
-			int targetSquare = move.To; // Get target square
-
-			return history_moves[pieceType][targetSquare];
-		}
-		// 
 		//history move
 	}
 
@@ -376,31 +380,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 	}
 
-	if (doNMP)
-	{
-		if (!is_in_check(board) && depth >= 3)
-		{
-			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
-			{
-
-				int lastep = board.enpassent;
-				uint64_t lzob = board.Zobrist_key;
-				Make_Nullmove(board);
-				int score = -Negamax(board, depth - 1 - 2, -beta, -beta + 1, false);
-
-				Unmake_Nullmove(board);
-
-				board.enpassent = lastep;
-				board.Zobrist_key = lzob;
-
-				if (score >= beta)
-				{
-					return score;
-				}
-				
-			}
-		}
-	}
 
 	if (depth == 0)
 	{
@@ -516,49 +495,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool is_reduced = false;
 
 		score = -Negamax(board, depth_to_search, -beta, -alpha, true);
-		//score = -Negamax(board, depth_to_search, -beta, -alpha, true);
-		//if (found_pv)
-		//{
-		//	score = -Negamax(board, depth_to_search, -alpha - 1, -alpha, true);
-		//	if ((score > alpha) && (score < beta))
-		//	{
-		//		score = -Negamax(board, depth_to_search, -beta, -alpha, true);
-		//	}
-		//	
-		//}
-		//else
-		//{
-		//	score = -Negamax(board, depth_to_search, -beta, -alpha, true);
-		//}
-
-
-
-		//if (legal_moves == 0)
-		//{
-		//	
-		//}
-		//else
-		//{
-		//	if (is_reduced)
-		//	{
-		//		score = -Negamax(board, depth_to_search, -(alpha + 1), -alpha, true);
-		//	}
-		//	else
-		//	{
-		//		score = alpha + 1;
-		//	}
-
-		//	if (score > alpha)
-		//	{
-		//		score = -Negamax(board, depth - 1, -(alpha + 1), -alpha, true);
-
-		//		if (score > alpha && score < beta)
-		//		{
-		//			score = -Negamax(board, depth - 1, -beta, -alpha, true);
-		//		}
-		//	}
-		//}
-
 
 
 		if (is_search_stopped) {
@@ -621,19 +557,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = ExactFlag;
 			alpha = score;
 
-			if (doNMP)
+			pv_table[ply][ply] = move;
+
+
+			//copy move from deeper ply into a current ply's line
+			for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
 			{
-				pv_table[ply][ply] = move;
-
-
-				//copy move from deeper ply into a current ply's line
-				for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
-				{
-					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-				}
-
-				pv_length[ply] = pv_length[ply + 1];
+				pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
 			}
+
+			pv_length[ply] = pv_length[ply + 1];
 
 		}
 		if (alpha >= beta)
@@ -656,7 +589,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				killer_moves[1][ply] = killer_moves[0][ply];
 				killer_moves[0][ply] = move;
-				update_history(move.Piece, move.To, depth);
+
+
+				update_history(move.Piece, move.To, depth*depth);
 			}
 			break;
 			//return score;
@@ -727,9 +662,18 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 	Print_Root = false;
 	//move_scores.clear();
 	//public_movelist.clear();
+
+	for (int piece = 0; piece < 12; ++piece)
+	{
+		for (int square = 0; square < 64; ++square)
+		{
+			history_moves[piece][square] = 0;
+			//history_moves[piece][square] = 0;
+		}
+	}
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
-		//move_scores.clear();
+		//move_scores.cler();
 		//public_movelist.clear();
 		ply = 0;
 
