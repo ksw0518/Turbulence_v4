@@ -28,7 +28,7 @@ bool is_search_stopped;
 
 
 bool Print_Root = false;
-constexpr int MAX_HISTORY = 5000;
+constexpr int MAX_HISTORY = 16384;
 
 
 
@@ -52,13 +52,17 @@ Transposition_entry* TranspositionTable;
 std::vector<int> move_scores;
 std::vector<Move> public_movelist;
 
+
+constexpr int MAX_HISTORY = 16384;
 void update_history(int piece, int to, int bonus)
 {
-	/*int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * abs(clampedBonus) / MAX_HISTORY;*/
+	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+
+	//std::cout<< clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
+	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 
 
-	history_moves[piece][to] += bonus;
+	//history_moves[piece][to] += bonus;
 }
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -126,10 +130,10 @@ static inline int get_move_score(Move move, Board& board)
 
 			 //int pieceType = get_piece(move.Piece, White); // Get piece type
 
-			 int targetSquare = move.To; // Get target square
+			 //int targetSquare = move.To; // Get target square
 
 
-			 return history_moves[move.Piece][move.To] - 1000000;
+			 return history_moves[move.Piece][move.To];
 		 }
 		//1st killer
 		//history move
@@ -569,7 +573,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			pv_length[ply] = pv_length[ply + 1];
 
 		}
-		if (alpha >= beta)
+		if (score >= beta)
 		{
 			
 				//int clampedBonus = std::clamp(depth, MAX_HISTORY, -MAX_HISTORY);
@@ -585,7 +589,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				//	}
 				//}
 			ttFlag = BetaFlag;
-			if ((move.Type & captureFlag) == 0)
+			if ((move.Type & capture) == 0)
 			{
 				killer_moves[1][ply] = killer_moves[0][ply];
 				killer_moves[0][ply] = move;
