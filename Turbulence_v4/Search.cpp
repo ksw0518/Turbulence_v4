@@ -28,7 +28,7 @@ bool is_search_stopped;
 
 
 bool Print_Root = false;
-constexpr int MAX_HISTORY = 16384;
+//constexpr int MAX_HISTORY = 16384;
 
 
 
@@ -59,10 +59,10 @@ void update_history(int piece, int to, int bonus)
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 
 	//std::cout<< clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
-	history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
+	//history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 
 
-	//history_moves[piece][to] += bonus;
+	history_moves[piece][to] += bonus;
 }
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -133,7 +133,7 @@ static inline int get_move_score(Move move, Board& board)
 			 //int targetSquare = move.To; // Get target square
 
 
-			 return history_moves[move.Piece][move.To];
+			 //return history_moves[move.Piece][move.To] - 1000000;
 		 }
 		//1st killer
 		//history move
@@ -595,7 +595,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				killer_moves[0][ply] = move;
 
 
-				update_history(move.Piece, move.To, depth*depth);
+				//update_history(move.Piece, move.To, depth*depth);
 			}
 			break;
 			//return score;
@@ -667,14 +667,14 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 	//move_scores.clear();
 	//public_movelist.clear();
 
-	for (int piece = 0; piece < 12; ++piece)
-	{
-		for (int square = 0; square < 64; ++square)
-		{
-			history_moves[piece][square] = 0;
-			//history_moves[piece][square] = 0;
-		}
-	}
+	//for (int piece = 0; piece < 12; ++piece)
+	//{
+	//	for (int square = 0; square < 64; ++square)
+	//	{
+	//		history_moves[piece][square] = 0;
+	//		//history_moves[piece][square] = 0;
+	//	}
+	//}
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		//move_scores.cler();
