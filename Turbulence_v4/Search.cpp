@@ -36,7 +36,7 @@ bool Print_Root = false;
 static Move last_bestMove[99];
 Move killer_moves[2][99];
 
-int history_moves[12][64];
+int history_moves[2][64][64];
 //struct Transposition_entry
 //{
 //	uint64_t zobrist_key;
@@ -54,15 +54,15 @@ std::vector<Move> public_movelist;
 
 
 constexpr int MAX_HISTORY = 16384;
-void update_history(int piece, int to, int bonus)
+void update_history(int stm, int from, int to, int bonus)
 {
-	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	//int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 
 	//std::cout<< clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 	//history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 
 
-	history_moves[piece][to] += bonus;
+	history_moves[stm][from][to] += bonus;
 }
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -72,6 +72,33 @@ static int mvv_lva[6][6] = {
 	{101, 201, 301, 401, 501, 601},
 	{100, 200, 300, 400, 500, 600}
 };
+void printTopHistory(int side) {
+	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
+
+	// Populate the vector with scores and moves
+	for (int from = 0; from < 64; ++from) {
+		for (int to = 0; to < 64; ++to) {
+			int score = history_moves[side][from][to];
+			moves.push_back({ score, from, to });
+		}
+	}
+
+	// Sort moves by score in descending order
+	std::sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+		return std::get<0>(a) < std::get<0>(b);
+		});
+
+	// Print the top 10 moves
+	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
+	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
+		auto [score, from, to] = moves[i];
+		std::cout << "from: " << CoordinatesToChessNotation(from)
+			<< " to: " << CoordinatesToChessNotation(to)
+			<< " score = " << score
+			<< " side_to_move = " << side
+			<< std::endl;
+	}
+}
 static inline int get_move_score(Move move, Board& board)
 {
 
@@ -126,14 +153,24 @@ static inline int get_move_score(Move move, Board& board)
 		 {
 			 // Return history score for non-capture and non-killer moves
 
-
+			 
 
 			 //int pieceType = get_piece(move.Piece, White); // Get piece type
 
 			 //int targetSquare = move.To; // Get target square
 
+			 int history = history_moves[board.side][move.From][move.To] - 1000000;
 
-			 return history_moves[move.Piece][move.To] - 1000000;
+			 if (history >= 99999)
+			 {
+				 return 99999;
+			 }
+			 else
+			 {
+				 return history;
+			 }
+			 
+
 		 }
 		//1st killer
 		//history move
@@ -572,6 +609,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 			pv_length[ply] = pv_length[ply + 1];
 
+
+
+
 		}
 		if (score >= beta)
 		{
@@ -595,7 +635,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				killer_moves[0][ply] = move;
 
 
-				update_history(move.Piece, move.To, depth*depth);
+				update_history(board.side, move.From, move.To, depth*depth);
 			}
 			break;
 			//return score;
@@ -642,7 +682,7 @@ int get_hashfull()
 
 void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 {
-	
+
 	if (timeMS == -1)
 	{
 		Searchtime_MS = INT_MAX;
@@ -667,14 +707,20 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 	//move_scores.clear();
 	//public_movelist.clear();
 
-	for (int piece = 0; piece < 12; ++piece)
+	for (int from = 0; from < 64; ++from)
 	{
-		for (int square = 0; square < 64; ++square)
+		for (int to = 0; to < 64; ++to)
 		{
-			history_moves[piece][square] = 0;
+			history_moves[0][from][to] = 0;
+			history_moves[1][from][to] = 0;
+			//std::cout << to<<"\n";
 			//history_moves[piece][square] = 0;
 		}
 	}
+	//std::cout << "white";
+	//printTopHistory(0);
+	//std::cout << "black";
+	//printTopHistory(1);
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		//move_scores.cler();
@@ -701,6 +747,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 		//}
 		score = Negamax(board, curr_depth, alpha_val, beta_val, true);
 
+		
 		//int last_alpha = alpha_val;
 		//int last_beta = beta_val;
 
@@ -722,7 +769,10 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 			score = Negamax(board, curr_depth, alpha_val, beta_val, true);
 			//std::cout << "Window widened: [" << alpha_val << ", " << beta_val << "]" << std::endl;
 		}
-
+		//std::cout << "white";
+		//printTopHistory(0);
+		//std::cout << "black";
+		//printTopHistory(1);
 		//if (Print_Root)
 		//{
 		//	//public_movelist.clear();
