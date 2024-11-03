@@ -159,7 +159,7 @@ static inline int get_move_score(Move move, Board& board)
 
 			 //int targetSquare = move.To; // Get target square
 
-			 int history = history_moves[board.side][move.From][move.To] - 1000000;
+			 int history = history_moves[board.side][move.From][move.To] - 100000;
 
 			 if (history >= 99999)
 			 {
@@ -193,7 +193,7 @@ static inline void sort_moves(std::vector <Move>& moves, Board& board)
 
 	// Sort using a lambda that captures the board reference
 	std::sort(moves.begin(), moves.end(), [&board](const Move& move1, const Move& move2) {
-		return compareMoves(move1, move2, board);
+		return compareMoves(move1, move2, board); 
 		});
 
 }
@@ -393,6 +393,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 
+
 	// Only check TT for depths greater than zero (ply != 0)
 	if (ply != 0 && ttEntry.zobrist_key == board.Zobrist_key)
 	{
@@ -535,7 +536,22 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int reduction = 0;
 		bool is_reduced = false;
 
-		score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+		
+		
+		if (legal_moves == 1)
+		{
+			score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+		}
+		else
+		{
+			score = -Negamax(board, depth_to_search, -alpha-1, -alpha, true);
+			
+			if (score > alpha && score < beta )
+			{
+				score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+			}
+		
+		}
 
 
 		if (is_search_stopped) {
@@ -584,14 +600,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		//	std::cout << std::hex << board.history[i] << std::dec << "\n";
 		//}
 		//std::cout << "\n";
-		if (score > bestValue)
-		{
-			//store history moves
 
-			
-			bestValue = score;
+		bestValue = std::max(score, bestValue);
 
-		}
+
 		if (bestValue > alpha)
 		{
 			found_pv = true;
@@ -611,9 +623,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 
-
 		}
-		if (score >= beta)
+		if (alpha >= beta)
 		{
 			
 				//int clampedBonus = std::clamp(depth, MAX_HISTORY, -MAX_HISTORY);
@@ -631,11 +642,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = BetaFlag;
 			if ((move.Type & capture) == 0)
 			{
-				killer_moves[1][ply] = killer_moves[0][ply];
-				killer_moves[0][ply] = move;
+				if (!(killer_moves[0][ply] == move))
+				{
+					killer_moves[1][ply] = killer_moves[0][ply];
+					killer_moves[0][ply] = move;
+				}
 
 
-				update_history(board.side, move.From, move.To, depth*depth);
+				history_moves[board.side][move.From][move.To] += depth * depth;
+				//update_history(board.side, move.From, move.To, depth*depth);
 			}
 			break;
 			//return score;
@@ -745,30 +760,37 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 		//{
 		//	Print_Root = PrintRootVal;
 		//}
-		score = Negamax(board, curr_depth, alpha_val, beta_val, true);
 
-		
-		//int last_alpha = alpha_val;
-		//int last_beta = beta_val;
 
-		// Continue re-searching until the search is successful
-		while (score <= alpha_val || score >= beta_val)
-		{
-			if (score <= alpha_val) // Failed low
-			{
-				alpha_val -= 50; // Widen alpha by decreasing it
-			}
-			else if (score >= beta_val) // Failed high
-			{
-				beta_val += 50; // Widen beta by increasing it
-			}
+		score = Negamax(board, curr_depth, MINUS_INFINITY, PLUS_INFINITY, true);
 
-			// Perform the search again with the widened window
-			//move_scores.clear();
-			//public_movelist.clear();
-			score = Negamax(board, curr_depth, alpha_val, beta_val, true);
-			//std::cout << "Window widened: [" << alpha_val << ", " << beta_val << "]" << std::endl;
-		}
+		//score = Negamax(board, curr_depth, alpha_val, beta_val, true);
+
+		//
+		////int last_alpha = alpha_val;
+		////int last_beta = beta_val;
+
+		//// Continue re-searching until the search is successful
+		//while (score <= alpha_val || score >= beta_val)
+		//{
+		//	if (score <= alpha_val) // Failed low
+		//	{
+		//		alpha_val -= 50; // Widen alpha by decreasing it
+		//	}
+		//	else if (score >= beta_val) // Failed high
+		//	{
+		//		beta_val += 50; // Widen beta by increasing it
+		//	}
+
+		//	// Perform the search again with the widened window
+		//	//move_scores.clear();
+		//	//public_movelist.clear();
+		//	score = Negamax(board, curr_depth, alpha_val, beta_val, true);
+		//	//std::cout << "Window widened: [" << alpha_val << ", " << beta_val << "]" << std::endl;
+		//}
+
+
+
 		//std::cout << "white";
 		//printTopHistory(0);
 		//std::cout << "black";
