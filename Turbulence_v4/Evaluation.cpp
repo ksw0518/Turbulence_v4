@@ -417,6 +417,23 @@ int Evaluate(Board& board)
     int egPhase = 24 - mgPhase;
 
     int Whiteeval = (mgScore * mgPhase + egScore * egPhase) / 24;
+
+    //int WhiteBishops = count_bits(board.bitboards[B]);
+    //int BlackBishops = count_bits(board.bitboards[b]);
+
+    //int white_bishoppair = 0;
+    //int black_bishoppair = 0;
+
+    //if (WhiteBishops >= 2)
+    //{
+    //    white_bishoppair = 50;
+    //}
+    //if (BlackBishops >= 2)
+    //{
+    //    black_bishoppair = 50;
+    //}
+    //Whiteeval += white_bishoppair;
+    //Whiteeval -= black_bishoppair;
     return Whiteeval * side_multiply[evalSide];
 
 }
