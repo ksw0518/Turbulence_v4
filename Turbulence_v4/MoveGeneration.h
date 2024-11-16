@@ -66,6 +66,8 @@ void printMove(Move move);
 
 
 //inline uint64_t between(int a, int b);
+
+uint64_t all_attackers_to_square(Board& board, uint64_t occupied, int sq);
 int getSide(int piece);
 
 void InitializeBetweenTable();
@@ -84,6 +86,9 @@ void InitializeBetweenTable();
 //uint64_t CalculateBishopAttack(int square, uint64_t block);
 void init_sliders_attacks(int bishop);
 
+
+
+
 void InitializeLeaper();
 
 //static void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask);
@@ -93,7 +98,7 @@ void InitializeLeaper();
 //static void Generate_Queen_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask);
 //static void Generate_King_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask);
 
-bool is_square_attacked(int square, int side, Board board, uint64_t occupancy);
+bool is_square_attacked(int square, int side, Board &board, uint64_t occupancy);
 void Generate_Legal_Moves(std::vector<Move>& MoveList, Board& board, bool isCapture);
 int get_castle(uint64_t castle, int side);
 

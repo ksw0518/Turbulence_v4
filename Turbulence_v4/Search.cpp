@@ -12,7 +12,62 @@
 #include <algorithm>
 
 
+std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
+	"r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
+	"4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
+	"r3qbrk/6p1/2b2pPp/p3pP1Q/PpPpP2P/3P1B2/2PB3K/R5R1 w - - 16 42",
+	"6k1/1R3p2/6p1/2Bp3p/3P2q1/P7/1P2rQ1K/5R2 b - - 4 44",
+	"8/8/1p2k1p1/3p3p/1p1P1P1P/1P2PK2/8/8 w - - 3 54",
+	"7r/2p3k1/1p1p1qp1/1P1Bp3/p1P2r1P/P7/4R3/Q4RK1 w - - 0 36",
+	"r1bq1rk1/pp2b1pp/n1pp1n2/3P1p2/2P1p3/2N1P2N/PP2BPPP/R1BQ1RK1 b - - 2 10",
+	"3r3k/2r4p/1p1b3q/p4P2/P2Pp3/1B2P3/3BQ1RP/6K1 w - - 3 87",
+	"2r4r/1p4k1/1Pnp4/3Qb1pq/8/4BpPp/5P2/2RR1BK1 w - - 0 42",
+	"4q1bk/6b1/7p/p1p4p/PNPpP2P/KN4P1/3Q4/4R3 b - - 0 37",
+	"2q3r1/1r2pk2/pp3pp1/2pP3p/P1Pb1BbP/1P4Q1/R3NPP1/4R1K1 w - - 2 34",
+	"1r2r2k/1b4q1/pp5p/2pPp1p1/P3Pn2/1P1B1Q1P/2R3P1/4BR1K b - - 1 37",
+	"r3kbbr/pp1n1p1P/3ppnp1/q5N1/1P1pP3/P1N1B3/2P1QP2/R3KB1R b KQkq b3 0 17",
+	"8/6pk/2b1Rp2/3r4/1R1B2PP/P5K1/8/2r5 b - - 16 42",
+	"1r4k1/4ppb1/2n1b1qp/pB4p1/1n1BP1P1/7P/2PNQPK1/3RN3 w - - 8 29",
+	"8/p2B4/PkP5/4p1pK/4Pb1p/5P2/8/8 w - - 29 68",
+	"3r4/ppq1ppkp/4bnp1/2pN4/2P1P3/1P4P1/PQ3PBP/R4K2 b - - 2 20",
+	"5rr1/4n2k/4q2P/P1P2n2/3B1p2/4pP2/2N1P3/1RR1K2Q w - - 1 49",
+	"1r5k/2pq2p1/3p3p/p1pP4/4QP2/PP1R3P/6PK/8 w - - 1 51",
+	"q5k1/5ppp/1r3bn1/1B6/P1N2P2/BQ2P1P1/5K1P/8 b - - 2 34",
+	"r1b2k1r/5n2/p4q2/1ppn1Pp1/3pp1p1/NP2P3/P1PPBK2/1RQN2R1 w - - 0 22",
+	"r1bqk2r/pppp1ppp/5n2/4b3/4P3/P1N5/1PP2PPP/R1BQKB1R w KQkq - 0 5",
+	"r1bqr1k1/pp1p1ppp/2p5/8/3N1Q2/P2BB3/1PP2PPP/R3K2n b Q - 1 12",
+	"r1bq2k1/p4r1p/1pp2pp1/3p4/1P1B3Q/P2B1N2/2P3PP/4R1K1 b - - 2 19",
+	"r4qk1/6r1/1p4p1/2ppBbN1/1p5Q/P7/2P3PP/5RK1 w - - 2 25",
+	"r7/6k1/1p6/2pp1p2/7Q/8/p1P2K1P/8 w - - 0 32",
+	"r3k2r/ppp1pp1p/2nqb1pn/3p4/4P3/2PP4/PP1NBPPP/R2QK1NR w KQkq - 1 5",
+	"3r1rk1/1pp1pn1p/p1n1q1p1/3p4/Q3P3/2P5/PP1NBPPP/4RRK1 w - - 0 12",
+	"5rk1/1pp1pn1p/p3Brp1/8/1n6/5N2/PP3PPP/2R2RK1 w - - 2 20",
+	"8/1p2pk1p/p1p1r1p1/3n4/8/5R2/PP3PPP/4R1K1 b - - 3 27",
+	"8/4pk2/1p1r2p1/p1p4p/Pn5P/3R4/1P3PP1/4RK2 w - - 1 33",
+	"8/5k2/1pnrp1p1/p1p4p/P6P/4R1PK/1P3P2/4R3 b - - 1 38",
+	"8/8/1p1kp1p1/p1pr1n1p/P6P/1R4P1/1P3PK1/1R6 b - - 15 45",
+	"8/8/1p1k2p1/p1prp2p/P2n3P/6P1/1P1R1PK1/4R3 b - - 5 49",
+	"8/8/1p4p1/p1p2k1p/P2npP1P/4K1P1/1P6/3R4 w - - 6 54",
+	"8/8/1p4p1/p1p2k1p/P2n1P1P/4K1P1/1P6/6R1 b - - 6 59",
+	"8/5k2/1p4p1/p1pK3p/P2n1P1P/6P1/1P6/4R3 b - - 14 63",
+	"8/1R6/1p1K1kp1/p6p/P1p2P1P/6P1/1Pn5/8 w - - 0 67",
+	"1rb1rn1k/p3q1bp/2p3p1/2p1p3/2P1P2N/PP1RQNP1/1B3P2/4R1K1 b - - 4 23",
+	"4rrk1/pp1n1pp1/q5p1/P1pP4/2n3P1/7P/1P3PB1/R1BQ1RK1 w - - 3 22",
+	"r2qr1k1/pb1nbppp/1pn1p3/2ppP3/3P4/2PB1NN1/PP3PPP/R1BQR1K1 w - - 4 12",
+	"2r2k2/8/4P1R1/1p6/8/P4K1N/7b/2B5 b - - 0 55",
+	"6k1/5pp1/8/2bKP2P/2P5/p4PNb/B7/8 b - - 1 44",
+	"2rqr1k1/1p3p1p/p2p2p1/P1nPb3/2B1P3/5P2/1PQ2NPP/R1R4K w - - 3 25",
+	"r1b2rk1/p1q1ppbp/6p1/2Q5/8/4BP2/PPP3PP/2KR1B1R b - - 2 14",
+	"6r1/5k2/p1b1r2p/1pB1p1p1/1Pp3PP/2P1R1K1/2P2P2/3R4 w - - 1 36",
+	"rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq c3 0 2",
+	"2rr2k1/1p4bp/p1q1p1p1/4Pp1n/2PB4/1PN3P1/P3Q2P/2RR2K1 w - f6 0 20",
+	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
+	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
+};
 constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
+
+constexpr int asp_window_initial = 40;
+constexpr int asp_window_max = 300;
 
 auto start = std::chrono::steady_clock::now();
 
@@ -31,8 +86,8 @@ bool Print_Root = false;
 //constexpr int MAX_HISTORY = 16384;
 
 
-
-
+int seldepth = 0;
+int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 Move killer_moves[2][99];
 
@@ -54,15 +109,24 @@ std::vector<Move> public_movelist;
 
 
 constexpr int MAX_HISTORY = 16384;
+
+constexpr int Minimum_lmr_depth = 3;
+
+
+int scaledBonus(int score, int bonus)
+{
+	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
+}
 void update_history(int stm, int from, int to, int bonus)
 {
 	//int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 
 	//std::cout<< clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 	//history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
-
-
-	history_moves[stm][from][to] += bonus;
+	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	history_moves[stm][from][to] += clampedBonus - history_moves[stm][from][to] * abs(clampedBonus) / MAX_HISTORY;
+	//history_moves[stm][from][to] = std::clamp(history_moves[stm][from][to], -MAX_HISTORY, MAX_HISTORY);
+	//history_moves[stm][from][to] += bonus;
 }
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
@@ -123,20 +187,40 @@ static inline int get_move_score(Move move, Board& board)
 		}
 	}
 	 if ((move.Type & captureFlag) != 0) // if a move is a capture move
-	{
-		 if (move.Type == ep_capture)
-		 {
-			 return mvv_lva[P][P];
-		 }
-		int victim = get_piece(board.mailbox[move.To], White);
-		int attacker = get_piece(move.Piece, White);
-		//score moves based on mvv-lva scheme
-		//return 0;
+	{			 if (move.Type == ep_capture)
+			 {
+				 return mvv_lva[P][P] * 10000;
+			 }
+			 int victim = get_piece(board.mailbox[move.To], White);
+			 int attacker = get_piece(move.Piece, White);
+			 //score moves based on mvv-lva scheme
+			 //return 0;
 
-		//std::cout << board.mailbox[move.To] << "\n";
-		//std::cout << attacker << "\n";
-		//return mvv_lva[victim][attacker];
-		return mvv_lva[attacker][victim] * 10000;
+			 //std::cout << board.mailbox[move.To] << "\n";
+			 //std::cout << attacker << "\n";
+			 //return mvv_lva[victim][attacker];
+			 return mvv_lva[attacker][victim] * 10000;
+		 //if (SEE(board, move, -50))
+		 //{
+
+		 //}
+		 //else
+		 //{
+			// if (move.Type == ep_capture)
+			// {
+			//	 return mvv_lva[P][P] * 10000 /6 -  40000;
+			// }
+			// int victim = get_piece(board.mailbox[move.To], White);
+			// int attacker = get_piece(move.Piece, White);
+			// //score moves based on mvv-lva scheme
+			// //return 0;
+
+			// //std::cout << board.mailbox[move.To] << "\n";
+			// //std::cout << attacker << "\n";
+			// //return mvv_lva[victim][attacker];
+			// return mvv_lva[attacker][victim] * 10000 /6 - 40000;
+		 //}
+
 	}
 	else
 	{
@@ -185,6 +269,168 @@ bool compareMoves(const Move& move1, const Move& move2, Board& board)
 	return (get_move_score(move1, board)) > (get_move_score(move2, board));
 }
 
+bool is_promotion(int type)
+{
+	return  (type & promotionFlag) != 0;
+}
+
+int get_piece_promoting(int type, int side)
+{
+	int return_piece = 0;
+	if ((type == queen_promo) || (type == queen_promo_capture))
+	{
+		return_piece = Q;
+	}
+	else if (type == rook_promo || (type == rook_promo_capture))
+	{
+		return_piece = R;
+	}
+	else if (type == bishop_promo || (type == bishop_promo_capture))
+	{
+		return_piece = B;
+	}
+	else if (type == knight_promo || (type == knight_promo_capture))
+	{
+		return_piece = N;
+	}
+
+	return get_piece(return_piece, side);
+}
+int move_estimated_value(Board &board, Move move) {
+
+	// Start with the value of the piece on the target square
+	int target_piece = board.mailbox[move.To] > 5
+		? board.mailbox[move.To] - 6
+		: board.mailbox[move.To];
+
+	int promoted_piece = get_piece_promoting(move.Type, White);
+	int value = SEEPieceValues[target_piece];
+
+	// Factor in the new piece's value and remove our promoted pawn
+	if ((move.Type & promotionFlag) != 0)
+		value += SEEPieceValues[promoted_piece] - SEEPieceValues[P];
+
+	// Target square is encoded as empty for enpass moves
+	else if (move.Type == ep_capture)
+		value = SEEPieceValues[P];
+
+	// We encode Castle moves as KxR, so the initial step is wrong
+	else if (move.Type == king_castle || move.Type == queen_castle)
+		value = 0;
+
+	return value;
+}
+
+//int SEE(Board& pos, Move move, int threshold) {
+//
+//	int from, to, enpassant, promotion, colour, balance, nextVictim;
+//	uint64_t bishops, rooks, occupied, attackers, myAttackers;
+//
+//	// Unpack move information
+//	from = move.From;
+//	to = move.To;
+//	enpassant = move.Type == ep_capture;
+//	promotion = (move.Type & promotionFlag) != 0;
+//
+//	// Next victim is moved piece or promotion type
+//	nextVictim = promotion ? promotion : pos.mailbox[from];
+//	nextVictim = nextVictim > 5 ? nextVictim - 6 : nextVictim;
+//
+//	// Balance is the value of the move minus threshold. Function
+//	// call takes care for Enpass, Promotion and Castling moves.
+//	balance = move_estimated_value(pos, move) - threshold;
+//
+//	// Best case still fails to beat the threshold
+//	if (balance < 0)
+//		return 0;
+//
+//	// Worst case is losing the moved piece
+//	balance -= SEEPieceValues[nextVictim];
+//
+//	// If the balance is positive even if losing the moved piece,
+//	// the exchange is guaranteed to beat the threshold.
+//	if (balance >= 0)
+//		return 1;
+//
+//	// Grab sliders for updating revealed attackers
+//	bishops = pos.bitboards[b] | pos.bitboards[B] | pos.bitboards[q] |
+//		pos.bitboards[Q];
+//	rooks = pos.bitboards[r] | pos.bitboards[R] | pos.bitboards[q] |
+//		pos.bitboards[Q];
+//
+//	// Let occupied suppose that the move was actually made
+//	occupied = pos.occupancies[Both];
+//	occupied = (occupied ^ (1ull << from)) | (1ull << to);
+//	if (enpassant)
+//	{
+//		int ep_square = (pos.side == White) ? move.To + 8 : move.To - 8;
+//		occupied ^= (1ull << ep_square);
+//	}
+//		
+//
+//	// Get all pieces which attack the target square. And with occupied
+//	// so that we do not let the same piece attack twice
+//	attackers = all_attackers_to_square(pos, occupied, to) & occupied;
+//
+//	// Now our opponents turn to recapture
+//	colour = pos.side ^ 1;
+//
+//	while (1) {
+//
+//		// If we have no more attackers left we lose
+//		myAttackers = attackers & pos.occupancies[colour];
+//		if (myAttackers == 0ull) {
+//			break;
+//		}
+//
+//		// Find our weakest piece to attack with
+//		for (nextVictim = P; nextVictim <= Q; nextVictim++) {
+//			if (myAttackers &
+//				(pos.bitboards[nextVictim] | pos.bitboards[nextVictim + 6])) {
+//				break;
+//			}
+//		}
+//
+//		// Remove this attacker from the occupied
+//		occupied ^=
+//			(1ull << get_ls1b(myAttackers & (pos.bitboards[nextVictim] |
+//				pos.bitboards[nextVictim + 6])));
+//
+//		// A diagonal move may reveal bishop or queen attackers
+//		if (nextVictim == P || nextVictim == B || nextVictim == Q)
+//			attackers |= get_bishop_attacks(to, occupied) & bishops;
+//
+//		// A vertical or horizontal move may reveal rook or queen attackers
+//		if (nextVictim == R || nextVictim == Q)
+//			attackers |= get_rook_attacks(to, occupied) & rooks;
+//
+//		// Make sure we did not add any already used attacks
+//		attackers &= occupied;
+//
+//		// Swap the turn
+//		colour = 1 - colour;
+//
+//		// Negamax the balance and add the value of the next victim
+//		balance = -balance - 1 - SEEPieceValues[nextVictim];
+//
+//		// If the balance is non negative after giving away our piece then we win
+//		if (balance >= 0) {
+//
+//			// As a slide speed up for move legality checking, if our last attacking
+//			// piece is a king, and our opponent still has attackers, then we've
+//			// lost as the move we followed would be illegal
+//			if (nextVictim == K && (attackers & pos.occupancies[colour]))
+//				colour = 1 - colour;
+//
+//			break;
+//		}
+//	}
+//
+//	// Side to move after the loop loses
+//	return pos.side != colour;
+//}
+
+
 
 static inline void sort_moves(std::vector <Move>& moves, Board& board)
 {
@@ -197,7 +443,18 @@ static inline void sort_moves(std::vector <Move>& moves, Board& board)
 		});
 
 }
+bool is_quiet(int type)
+{
+	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //quiet move
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 
+}
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
 	
@@ -214,7 +471,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 		// evaluate position
 		//std::cout << "fuck";
-		
+	int score = 0;
 
 	int evaluation = Evaluate(board);
 
@@ -235,9 +492,24 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
+	//PrintBoards(board);
+
+	int pvNode = beta - alpha > 1;
+	int futilityMargin = evaluation + 120;
 	for (Move& move : moveList)
 	{
-		if ((captureFlag & move.Type) == 0) continue; //skip non capture moves
+		if (is_quiet(move.Type)) continue; //skip non capture moves
+		//if (!pvNode && futilityMargin <= alpha)
+		//{
+
+		//	//if (negamaxScore < futilityMargin)
+		//	//{
+		//	//	negamaxScore = futilityMargin;
+		//	//}
+		//	continue;
+		//}
+		//if ((captureFlag & move.Type) == 0) continue;
+
 		nodes_for_time_checking++;
 
 		int lastEp = board.enpassent;
@@ -263,6 +535,27 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			continue;
 		}
 
+		//Board boardcopy = board;
+		/*if (!SEE(board, move, 0))
+		{
+			ply--;
+			UnmakeMove(board, move, captured_piece);
+
+			board.history.pop_back();
+			board.last_irreversible_ply = last_irreversible;
+			board.enpassent = lastEp;
+			board.castle = lastCastle;
+			board.side = lastside;
+			continue;
+		}*/
+
+		//if (!staticExchangeEvaluation(board, move, -100))
+		//{
+		//	continue;
+		//}
+
+		//PrintBoards(board);
+		
 		negamax_nodecount++;
 
 
@@ -273,7 +566,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 
 		legal_moves++;
-		int score = -Quiescence(board, -beta, -alpha);
+		score = -Quiescence(board, -beta, -alpha);
 
 		if (is_search_stopped) {
 			UnmakeMove(board, move, captured_piece);
@@ -349,7 +642,8 @@ bool is_checking(Board& board)
 	}
 	return false;
 }
-static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP)
+
+static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode)
 {
 	bool is_pv_node = beta - alpha > 1;
 	nodes_for_time_checking++;
@@ -389,6 +683,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		
 		
 	}
+
+	//if (ply > 99 - 1) {
+	//	return Evaluate(board);
+	//}
 	//Transposition_entry ttEntry;
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
@@ -422,12 +720,71 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 	}
 
-
-	if (depth == 0)
+	if (is_in_check(board))
+	{
+		depth = std::max(depth + 1, 1);
+	}
+	if (depth <= 0)
 	{
 		return Quiescence(board, alpha, beta);
 		//return Evaluate(board);
 	}
+	
+
+	//bool moreSafeCutNodeReduction = false;
+	//if (!doNMP && depth >= 3) {
+	//	moreSafeCutNodeReduction = true;
+	//} 
+
+	// IIR by Ed Schroder (~15 Elo)
+	//if (depth >= 6 && (is_pv_node || cutnode) && (ttEntry.node_type = 0))
+	//{
+	//	//std::cout << 1 + (cutnode && !moreSafeCutNodeReduction);
+	//	--depth;
+	//}
+
+
+
+	int static_eval = Evaluate(board);
+
+	int canPrune = !is_in_check(board) && !is_pv_node;
+	if (depth < 4 && canPrune)//rfp
+	{
+		int rfpMargin = 75 * depth;
+		int rfpThreshold = rfpMargin;
+
+		if (static_eval - rfpThreshold >= beta)
+		{
+			return static_eval - rfpThreshold;
+		}
+	}
+	if (doNMP)
+	{
+		if (!is_in_check(board) && depth >= 3 && ply)
+		{
+			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
+			{
+
+				int lastep = board.enpassent;
+				uint64_t lzob = board.Zobrist_key;
+				ply++;
+				Make_Nullmove(board);
+				int score = -Negamax(board, depth - 1 - 2, -beta, -beta + 1, false, !cutnode);
+
+				Unmake_Nullmove(board);
+				ply--;
+				board.enpassent = lastep;
+				board.Zobrist_key = lzob;
+
+				if (score >= beta)
+				{
+					return score > 49000 ? beta : score;
+				}
+
+			}
+		}
+	}
+	
 
 	
 	int bestValue = MINUS_INFINITY;
@@ -461,8 +818,40 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int depth_to_search;
 	int ttFlag = AlphaFlag;
 	//bool isPV = beta - alpha > 1;
+	bool skip_quiets = false;
+
+
+	pv_table[ply][ply] = ttEntry.best_move;
+	int lmp_threshold = 1 + 3 * depth * depth;
 	for (Move& move : moveList)
 	{
+		bool isQuiet = is_quiet(move.Type);
+		if (skip_quiets && isQuiet) //quiet move
+		{
+			continue;
+		}
+		bool isNotMated = alpha > -49000 + 99;
+
+		if (ply != 0 && isQuiet && isNotMated)
+		{
+			if (legal_moves >= lmp_threshold)
+			{
+				skip_quiets = true;
+			}
+		}
+
+		//int futility_margin = 60+250*depth;
+		//if (canPrune && depth < 4 && abs(alpha) < 2000 && static_eval + futility_margin <= alpha)
+		//{
+		//	skip_quiets = true;
+		//}
+
+		//if (!is_pv_node && !is_in_check(board) && is_quiet(move.Type) && legal_moves-1 > (4 + 3 * depth * depth))
+		//{
+		//	skip_quiets = true;
+		//}
+
+
 		nodes_for_time_checking++;
 
 		int lastEp = board.enpassent;
@@ -474,7 +863,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 		ply++;
-
+		if (seldepth < ply)
+		{
+			seldepth = ply;
+		}
 		MakeMove(board, move);
 
 		//uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
@@ -536,19 +928,54 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int reduction = 0;
 		bool is_reduced = false;
 
+
+
+		if (depth > Minimum_lmr_depth && legal_moves > 1)
+		{
+			reduction = 0.77 + log(legal_moves) * log(depth) / 2.36;
+			
+
+			//if (beta - alpha >= 1) //reduce less on pv nodes
+			//{
+			//	reduction -= 1;
+			//}
+		}
 		
+		is_reduced = reduction > 0;
 		
 		if (legal_moves == 1)
 		{
-			score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+			score = -Negamax(board, depth_to_search, -beta, -alpha, true, false);
 		}
 		else
 		{
-			score = -Negamax(board, depth_to_search, -alpha-1, -alpha, true);
+			if (is_reduced)
+			{
+				if (is_pv_node)
+				{
+					score = -Negamax(board, depth_to_search - reduction, -alpha - 1, -alpha, true, false);
+				}
+				else
+				{
+					score = -Negamax(board, depth_to_search - reduction, -alpha - 1, -alpha, true, !cutnode);
+				}
+				
+
+				
+			}
+			else
+			{
+				score = alpha + 1;
+			}
+			//score = -Negamax(board, depth_to_search, -alpha-1, -alpha, true);
 			
+			if (score > alpha)
+			{
+				score = -Negamax(board, depth_to_search, -alpha-1, -alpha, true, false);
+			}
 			if (score > alpha && score < beta )
 			{
-				score = -Negamax(board, depth_to_search, -beta, -alpha, true);
+				score = -Negamax(board, depth_to_search, -beta, -alpha, true, false);
 			}
 		
 		}
@@ -610,8 +1037,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = ExactFlag;
 			alpha = score;
 
+			//if (ply < 0 || ply > 98)
+			//{
+			//	std::cout << ply << "\n";
+			//}
+			
 			pv_table[ply][ply] = move;
 
+
+			
+			
 
 			//copy move from deeper ply into a current ply's line
 			for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
@@ -646,11 +1081,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				{
 					killer_moves[1][ply] = killer_moves[0][ply];
 					killer_moves[0][ply] = move;
-				}
+				} 
 
 
 				history_moves[board.side][move.From][move.To] += depth * depth;
-				//update_history(board.side, move.From, move.To, depth*depth);
+				//update_history(board.side, move.From, move.To, std::min(depth * 300, 1928));
 			}
 			break;
 			//return score;
@@ -693,9 +1128,62 @@ int get_hashfull()
 	return entryCount;
 }
 
+void bench()
+{
+	auto search_start = std::chrono::steady_clock::now();
+	auto search_end = std::chrono::steady_clock::now();
+	Board board;
+	uint64_t nodecount = 0;
+	int totalsearchtime = 0;
+	for (int i = 0; i < 50; i++)
+	{
+		for (int ply = 0; ply < 99; ply++)
+		{
+			killer_moves[0][ply] = Move();
+			killer_moves[1][ply] = Move();
+		}
+		for (int from = 0; from < 64; ++from)
+		{
+			for (int to = 0; to < 64; ++to)
+			{
+				history_moves[0][from][to] = 0;
+				history_moves[1][from][to] = 0;
+				//std::cout << to<<"\n";
+				//history_moves[piece][square] = 0;
+			}
+		}
+
+		for (int i = 0; i < TT_size; i++)
+		{
+			TranspositionTable[i] = Transposition_entry();
+		}
+
+		parse_fen(bench_fens[i], board);
 
 
-void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
+		search_start = std::chrono::steady_clock::now();
+		IterativeDeepening(board, 8, -1, false, false);
+		search_end = std::chrono::steady_clock::now();
+
+		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
+		//std::chrono::duration<double, std::milli> elapsedS = end - start;
+
+		float second = (elapsedMS + 1) / 1000;
+
+		double nps = negamax_nodecount / second;
+
+
+		nodecount += negamax_nodecount;
+		totalsearchtime += std::floor(elapsedMS);
+
+		
+
+	}
+	std::cout << "nodes " << nodecount << " nps " << nodecount / (totalsearchtime + 1) * 1000 << "\n";
+	
+}
+
+void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info)
 {
 
 	if (timeMS == -1)
@@ -714,10 +1202,9 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 	
 	///std::vector<uint64_t> histcopy = board.history;
 	//int lastirr = board.last_irreversible_ply;
-	int alpha_val = MINUS_INFINITY;
-	int beta_val = PLUS_INFINITY;
 
-	int score;
+
+	int score = 0;
 	Print_Root = false;
 	//move_scores.clear();
 	//public_movelist.clear();
@@ -741,16 +1228,16 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 		//move_scores.cler();
 		//public_movelist.clear();
 		ply = 0;
-
+		seldepth = 0;
 		nodes_for_time_checking = 0;
 		is_search_stopped = false;
 		//memset(last_bestMove, 0, 64 * sizeof(int));
 
-		if (curr_depth >= 4)
-		{
-			alpha_val = score - 25;
-			beta_val = score + 25;
-		}
+		//if (curr_depth >= 4)
+		//{
+		//	alpha_val = score - 25;
+		//	beta_val = score + 25;
+		//}
 		//for (int i = 0; i < 99; ++i) {
 		//	for (int j = 0; j < 99; ++j) {
 		//		pv_table[i][j] = Move();  // Calls the default constructor
@@ -761,8 +1248,40 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 		//	Print_Root = PrintRootVal;
 		//}
 
+		int delta = asp_window_initial;
+		int alpha_val = std::max(MINUS_INFINITY ,score - delta);
+		int beta_val = std::min(PLUS_INFINITY, score + delta);
+		//std::cout << alpha_val << ","<<beta_val;
+		while (true)
+		{
+			score = Negamax(board, curr_depth, alpha_val, beta_val, true, false);
+			//std::cout << "alpha:" << alpha_val<<"\n";
+			//std::cout << "beta:" << beta_val << "\n";
+			//std::cout << "delta:" << delta << "\n";
+			//std::cout << score;
+			delta += delta;
+			if (score <= alpha_val)
+			{
+				alpha_val = std::max(MINUS_INFINITY, score - delta);
+			}
+			else if (score >= beta_val)
+			{
+				beta_val = std::min(PLUS_INFINITY, score + delta);
+			}
+			else
+			{
+				break;
+			}
 
-		score = Negamax(board, curr_depth, MINUS_INFINITY, PLUS_INFINITY, true);
+			
+
+			if (delta >= asp_window_max)
+			{
+				delta = PLUS_INFINITY;
+			}
+		}
+
+		
 
 		//score = Negamax(board, curr_depth, alpha_val, beta_val, true);
 
@@ -826,36 +1345,41 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 		double nps = negamax_nodecount / second;
 		double nps_in_millions = nps / 1000000.0;
 
-		if (!is_search_stopped)
+		if (print_info)
 		{
-			bestmove = pv_table[0][0];
-			int hashfull = get_hashfull();
-			last_bestMove[curr_depth - 1] = bestmove;
-			std::cout << "info depth " << curr_depth;
-			if (std::abs(score) > 40000)
+			if (!is_search_stopped)
 			{
-				int mate_ply = 49000 - std::abs(score);
-				int mate_fullmove = std::ceil(static_cast<double>(mate_ply) / 2);
-
-				if (score < 0)
+				bestmove = pv_table[0][0];
+				int hashfull = get_hashfull();
+				last_bestMove[curr_depth - 1] = bestmove;
+				std::cout << "info depth " << curr_depth;
+				std::cout << " seldepth " << seldepth;
+				if (std::abs(score) > 40000)
 				{
-					mate_fullmove *= -1;
+					int mate_ply = 49000 - std::abs(score);
+					int mate_fullmove = std::ceil(static_cast<double>(mate_ply) / 2);
+
+					if (score < 0)
+					{
+						mate_fullmove *= -1;
+					}
+					std::cout << " score mate " << mate_fullmove;
+
 				}
-				std::cout << " score mate " << mate_fullmove;
-				
-			}
-			else
-			{
-				std::cout << " score cp " << score;
-			}
-			
-			std::cout << " time " << static_cast<int>(std::round(elapsedMS)) << " nodes " << negamax_nodecount << " nps " << static_cast<int>(std::round(nps)) << " hashfull " << hashfull << " pv ";
-			for (int count = 0; count < pv_length[0]; count++)
-			{
-				printMove(pv_table[0][count]);
-				std::cout << " ";
+				else
+				{
+					std::cout << " score cp " << score;
+				}
+
+				std::cout << " time " << static_cast<int>(std::round(elapsedMS)) << " nodes " << negamax_nodecount << " nps " << static_cast<int>(std::round(nps)) << " hashfull " << hashfull << " pv " << std::flush;
+				for (int count = 0; count < pv_length[0]; count++)
+				{
+					printMove(pv_table[0][count]);
+					std::cout << " ";
+				}
 			}
 		}
+
 
 
 		
@@ -866,14 +1390,18 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal)
 			//std::cout << Searchtime_MS << "\n";
 			break;
 		}
-		std::cout << "\n";
+		if (print_info)
+		{
+			std::cout << "\n";
+		}
 	}
 	//auto end = std::chrono::high_resolution_clock::now();
-
-	std::cout << "bestmove ";
-	printMove(bestmove);
-	std::cout << "\n";
-
+	if (print_info)
+	{
+		std::cout << "bestmove ";
+		printMove(bestmove);
+		std::cout << "\n";
+	}
 
 }
 

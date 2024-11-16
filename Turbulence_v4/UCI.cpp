@@ -116,7 +116,7 @@ std::vector<std::string> splitStringBySpace(const std::string& str)
     return tokens;
 }
 
-uint64_t Perft(Board& board, int depth)
+static uint64_t Perft(Board& board, int depth)
 {
 
     if (depth == 0)
@@ -144,14 +144,14 @@ uint64_t Perft(Board& board, int depth)
         int captured_piece = board.mailbox[move.To];
 
         uint64_t last_zobrist = board.Zobrist_key;
-        std::vector<uint64_t> last_history(board.history);
+        //std::vector<uint64_t> last_history(board.history);
 
 
 
 
         //ulong lastZobrist = Zobrist;
         MakeMove(board, move);
-        uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
+        /*uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
 
         if (board.Zobrist_key != zobrist_generated_from_scratch)
         {
@@ -159,7 +159,7 @@ uint64_t Perft(Board& board, int depth)
             printMove(move);
             std::cout << "ep " << CoordinatesToChessNotation(board.enpassent)<< board.enpassent;
             std::cout << "\n\n";
-        }
+        }*/
 
 
         //u64 nodes_added
@@ -183,7 +183,7 @@ uint64_t Perft(Board& board, int depth)
         UnmakeMove(board, move, captured_piece);
 
 
-        board.history = last_history;
+        //board.history = last_history;
         board.enpassent = lastEp;
         board.castle = lastCastle;
         board.side = lastside;
@@ -620,6 +620,10 @@ void ProcessUCI(std::string input)
             }
            
         }
+        else
+        {
+            IterativeDeepening(main_board, 99);
+        }
         //else if (Commands[1] == "perft")
         //{
 
@@ -652,7 +656,7 @@ void ProcessUCI(std::string input)
     {
         printMoveSort(main_board);
     }
-    else if (main_command == "move")
+    else if(main_command == "move")
     {
         std::string From = std::string(1, Commands[1][0]) + std::string(1, Commands[1][1]);
         std::string To = std::string(1, Commands[1][2]) + std::string(1, Commands[1][3]);
@@ -759,6 +763,11 @@ void ProcessUCI(std::string input)
             std::cout << "warning:zobrist key doesn't match";
         }
     }
+    else if(main_command == "bench")
+    {
+        bench();
+    }
+
 }
 
 
@@ -773,6 +782,7 @@ static void InitAll()
 }
 int main()
 {
+    std::cout.sync_with_stdio(false);
     InitAll();
     
     parse_fen(start_pos, main_board);
@@ -788,8 +798,26 @@ int main()
 
 
 
-    //hash_key = generate_hash_key(main_board);
+    
     //std::cout << std::hex<<hash_key << std::dec;
+
+    //parse_fen("5rk1/1pp2q1p/p1pb4/8/3P1NP1/2P5/1P1BQ1P1/5RK1 b - - ", main_board);
+    //main_board.Zobrist_key = generate_hash_key(main_board);
+    //std::vector<Move> legalmoves;
+
+    //Generate_Legal_Moves(legalmoves, main_board, false);
+
+    //for (int i = 0; i < legalmoves.size(); i++)
+    //{
+    //    if ((legalmoves[i].Type & captureFlag) != 0)
+    //    {
+    //        printMove(legalmoves[i]);
+    //        std::cout << "\n";
+    //        std::cout << ((SEE(main_board, legalmoves[i],-50)==1) ? "winning" :"losing") << "\n";
+    //    }
+
+    //}
+    
     while (true)
     {
         std::string input;

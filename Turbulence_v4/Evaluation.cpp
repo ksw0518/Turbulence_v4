@@ -18,9 +18,14 @@
 //{
 //    return (square) != 0 ? 7 - (square) / 8 : 7;
 //}
-constexpr uint64_t A_file = 0x0101010101010101;
+constexpr uint64_t A_file = 0x0101010101010101ULL;
+//constexpr uint64_t H_file = 0x8080808080808080ULL;
+constexpr uint64_t files_bitboard[8] = {
+    A_file, A_file << 1, A_file << 2, A_file << 3,
+    A_file << 4, A_file << 5, A_file << 6, A_file << 7
+};
 
-static int history[12][64];
+//static int history[12][64];
 
 //int pawn_mg_passed_bonus[8] = {}
 inline int getSide(int piece)
@@ -183,6 +188,12 @@ int* eg_pesto_table[6] =
 uint64_t white_pawn_span[64];
 uint64_t black_pawn_span[64];
 
+const int ISOLATED_PAWN_MALUS_MG = 5;
+const int ISOLATED_PAWN_MALUS_EG = 25;
+
+const int DOUBLED_PAWN_MALUS_MG = 10;
+const int DOUBLED_PAWN_MALUS_EG = 50;
+
 //enum Piece {
 //    P = 0, N, B, R, Q, K, p, n, b, r, q, k, NO_PIECE
 //};
@@ -314,6 +325,50 @@ void init_tables()
 
     }
     precalculate_pawn_spans();
+    //PrintBitboard(files_bitboard[5]);
+}
+uint64_t getFileBitboard(uint64_t pieces, int file) {
+    return pieces & files_bitboard[file];
+}
+
+uint64_t detectDoubledPawns(uint64_t pawns) {
+    uint64_t doubledPawns = 0;
+    for (int file = 0; file < 8; ++file) {
+        uint64_t pawnsInFile = getFileBitboard(pawns, file);
+        if ((pawnsInFile & (pawnsInFile - 1)) != 0) {  // More than one pawn in file
+            doubledPawns |= pawnsInFile;
+        }
+    }
+    return doubledPawns;
+}
+
+// Detect isolated pawns for a color
+uint64_t detectIsolatedPawns(uint64_t pawns) {
+    uint64_t isolatedPawns = 0;
+    for (int file = 0; file < 8; ++file) {
+        uint64_t pawnsInFile = getFileBitboard(pawns, file);
+        uint64_t adjacentFiles = 0;
+        if (file > 0) adjacentFiles |= getFileBitboard(pawns, file - 1);  // Left file
+        if (file < 7) adjacentFiles |= getFileBitboard(pawns, file + 1);  // Right file
+        if ((adjacentFiles & pawnsInFile) == 0) {  // No supporting pawns
+            isolatedPawns |= pawnsInFile;
+        }
+    }
+    return isolatedPawns;
+}
+
+uint64_t detectPassedPawns(uint64_t pawns, uint64_t opponentPawns, bool isWhite) {
+    uint64_t passedPawns = 0;
+    for (int file = 0; file < 8; ++file) {
+        uint64_t pawnsInFile = getFileBitboard(pawns, file);
+        uint64_t frontSpan = isWhite
+            ? ~((files_bitboard[file] | (file > 0 ? files_bitboard[file - 1] : 0) | (file < 7 ? files_bitboard[file + 1] : 0)) >> 8)
+            : ~((files_bitboard[file] | (file > 0 ? files_bitboard[file - 1] : 0) | (file < 7 ? files_bitboard[file + 1] : 0)) << 8);
+        if ((frontSpan & opponentPawns & pawnsInFile) == 0) {  // No opposing pawns blocking or contesting
+            passedPawns |= pawnsInFile;
+        }
+    }
+    return passedPawns;
 }
 
 int Evaluate(Board& board)
@@ -340,7 +395,21 @@ int Evaluate(Board& board)
             gamePhase += gamephaseInc[pc];
         }
     }
+    
+    //int double_pawns_evalside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, evalSide)]));
+    //int double_pawns_oppside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, 1 - evalSide)]));
+
+    /*int isolated_pawns_evalside = count_bits(detectIsolatedPawns(board.bitboards[get_piece(P, evalSide)]));
+    int isolated_pawns_oppside = count_bits(detectIsolatedPawns(board.bitboards[get_piece(P, 1 - evalSide)]));*/
+
+
+    //std::cout << "doublepawn" << double_pawns_evalside<<","<<double_pawns_oppside;
+
+    
     /* tapered eval */
+    //int mgScore = mg[evalSide] + mg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_MG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_MG)/2;
+    //int egScore = eg[evalSide] + eg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_EG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_EG)/2;
+
     int mgScore = mg[evalSide] + mg[1 - evalSide];
     int egScore = eg[evalSide] + eg[1 - evalSide];
     int mgPhase = gamePhase;

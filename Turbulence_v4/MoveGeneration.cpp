@@ -25,6 +25,28 @@ static uint64_t bishop_attacks[64][512] = {};
 static uint64_t rook_attacks[64][4096] = {};
 static uint64_t betweenTable[64][64] = {};
 uint32_t random_state = 1804289383;
+
+uint64_t all_attackers_to_square(Board &board, uint64_t occupied, int sq) {
+
+    // When performing a static exchange evaluation we need to find all
+    // attacks to a given square, but we also are given an updated occupied
+    // bitboard, which will likely not match the actual board, as pieces are
+    // removed during the iterations in the static exchange evaluation
+
+    //return (pawn_attacks[White][sq] & board.bitboards[p]) |
+    //    (pawn_attacks[Black][sq] & board.bitboards[P]) |
+    //    (Knight_attacks[sq] & (board.bitboards[n] | board.bitboards[N])) |
+    //    (get_bishop_attacks(sq, occupied) &
+    //        ((board.bitboards[b] | board.bitboards[B]) |
+    //            (board.bitboards[q] | board.bitboards[Q]))) |
+    //    (get_rook_attacks(sq, occupied) &
+    //        ((board.bitboards[r] | board.bitboards[R]) |
+    //            (board.bitboards[q] | board.bitboards[Q]))) |
+    //    (King_attacks[sq] & (board.bitboards[k] | board.bitboards[K]));
+
+    return 0ULL;
+}
+
 uint32_t get_random_U32_number()
 {
     // get current state
@@ -439,15 +461,15 @@ static uint64_t Calcbetween(int a, int b)
     return between;
 }
 
-static uint64_t get_bishop_attacks(int square, uint64_t occupancy)
+inline uint64_t get_bishop_attacks(int square, uint64_t occupancy)
 {
     occupancy &= bishop_masks[square];
     occupancy *= bishop_magic_numbers[square];
     occupancy >>= 64 - bishop_relevant_bits[square];
-
+    //std::cout << square << "\n";
     return bishop_attacks[square][occupancy];
 }
-static uint64_t get_rook_attacks(int square, uint64_t occupancy)
+inline uint64_t get_rook_attacks(int square, uint64_t occupancy)
 {
     occupancy &= rook_masks[square];
     occupancy *= rook_magic_numbers[square];
@@ -1330,7 +1352,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
 
 }
 
-bool is_square_attacked(int square, int side, Board board, uint64_t occupancy)
+bool is_square_attacked(int square, int side, Board &board, uint64_t occupancy)
 {
     //side is the side who is checking the king
     //occupancy is both occupancy
@@ -2989,6 +3011,10 @@ bool isMoveValid(Move& move, Board& board)
     //std::cout << get_ls1b(board.bitboards[get_piece(K, Black)]) << ("\n");
     //std::cout << << ("\n");
     //White
+
+    //printMove(move);
+    //std::cout << "\n";
+    
     if (move.Type != king_castle && move.Type != queen_castle)
     {
         if (!is_square_attacked(get_ls1b(kingSquare), board.side, board, board.occupancies[Both]))
