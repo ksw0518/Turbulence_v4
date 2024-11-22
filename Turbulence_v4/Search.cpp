@@ -108,11 +108,21 @@ std::vector<int> move_scores;
 std::vector<Move> public_movelist;
 
 
-constexpr int MAX_HISTORY = 16384;
+constexpr int MAX_HISTORY = 512;
 
 constexpr int Minimum_lmr_depth = 3;
 
+constexpr int Maximum_pvs_see_depth = 8;
+int lmrTable[99][256];
 
+
+void initializeLMRTable() {
+	for (int depth = 0; depth < 99; depth++) {
+		for (int move = 0; move < 256; move++) {
+			lmrTable[depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
+		}
+	}
+}
 int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
@@ -321,114 +331,114 @@ int move_estimated_value(Board &board, Move move) {
 	return value;
 }
 
-//int SEE(Board& pos, Move move, int threshold) {
-//
-//	int from, to, enpassant, promotion, colour, balance, nextVictim;
-//	uint64_t bishops, rooks, occupied, attackers, myAttackers;
-//
-//	// Unpack move information
-//	from = move.From;
-//	to = move.To;
-//	enpassant = move.Type == ep_capture;
-//	promotion = (move.Type & promotionFlag) != 0;
-//
-//	// Next victim is moved piece or promotion type
-//	nextVictim = promotion ? promotion : pos.mailbox[from];
-//	nextVictim = nextVictim > 5 ? nextVictim - 6 : nextVictim;
-//
-//	// Balance is the value of the move minus threshold. Function
-//	// call takes care for Enpass, Promotion and Castling moves.
-//	balance = move_estimated_value(pos, move) - threshold;
-//
-//	// Best case still fails to beat the threshold
-//	if (balance < 0)
-//		return 0;
-//
-//	// Worst case is losing the moved piece
-//	balance -= SEEPieceValues[nextVictim];
-//
-//	// If the balance is positive even if losing the moved piece,
-//	// the exchange is guaranteed to beat the threshold.
-//	if (balance >= 0)
-//		return 1;
-//
-//	// Grab sliders for updating revealed attackers
-//	bishops = pos.bitboards[b] | pos.bitboards[B] | pos.bitboards[q] |
-//		pos.bitboards[Q];
-//	rooks = pos.bitboards[r] | pos.bitboards[R] | pos.bitboards[q] |
-//		pos.bitboards[Q];
-//
-//	// Let occupied suppose that the move was actually made
-//	occupied = pos.occupancies[Both];
-//	occupied = (occupied ^ (1ull << from)) | (1ull << to);
-//	if (enpassant)
-//	{
-//		int ep_square = (pos.side == White) ? move.To + 8 : move.To - 8;
-//		occupied ^= (1ull << ep_square);
-//	}
-//		
-//
-//	// Get all pieces which attack the target square. And with occupied
-//	// so that we do not let the same piece attack twice
-//	attackers = all_attackers_to_square(pos, occupied, to) & occupied;
-//
-//	// Now our opponents turn to recapture
-//	colour = pos.side ^ 1;
-//
-//	while (1) {
-//
-//		// If we have no more attackers left we lose
-//		myAttackers = attackers & pos.occupancies[colour];
-//		if (myAttackers == 0ull) {
-//			break;
-//		}
-//
-//		// Find our weakest piece to attack with
-//		for (nextVictim = P; nextVictim <= Q; nextVictim++) {
-//			if (myAttackers &
-//				(pos.bitboards[nextVictim] | pos.bitboards[nextVictim + 6])) {
-//				break;
-//			}
-//		}
-//
-//		// Remove this attacker from the occupied
-//		occupied ^=
-//			(1ull << get_ls1b(myAttackers & (pos.bitboards[nextVictim] |
-//				pos.bitboards[nextVictim + 6])));
-//
-//		// A diagonal move may reveal bishop or queen attackers
-//		if (nextVictim == P || nextVictim == B || nextVictim == Q)
-//			attackers |= get_bishop_attacks(to, occupied) & bishops;
-//
-//		// A vertical or horizontal move may reveal rook or queen attackers
-//		if (nextVictim == R || nextVictim == Q)
-//			attackers |= get_rook_attacks(to, occupied) & rooks;
-//
-//		// Make sure we did not add any already used attacks
-//		attackers &= occupied;
-//
-//		// Swap the turn
-//		colour = 1 - colour;
-//
-//		// Negamax the balance and add the value of the next victim
-//		balance = -balance - 1 - SEEPieceValues[nextVictim];
-//
-//		// If the balance is non negative after giving away our piece then we win
-//		if (balance >= 0) {
-//
-//			// As a slide speed up for move legality checking, if our last attacking
-//			// piece is a king, and our opponent still has attackers, then we've
-//			// lost as the move we followed would be illegal
-//			if (nextVictim == K && (attackers & pos.occupancies[colour]))
-//				colour = 1 - colour;
-//
-//			break;
-//		}
-//	}
-//
-//	// Side to move after the loop loses
-//	return pos.side != colour;
-//}
+int SEE(Board& pos, Move move, int threshold) {
+
+	int from, to, enpassant, promotion, colour, balance, nextVictim;
+	uint64_t bishops, rooks, occupied, attackers, myAttackers;
+
+	// Unpack move information
+	from = move.From;
+	to = move.To;
+	enpassant = move.Type == ep_capture;
+	promotion = (move.Type & promotionFlag) != 0;
+
+	// Next victim is moved piece or promotion type
+	nextVictim = promotion ? promotion : pos.mailbox[from];
+	nextVictim = nextVictim > 5 ? nextVictim - 6 : nextVictim;
+
+	// Balance is the value of the move minus threshold. Function
+	// call takes care for Enpass, Promotion and Castling moves.
+	balance = move_estimated_value(pos, move) - threshold;
+
+	// Best case still fails to beat the threshold
+	if (balance < 0)
+		return 0;
+
+	// Worst case is losing the moved piece
+	balance -= SEEPieceValues[nextVictim];
+
+	// If the balance is positive even if losing the moved piece,
+	// the exchange is guaranteed to beat the threshold.
+	if (balance >= 0)
+		return 1;
+
+	// Grab sliders for updating revealed attackers
+	bishops = pos.bitboards[b] | pos.bitboards[B] | pos.bitboards[q] |
+		pos.bitboards[Q];
+	rooks = pos.bitboards[r] | pos.bitboards[R] | pos.bitboards[q] |
+		pos.bitboards[Q];
+
+	// Let occupied suppose that the move was actually made
+	occupied = pos.occupancies[Both];
+	occupied = (occupied ^ (1ull << from)) | (1ull << to);
+	if (enpassant)
+	{
+		int ep_square = (pos.side == White) ? move.To + 8 : move.To - 8;
+		occupied ^= (1ull << ep_square);
+	}
+		
+
+	// Get all pieces which attack the target square. And with occupied
+	// so that we do not let the same piece attack twice
+	attackers = all_attackers_to_square(pos, occupied, to) & occupied;
+
+	// Now our opponents turn to recapture
+	colour = pos.side ^ 1;
+
+	while (1) {
+
+		// If we have no more attackers left we lose
+		myAttackers = attackers & pos.occupancies[colour];
+		if (myAttackers == 0ull) {
+			break;
+		}
+
+		// Find our weakest piece to attack with
+		for (nextVictim = P; nextVictim <= Q; nextVictim++) {
+			if (myAttackers &
+				(pos.bitboards[nextVictim] | pos.bitboards[nextVictim + 6])) {
+				break;
+			}
+		}
+
+		// Remove this attacker from the occupied
+		occupied ^=
+			(1ull << get_ls1b(myAttackers & (pos.bitboards[nextVictim] |
+				pos.bitboards[nextVictim + 6])));
+
+		// A diagonal move may reveal bishop or queen attackers
+		if (nextVictim == P || nextVictim == B || nextVictim == Q)
+			attackers |= get_bishop_attacks(to, occupied) & bishops;
+
+		// A vertical or horizontal move may reveal rook or queen attackers
+		if (nextVictim == R || nextVictim == Q)
+			attackers |= get_rook_attacks(to, occupied) & rooks;
+
+		// Make sure we did not add any already used attacks
+		attackers &= occupied;
+
+		// Swap the turn
+		colour = 1 - colour;
+
+		// Negamax the balance and add the value of the next victim
+		balance = -balance - 1 - SEEPieceValues[nextVictim];
+
+		// If the balance is non negative after giving away our piece then we win
+		if (balance >= 0) {
+
+			// As a slide speed up for move legality checking, if our last attacking
+			// piece is a king, and our opponent still has attackers, then we've
+			// lost as the move we followed would be illegal
+			if (nextVictim == K && (attackers & pos.occupancies[colour]))
+				colour = 1 - colour;
+
+			break;
+		}
+	}
+
+	// Side to move after the loop loses
+	return pos.side != colour;
+}
 
 
 
@@ -509,7 +519,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		//	continue;
 		//}
 		//if ((captureFlag & move.Type) == 0) continue;
-
+		if (!SEE(board, move, 0))
+		{
+			continue;
+		}
 		nodes_for_time_checking++;
 
 		int lastEp = board.enpassent;
@@ -520,6 +533,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		ply++;
 
 		MakeMove(board, move);
+
 		//u64 nodes_added
 		if (!isMoveValid(move, board))//isMoveValid(move, board)
 		{
@@ -536,18 +550,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		}
 
 		//Board boardcopy = board;
-		/*if (!SEE(board, move, 0))
-		{
-			ply--;
-			UnmakeMove(board, move, captured_piece);
 
-			board.history.pop_back();
-			board.last_irreversible_ply = last_irreversible;
-			board.enpassent = lastEp;
-			board.castle = lastCastle;
-			board.side = lastside;
-			continue;
-		}*/
 
 		//if (!staticExchangeEvaluation(board, move, -100))
 		//{
@@ -823,13 +826,39 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	pv_table[ply][ply] = ttEntry.best_move;
 	int lmp_threshold = 1 + 3 * depth * depth;
+
+	int quiet_SEE_margin = -70 * depth;
+	int noisy_SEE_margin = -20 * depth * depth;
+
+
 	for (Move& move : moveList)
 	{
+		
 		bool isQuiet = is_quiet(move.Type);
+
 		if (skip_quiets && isQuiet) //quiet move
 		{
 			continue;
 		}
+
+		if(depth <= Maximum_pvs_see_depth)
+		{
+			if (isQuiet)
+			{
+				if (!SEE(board, move, quiet_SEE_margin))
+				{
+					continue;
+				}
+			}
+			else
+			{
+				if (!SEE(board, move, noisy_SEE_margin))
+				{
+					continue;
+				}
+			}
+		}
+
 		bool isNotMated = alpha > -49000 + 99;
 
 		if (ply != 0 && isQuiet && isNotMated)
@@ -838,8 +867,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skip_quiets = true;
 			}
+			//bool is_checked = is_in_check(board);
+			////int lmr_depth = std::max(1, depth - (lmrTable[depth][legal_moves]));
+			//if (!is_pv_node && ply != 0 && isNotMated && depth < 4 && !is_checked && isQuiet && (static_eval + (depth * 177 + 133)) <= alpha)
+			//{
+			//	skip_quiets = true;
+			//}
+			
 		}
 
+		// 
+		// 
 		//int futility_margin = 60+250*depth;
 		//if (canPrune && depth < 4 && abs(alpha) < 2000 && static_eval + futility_margin <= alpha)
 		//{
@@ -932,8 +970,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (depth > Minimum_lmr_depth && legal_moves > 1)
 		{
-			reduction = 0.77 + log(legal_moves) * log(depth) / 2.36;
+			//reduction = 0.77 + log(legal_moves) * log(depth) / 2.36;
 			
+			reduction = lmrTable[depth][legal_moves];
+
+			//asdf
 
 			//if (beta - alpha >= 1) //reduce less on pv nodes
 			//{
@@ -943,7 +984,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		
 		is_reduced = reduction > 0;
 		
-		if (legal_moves == 1)
+		if (legal_moves <= 1)
 		{
 			score = -Negamax(board, depth_to_search, -beta, -alpha, true, false);
 		}
@@ -1084,8 +1125,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				} 
 
 
-				history_moves[board.side][move.From][move.To] += depth * depth;
-				//update_history(board.side, move.From, move.To, std::min(depth * 300, 1928));
+				//history_moves[board.side][move.From][move.To] += depth * depth;
+				update_history(board.side, move.From, move.To, depth*depth);
 			}
 			break;
 			//return score;

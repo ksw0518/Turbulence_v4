@@ -14,6 +14,7 @@ struct Transposition_entry
 	int score;
 	int node_type;
 };
+void initializeLMRTable();
 extern Transposition_entry* TranspositionTable;
 void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true);
 int SEE(Board& pos, Move move, int threshold);
