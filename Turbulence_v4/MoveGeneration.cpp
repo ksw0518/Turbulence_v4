@@ -33,16 +33,16 @@ uint64_t all_attackers_to_square(Board &board, uint64_t occupied, int sq) {
     // bitboard, which will likely not match the actual board, as pieces are
     // removed during the iterations in the static exchange evaluation
 
-    //return (pawn_attacks[White][sq] & board.bitboards[p]) |
-    //    (pawn_attacks[Black][sq] & board.bitboards[P]) |
-    //    (Knight_attacks[sq] & (board.bitboards[n] | board.bitboards[N])) |
-    //    (get_bishop_attacks(sq, occupied) &
-    //        ((board.bitboards[b] | board.bitboards[B]) |
-    //            (board.bitboards[q] | board.bitboards[Q]))) |
-    //    (get_rook_attacks(sq, occupied) &
-    //        ((board.bitboards[r] | board.bitboards[R]) |
-    //            (board.bitboards[q] | board.bitboards[Q]))) |
-    //    (King_attacks[sq] & (board.bitboards[k] | board.bitboards[K]));
+    return (pawn_attacks[White][sq] & board.bitboards[p]) |
+        (pawn_attacks[Black][sq] & board.bitboards[P]) |
+        (Knight_attacks[sq] & (board.bitboards[n] | board.bitboards[N])) |
+        (get_bishop_attacks(sq, occupied) &
+            ((board.bitboards[b] | board.bitboards[B]) |
+                (board.bitboards[q] | board.bitboards[Q]))) |
+        (get_rook_attacks(sq, occupied) &
+            ((board.bitboards[r] | board.bitboards[R]) |
+                (board.bitboards[q] | board.bitboards[Q]))) |
+        (King_attacks[sq] & (board.bitboards[k] | board.bitboards[K]));
 
     return 0ULL;
 }
@@ -461,23 +461,25 @@ static uint64_t Calcbetween(int a, int b)
     return between;
 }
 
-inline uint64_t get_bishop_attacks(int square, uint64_t occupancy)
+uint64_t get_bishop_attacks(int square, uint64_t occupancy)
 {
+    
     occupancy &= bishop_masks[square];
     occupancy *= bishop_magic_numbers[square];
     occupancy >>= 64 - bishop_relevant_bits[square];
     //std::cout << square << "\n";
     return bishop_attacks[square][occupancy];
 }
-inline uint64_t get_rook_attacks(int square, uint64_t occupancy)
+uint64_t get_rook_attacks(int square, uint64_t occupancy)
 {
+    //std::cout << "asdt";
     occupancy &= rook_masks[square];
     occupancy *= rook_magic_numbers[square];
     occupancy >>= 64 - rook_relevant_bits[square];
 
     return rook_attacks[square][occupancy];
 }
-static uint64_t get_queen_attacks(int square, uint64_t occupancy)
+uint64_t get_queen_attacks(int square, uint64_t occupancy)
 {
 
     //Console.WriteLine(square);

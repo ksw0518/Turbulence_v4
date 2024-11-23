@@ -652,10 +652,6 @@ void ProcessUCI(std::string input)
 
 
     }
-    else if (main_command == "sort")
-    {
-        printMoveSort(main_board);
-    }
     else if(main_command == "move")
     {
         std::string From = std::string(1, Commands[1][0]) + std::string(1, Commands[1][1]);
@@ -782,6 +778,7 @@ static void InitAll()
 }
 int main()
 {
+    initializeLMRTable();
     std::cout.sync_with_stdio(false);
     InitAll();
     
@@ -801,7 +798,7 @@ int main()
     
     //std::cout << std::hex<<hash_key << std::dec;
 
-    //parse_fen("5rk1/1pp2q1p/p1pb4/8/3P1NP1/2P5/1P1BQ1P1/5RK1 b - - ", main_board);
+    //parse_fen("2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - - ", main_board);
     //main_board.Zobrist_key = generate_hash_key(main_board);
     //std::vector<Move> legalmoves;
 
@@ -813,7 +810,7 @@ int main()
     //    {
     //        printMove(legalmoves[i]);
     //        std::cout << "\n";
-    //        std::cout << ((SEE(main_board, legalmoves[i],-50)==1) ? "winning" :"losing") << "\n";
+    //        std::cout << ((SEE(main_board, legalmoves[i],0)==1) ? "winning" :"losing") << "\n";
     //    }
 
     //}
