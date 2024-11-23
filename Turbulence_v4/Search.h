@@ -18,7 +18,7 @@ void initializeLMRTable();
 extern Transposition_entry* TranspositionTable;
 void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true);
 int SEE(Board& pos, Move move, int threshold);
-void printMoveSort(Board board);
+//void printMoveSort(Board board);
 void bench();
 inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversible)
 {

@@ -652,10 +652,6 @@ void ProcessUCI(std::string input)
 
 
     }
-    else if (main_command == "sort")
-    {
-        printMoveSort(main_board);
-    }
     else if(main_command == "move")
     {
         std::string From = std::string(1, Commands[1][0]) + std::string(1, Commands[1][1]);
