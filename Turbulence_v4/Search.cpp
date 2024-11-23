@@ -712,7 +712,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				return beta;
 			}
-
+			 
 			//if (alpha >= beta)
 			//{
 			//	return ttEntry.score;
