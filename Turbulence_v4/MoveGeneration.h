@@ -21,9 +21,11 @@ int GetSquare(std::string squareName);
 
 //static uint64_t Calcbetween(int a, int b);
 //
-//static uint64_t get_bishop_attacks(int square, uint64_t occupancy);
-//static uint64_t get_rook_attacks(int square, uint64_t occupancy);
-//static uint64_t get_queen_attacks(int square, uint64_t occupancy);
+
+
+uint64_t get_bishop_attacks(int square, uint64_t occupancy);
+uint64_t get_rook_attacks(int square, uint64_t occupancy);
+uint64_t get_queen_attacks(int square, uint64_t occupancy);
 void PrintBitboard(uint64_t bitboard);
 void printMove(Move move);
 //static Dictionary<int, string> MoveType = new()
@@ -66,6 +68,7 @@ void printMove(Move move);
 
 
 //inline uint64_t between(int a, int b);
+
 
 uint64_t all_attackers_to_square(Board& board, uint64_t occupied, int sq);
 int getSide(int piece);
