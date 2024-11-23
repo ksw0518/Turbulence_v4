@@ -894,7 +894,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int static_eval = Evaluate(board);
 
 	int canPrune = !is_in_check(board) && !is_pv_node;
-	if (!is_in_check(board) && !is_pv_node &&depth < 4 && canPrune)//rfp
+	if (depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin = 75 * depth;
 		int rfpThreshold = rfpMargin;
