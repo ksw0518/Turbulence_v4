@@ -808,7 +808,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			else if (ttEntry.node_type == BetaFlag && ttEntry.score >= beta )
 			{
 				return beta;
-      }
+                        }
 			//if (alpha >= beta)
 			//{
 			//	return ttEntry.score;
@@ -1077,14 +1077,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			
 			reduction = lmrTable[depth][legal_moves];
 
-			if (is_pv_node)
-			{
-				if (reduction >= 1)
-				{
-					reduction--;
-				}
-				
-			}
+
 			//asdf
 
 			//if (beta - alpha >= 1) //reduce less on pv nodes
