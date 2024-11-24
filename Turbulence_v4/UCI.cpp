@@ -776,8 +776,9 @@ static void InitAll()
     init_tables();
     init_random_keys();
 }
-int main()
+int main(int argc, char* argv[])
 {
+
     initializeLMRTable();
     std::cout.sync_with_stdio(false);
     InitAll();
@@ -814,7 +815,16 @@ int main()
     //    }
 
     //}
-    
+    if (argc > 1) {
+        std::string command = argv[1]; // First argument (after program name)
+
+        if (command == "bench") {
+            // Run the benchmarking function
+            //std::cout << "Running benchmark..." << std::endl;
+            // Call your benchmark function here
+            bench();
+        }
+    }
     while (true)
     {
         std::string input;
