@@ -1352,7 +1352,7 @@ void bench()
 		
 
 	}
-	std::cout << "nodes " << nodecount << " nps " << nodecount / (totalsearchtime + 1) * 1000 << "\n";
+	std::cout << nodecount << " nodes "  << nodecount / (totalsearchtime + 1) * 1000 << " nps "  << "\n";
 	
 }
 
