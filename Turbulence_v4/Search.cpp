@@ -206,7 +206,7 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 		if (entry.best_move == move)
 		{
 			//make sure TT move isn't included in search, because it is already searched before generating move
-			return -9999999;
+			return 99999999;
 		}
 	}
 	 if ((move.Type & captureFlag) != 0) // if a move is a capture move
@@ -808,59 +808,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			else if (ttEntry.node_type == BetaFlag && ttEntry.score >= beta )
 			{
 				return beta;
-			}
-			 
+      }
 			//if (alpha >= beta)
 			//{
 			//	return ttEntry.score;
 			//}
 		}		
 
-		//if (ply != 0 && !(ttEntry.best_move == Move(0, 0, 0, 0)))
-		//{
-		//	std::vector<Move> moveList;
-		//	Generate_Legal_Moves(moveList, board, false);
-
-		//	if (std::find(moveList.begin(), moveList.end(), ttEntry.best_move) != moveList.end()) {
-		//		//std::cout << "Value " << valueToFind << " is in the vector!" << std::endl;
-		//	}
-		//	else {
-		//		PrintBoards(board);
-		//		printMove(ttEntry.best_move);
-		//	}
-		//	//Board lastboard = board;
-		//	
-
-
-		//	int lastEp = board.enpassent;
-		//	uint64_t lastCastle = board.castle;
-		//	int lastside = board.side;
-		//	int captured_piece = board.mailbox[ttEntry.best_move.To];
-		//	int last_irreversible = board.last_irreversible_ply;
-		//	
-		//	//PrintBoards(board);
-		//	//printMove(ttEntry.best_move);
-
-		//	ply++;
-		//	MakeMove(board, ttEntry.best_move);
-		//	
-
-		//	ply--;
-		//	UnmakeMove(board, ttEntry.best_move,captured_piece);
-		//	board.history.pop_back();
-		//	board.last_irreversible_ply = last_irreversible;
-		//	board.Zobrist_key = last_zobrist;
-		//	board.enpassent = lastEp;
-		//	board.castle = lastCastle;
-		//	board.side = lastside;
-		//	// After
-		//	//if (board.mailbox != lastboard.mailbox)
-		//	//{
-		//	//	std::cout << "Before:" << std::endl;
-		//	//	print_mailbox(board.mailbox);
-		//	//}
-		//}
-		//
 
 
 	}
@@ -1123,6 +1077,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			
 			reduction = lmrTable[depth][legal_moves];
 
+			if (is_pv_node)
+			{
+				if (reduction >= 1)
+				{
+					reduction--;
+				}
+				
+			}
 			//asdf
 
 			//if (beta - alpha >= 1) //reduce less on pv nodes
