@@ -849,7 +849,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int static_eval = Evaluate(board);
 
 	int canPrune = !is_in_check(board) && !is_pv_node;
-	if (!is_pv_node && depth < 4 && canPrune)//rfp
+	if (depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin = 75 * depth;
 		int rfpThreshold = rfpMargin;
@@ -1078,6 +1078,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			
 			reduction = lmrTable[depth][legal_moves];
 
+			if (is_pv_node)
+			{
+				if (reduction >= 1)
+				{
+					reduction--;
+				}
+				
+			}
 			//asdf
 
 			//if (beta - alpha >= 1) //reduce less on pv nodes
