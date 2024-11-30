@@ -64,6 +64,22 @@ std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
+int RFP_MULTIPLIER = 85;
+int RFP_BASE = -49;
+
+int LMP_BASE = 0;
+int LMP_MULTIPLIER = 1;
+
+int PVS_QUIET_BASE = 0;
+int PVS_QUIET_MULTIPLIER = 63;
+
+int PVS_NOISY_BASE = -1;
+int PVS_NOISY_MULTIPLIER = 18;
+
+int HISTORY_BASE = 4;
+int HISTORY_MULTIPLIER = 2;
+
+
 constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
 
 constexpr int asp_window_initial = 40;
@@ -107,6 +123,10 @@ Transposition_entry* TranspositionTable;
 
 std::vector<int> move_scores;
 std::vector<Move> public_movelist;
+
+
+
+
 
 
 constexpr int MAX_HISTORY = 512;
@@ -851,7 +871,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int canPrune = !is_in_check(board) && !is_pv_node;
 	if (depth < 4 && canPrune)//rfp
 	{
-		int rfpMargin = 75 * depth;
+		int rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
 		int rfpThreshold = rfpMargin;
 
 		if (static_eval - rfpThreshold >= beta)
@@ -861,7 +881,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (doNMP)
 	{
-		if (!is_in_check(board) && depth >= 3 && ply)
+		if (!is_in_check(board) && depth >= 2 && ply)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
@@ -923,10 +943,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	pv_table[ply][ply] = ttEntry.best_move;
-	int lmp_threshold = 1 + 3 * depth * depth;
+	int lmp_threshold = LMP_BASE + LMP_MULTIPLIER * depth * depth;
 
-	int quiet_SEE_margin = -70 * depth;
-	int noisy_SEE_margin = -20 * depth * depth;
+	int quiet_SEE_margin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
+	int noisy_SEE_margin = PVS_NOISY_BASE + (-PVS_NOISY_MULTIPLIER * depth * depth);
 
 	std::vector<Move> Quiet_moves_list;
 	Quiet_moves_list.reserve(50);
@@ -1078,14 +1098,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			
 			reduction = lmrTable[depth][legal_moves];
 
-			if (is_pv_node)
-			{
-				if (reduction >= 1)
-				{
-					reduction--;
-				}
-				
-			}
+
 			//asdf
 
 			//if (beta - alpha >= 1) //reduce less on pv nodes
@@ -1238,15 +1251,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 				//history_moves[board.side][move.From][move.To] += depth * depth;
-
+				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
 				for (const auto& move_quiet : Quiet_moves_list) {
 					if (move_quiet == move)
 					{
-						update_history(board.side, move_quiet.From, move_quiet.To, depth * depth);
+						update_history(board.side, move_quiet.From, move_quiet.To, bonus);
 					}
 					else
 					{
-						update_history(board.side, move_quiet.From, move_quiet.To, -depth * depth);
+						update_history(board.side, move_quiet.From, move_quiet.To, -bonus);
 					}
 					
 				}
@@ -1272,7 +1285,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	ttEntry.node_type = ttFlag;
 	ttEntry.depth = depth;
 	ttEntry.zobrist_key = board.Zobrist_key;
-	ttEntry.best_move = bestmove;
+	ttEntry.best_move = pv_table[ply][ply];
 	//if (!(bestmove == Move(0, 0, 0, 0)))
 	//{
 	//	
@@ -1383,16 +1396,16 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//move_scores.clear();
 	//public_movelist.clear();
 
-	for (int from = 0; from < 64; ++from)
-	{
-		for (int to = 0; to < 64; ++to)
-		{
-			history_moves[0][from][to] = 0;
-			history_moves[1][from][to] = 0;
-			//std::cout << to<<"\n";
-			//history_moves[piece][square] = 0;
-		}
-	}
+	//for (int from = 0; from < 64; ++from)
+	//{
+	//	for (int to = 0; to < 64; ++to)
+	//	{
+	//		history_moves[0][from][to] = 0;
+	//		history_moves[1][from][to] = 0;
+	//		//std::cout << to<<"\n";
+	//		//history_moves[piece][square] = 0;
+	//	}
+	//}
 	//std::cout << "white";
 	//printTopHistory(0);
 	//std::cout << "black";

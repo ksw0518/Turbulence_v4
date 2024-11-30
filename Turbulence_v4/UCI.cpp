@@ -15,9 +15,29 @@
 #include <cstdlib>
 #include <random>
 
+std::vector<std::string> option_name = {"RFP_MULTIPLIER", "RFP_BASE", "PVS_QUIET_BASE", "PVS_QUIET_MULTIPLIER", "PVS_NOISY_BASE", "PVS_NOISY_MULTIPLIER", "LMP_BASE", "LMP_MULTIPLIER", "HISTORY_BASE", "HISTORY_MULTIPLIER"};
+std::vector<int> option_base = { 75, 0, 0, 70, 0, 20, 1, 3, 0, 1 };
+std::vector<int> option_min = { 10,  -50, -10, 30, -10, 5, 0, 1 , -10, 1 };
+std::vector<int> option_max = { 150, 100, 50, 200, 50, 20, 50, 5, 50, 5  };
+
+std::vector<int*> option_var{ &RFP_MULTIPLIER, &RFP_BASE,& PVS_QUIET_BASE, &PVS_QUIET_MULTIPLIER,&PVS_NOISY_BASE, &PVS_NOISY_MULTIPLIER,&LMP_BASE ,&LMP_MULTIPLIER ,&HISTORY_BASE,&HISTORY_MULTIPLIER };
 
 
+/*int RFP_MULTIPLIER = 75;
+int RFP_BASE = 0;
 
+int LMP_BASE = 1;
+int LMP_MULTIPLIER = 3;
+
+int PVS_QUIET_BASE = 0;
+int PVS_QUIET_MULTIPLIER = 70;
+
+int PVS_NOISY_BASE = 0;
+int PVS_NOISY_MULTIPLIER = 20;
+
+int HISTORY_BASE = 0;
+int HISTORY_MULTIPLIER = 1;
+*/
 
 // generate 32-bit pseudo legal numbers
 
@@ -236,6 +256,16 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
+
+        for (int i = 0; i < option_name.size(); i++)
+        {
+            std::cout << "option name " << option_name[i];
+            std::cout << " type spin ";
+            std::cout << " default " << option_base[i];
+            std::cout << " min " << option_min[i];
+            std::cout << " max " << option_max[i];
+            std::cout << "\n";
+        }
         std::cout << "uciok" << "\n";
     }
     else if (main_command == "setoption")
@@ -249,6 +279,17 @@ void ProcessUCI(std::string input)
         {
             //std::cout << ".";
             Initialize_TT(value);
+        }
+        else
+        {
+            for (int i = 0; i < option_name.size(); i++)
+            {
+                if (option == option_name[i])
+                {
+                    *option_var[i] = value;
+                    //std::cout << *option_var[i];
+                }
+            }
         }
 
     }
@@ -794,7 +835,7 @@ int main()
     uint64_t hash_key = 0ULL;
 
 
-
+    
     
     //std::cout << std::hex<<hash_key << std::dec;
 

@@ -192,7 +192,7 @@ const int ISOLATED_PAWN_MALUS_MG = 5;
 const int ISOLATED_PAWN_MALUS_EG = 25;
 
 const int DOUBLED_PAWN_MALUS_MG = 10;
-const int DOUBLED_PAWN_MALUS_EG = 50;
+const int DOUBLED_PAWN_MALUS_EG = 25;
 
 //enum Piece {
 //    P = 0, N, B, R, Q, K, p, n, b, r, q, k, NO_PIECE
@@ -332,15 +332,12 @@ uint64_t getFileBitboard(uint64_t pieces, int file) {
 }
 
 uint64_t detectDoubledPawns(uint64_t pawns) {
-    uint64_t doubledPawns = 0;
-    for (int file = 0; file < 8; ++file) {
-        uint64_t pawnsInFile = getFileBitboard(pawns, file);
-        if ((pawnsInFile & (pawnsInFile - 1)) != 0) {  // More than one pawn in file
-            doubledPawns |= pawnsInFile;
-        }
-    }
+    // Shift pawns upward to find overlap on the same file
+    uint64_t doubledPawns = pawns & (pawns >> 8);
     return doubledPawns;
 }
+
+
 
 // Detect isolated pawns for a color
 uint64_t detectIsolatedPawns(uint64_t pawns) {
@@ -396,8 +393,14 @@ int Evaluate(Board& board)
         }
     }
     
-    //int double_pawns_evalside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, evalSide)]));
-    //int double_pawns_oppside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, 1 - evalSide)]));
+    /*int double_pawns_evalside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, evalSide)]));
+    int double_pawns_oppside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, 1 - evalSide)]));
+
+    mg[evalSide] -= DOUBLED_PAWN_MALUS_MG * double_pawns_evalside;
+    mg[1 - evalSide] -= DOUBLED_PAWN_MALUS_MG * double_pawns_oppside;
+
+    eg[evalSide] -= DOUBLED_PAWN_MALUS_EG * double_pawns_evalside;
+    eg[1 - evalSide] -= DOUBLED_PAWN_MALUS_EG * double_pawns_oppside;*/
 
     /*int isolated_pawns_evalside = count_bits(detectIsolatedPawns(board.bitboards[get_piece(P, evalSide)]));
     int isolated_pawns_oppside = count_bits(detectIsolatedPawns(board.bitboards[get_piece(P, 1 - evalSide)]));*/
