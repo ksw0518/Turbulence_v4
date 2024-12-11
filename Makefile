@@ -28,3 +28,9 @@ clean:
 
 # Phony targets
 .PHONY: all clean
+pgo:
+    $(CC) $(CFLAGS) $(PGOGEN) $(NATIVE) $(INSTRUCTIONS) -MMD -MP -o $(EXE) $(SOURCES) $(LDFLAGS)
+    ./$(EXE) bench
+    $(PGOMERGE)
+    $(CC) $(CFLAGS) $(NATIVE) $(INSTRUCTIONS) $(PGOUSE) -MMD -MP -o $(EXE) $(SOURCES) $(LDFLAGS)
+    @rm -f *.gcda *.profraw *.o $(DEPENDS) *.d
