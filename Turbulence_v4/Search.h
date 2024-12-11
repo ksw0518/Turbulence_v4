@@ -5,6 +5,22 @@
 extern int pv_length[99];
 extern Move pv_table[99][99];
 
+
+extern int RFP_MULTIPLIER;
+extern int RFP_BASE;
+
+extern int LMP_BASE;
+extern int LMP_MULTIPLIER;
+
+extern int PVS_QUIET_BASE;
+extern int PVS_QUIET_MULTIPLIER;
+
+extern int PVS_NOISY_BASE;
+extern int PVS_NOISY_MULTIPLIER;
+
+extern int HISTORY_BASE;
+extern int HISTORY_MULTIPLIER;
+
 extern uint64_t TT_size;
 struct Transposition_entry
 {
@@ -13,6 +29,12 @@ struct Transposition_entry
 	int depth;
 	int score;
 	int node_type;
+};
+
+struct Search_data
+{
+	Move move;
+
 };
 void initializeLMRTable();
 extern Transposition_entry* TranspositionTable;
