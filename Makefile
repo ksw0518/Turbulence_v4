@@ -1,15 +1,13 @@
 # Compiler and flags
-CXX = clang++          # Fixed to clang++
-CXXFLAGS ?= -O3 -std=c++17 -Wall -Wextra # Default compiler flags
+CXX = clang++          
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra
 
 # Automatically find all source files in the correct folder
 SRC = $(wildcard Turbulence_v4/*.cpp)
-
-# Generate object file names from source files
 OBJ = $(SRC:.cpp=.o)
 
-# Output binary (default)
-EXE ?= Turbulence.exe
+# Output binary
+EXE = Turbulence.exe
 
 # Default target
 all: $(EXE)
@@ -24,13 +22,16 @@ $(EXE): $(OBJ)
 
 # Clean up build files
 clean:
-	del /f /q "Turbulence_v4\*.o" "$(EXE)"
+	if exist Turbulence_v4\*.o del /f /q Turbulence_v4\*.o
+	if exist $(EXE) del /f /q $(EXE)
+
+# PGO target
+pgo:
+	$(CXX) $(CXXFLAGS) -fprofile-generate -o $(EXE) $(SRC)
+	./$(EXE) bench
+	llvm-profdata merge -output=default.profdata *.profraw
+	$(CXX) $(CXXFLAGS) -fprofile-use=default.profdata -o $(EXE) $(SRC)
+	del /f /q *.gcda *.profraw
 
 # Phony targets
-.PHONY: all clean
-pgo:
-    $(CC) $(CFLAGS) $(PGOGEN) $(NATIVE) $(INSTRUCTIONS) -MMD -MP -o $(EXE) $(SOURCES) $(LDFLAGS)
-    ./$(EXE) bench
-    $(PGOMERGE)
-    $(CC) $(CFLAGS) $(NATIVE) $(INSTRUCTIONS) $(PGOUSE) -MMD -MP -o $(EXE) $(SOURCES) $(LDFLAGS)
-    @rm -f *.gcda *.profraw *.o $(DEPENDS) *.d
+.PHONY: all clean pgo
