@@ -3,7 +3,7 @@ CXX = clang++
 CXXFLAGS = -O3 -std=c++17 -Wall -Wextra
 
 # Automatically find all source files in the correct folder
-SRC = $(shell echo Turbulence_v4/*.cpp)
+SRC = $(shell find Turbulence_v4 -name "*.cpp")
 OBJ = $(SRC:.cpp=.o)
 
 # Output binary
@@ -22,8 +22,8 @@ $(EXE): $(OBJ)
 
 # Clean up build files
 clean:
-	if exist Turbulence_v4\*.o del /f /q Turbulence_v4\*.o
-	if exist $(EXE) del /f /q $(EXE)
+	-$(RM) $(OBJ)
+	-$(RM) $(EXE)
 
 # PGO target
 pgo:
@@ -31,7 +31,7 @@ pgo:
 	./$(EXE) bench
 	llvm-profdata merge -output=default.profdata *.profraw
 	$(CXX) $(CXXFLAGS) -fprofile-use=default.profdata -o $(EXE) $(SRC)
-	del /f /q *.gcda *.profraw
+	$(RM) *.gcda *.profraw
 
 # Phony targets
 .PHONY: all clean pgo
