@@ -33,6 +33,43 @@ inline int getSide(int piece)
     return (piece > 5) ? Black : White;
     //Piece
 };
+// passed pawn bonus
+const int white_passed_pawn_bonus_middle[64] = { 0, 0, 0, 0, 0, 0, 0, 0,
+                                                  36, 42, 42, 42, 42, 42, 42, 36,
+                                                  14, 17, 17, 17, 17, 17, 17, 14,
+                                                  5, 7, 7, 7, 7, 7, 7, 5,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0, };
+
+const int white_passed_pawn_bonus_endgame[64] = { 0, 0, 0, 0, 0, 0, 0, 0,
+                                                  80, 85, 90, 103, 103, 90, 85, 80,
+                                                  20, 27, 30, 34, 34, 30, 27, 20,
+                                                  10, 12, 15, 20, 20, 15, 12, 10,
+                                                  0, 10, 10, 10, 10, 10, 10, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0 };
+const int black_passed_pawn_bonus_middle[64] = { 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 5, 7, 7, 7, 7, 7, 7, 5,
+                                                 14, 17, 17, 17, 17, 17, 17, 14,
+                                                 36, 42, 42, 42, 42, 42, 42, 36,
+                                                 0, 0, 0, 0, 0, 0, 0, 0 };
+
+const int black_passed_pawn_bonus_endgame[64] = { 0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 0, 0, 0, 0, 0, 0, 0,
+                                                  0, 10, 10, 10, 10, 10, 10, 0,
+                                                  10, 12, 15, 20, 20, 15, 12, 10,
+                                                  20, 27, 30, 34, 34, 30, 27, 20,
+                                                  80, 85, 90, 103, 103, 90, 85, 80 };
+
+
 int mg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,  0,   0,
      98, 134,  61,  95,  68, 126, 34, -11,
@@ -359,17 +396,27 @@ uint64_t detectIsolatedPawns(uint64_t pawns) {
 
 uint64_t detectPassedPawns(uint64_t pawns, uint64_t opponentPawns, bool isWhite) {
     uint64_t passedPawns = 0;
+
     for (int file = 0; file < 8; ++file) {
         uint64_t pawnsInFile = getFileBitboard(pawns, file);
+
+        // Calculate the span of potential blocking pawns
+        uint64_t adjacentFiles = (file > 0 ? files_bitboard[file - 1] : 0) |
+            files_bitboard[file] |
+            (file < 7 ? files_bitboard[file + 1] : 0);
+
         uint64_t frontSpan = isWhite
-            ? ~((files_bitboard[file] | (file > 0 ? files_bitboard[file - 1] : 0) | (file < 7 ? files_bitboard[file + 1] : 0)) >> 8)
-            : ~((files_bitboard[file] | (file > 0 ? files_bitboard[file - 1] : 0) | (file < 7 ? files_bitboard[file + 1] : 0)) << 8);
-        if ((frontSpan & opponentPawns & pawnsInFile) == 0) {  // No opposing pawns blocking or contesting
-            passedPawns |= pawnsInFile;
+            ? (adjacentFiles & ~(0xFFull)) << 8 // All squares in front up to the promotion rank
+            : (adjacentFiles & ~(0xFFull << 56)) >> 8;
+
+        // Check if any opponent pawns are in the front span
+        if ((frontSpan & opponentPawns) == 0) {
+            passedPawns |= pawnsInFile; // Mark pawns in this file as passed
         }
     }
     return passedPawns;
 }
+
 
 int Evaluate(Board& board)
 {
@@ -410,6 +457,68 @@ int Evaluate(Board& board)
     //int mgScore = mg[evalSide] + mg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_MG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_MG)/2;
     //int egScore = eg[evalSide] + eg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_EG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_EG)/2;
 
+    uint64_t eval_passer = detectPassedPawns(board.bitboards[get_piece(p, evalSide)], board.bitboards[get_piece(p, 1 - evalSide)], evalSide != White);
+    uint64_t opp_passer = detectPassedPawns(board.bitboards[get_piece(p, 1 - evalSide)], board.bitboards[get_piece(p, evalSide)], evalSide == White);
+
+    //PrintBitboard(eval_passer);
+    //PrintBitboard(opp_passer);
+    //int passed_pawn_bonus_MG;
+    //int passed_pawn_bonus_EG;
+    while (eval_passer) {
+        int square = get_ls1b(eval_passer);
+        //int y;
+
+        //if (evalSide == White)
+        //{
+        //    y = getRank(square);
+        //}
+        //else
+        //{
+        //    y = 7 - getRank(square);
+        //}
+        
+        if (evalSide == White)
+        {
+            mg[evalSide] += white_passed_pawn_bonus_middle[square];
+            eg[evalSide] += white_passed_pawn_bonus_endgame[square];
+        }
+        else
+        {
+            mg[evalSide] += black_passed_pawn_bonus_middle[square];
+            eg[evalSide] += black_passed_pawn_bonus_endgame[square];
+        }
+
+        Pop_bit(eval_passer, square);
+    }
+
+    while (opp_passer) {
+        int square = get_ls1b(opp_passer);
+        int y;
+
+        if (evalSide != White)
+        {
+            y = getRank(square);
+        }
+        else
+        {
+            y = 7 - getRank(square);
+        }
+
+
+        if (evalSide != White)
+        {
+            mg[1 - evalSide] += white_passed_pawn_bonus_middle[square];
+            eg[1 - evalSide] += white_passed_pawn_bonus_endgame[square];
+        }
+        else
+        {
+            mg[1 - evalSide] += black_passed_pawn_bonus_middle[square];
+            eg[1 - evalSide] += black_passed_pawn_bonus_endgame[square];
+        }
+        Pop_bit(opp_passer, square);
+    }
+    
+    
     int mgScore = mg[evalSide] + mg[1 - evalSide];
     int egScore = eg[evalSide] + eg[1 - evalSide];
     int mgPhase = gamePhase;
@@ -420,6 +529,8 @@ int Evaluate(Board& board)
 
     int WhiteBishops = count_bits(board.bitboards[B]);
     int BlackBishops = count_bits(board.bitboards[b]);
+
+
 
     int white_bishoppair = 0;
     int black_bishoppair = 0;
@@ -434,6 +545,12 @@ int Evaluate(Board& board)
     }
     Whiteeval += white_bishoppair;
     Whiteeval -= black_bishoppair;
+
+
+
+
+    //Whiteeval += ((passed_pawn_bonus_MG * mgPhase + passed_pawn_bonus_EG * egPhase) / 24);
+
     return Whiteeval * side_multiply[evalSide];
 
 }
