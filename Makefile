@@ -3,7 +3,7 @@ CXX = clang++
 CXXFLAGS = -O3 -std=c++17 -Wall -Wextra
 
 # Automatically find all source files in the correct folder
-SRC = $(wildcard Turbulence_v4/*.cpp)
+SRC = $(shell echo Turbulence_v4/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 
 # Output binary
