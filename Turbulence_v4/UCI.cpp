@@ -796,7 +796,24 @@ int main(int argc, char* argv[])
 
 
 
-    
+    //for (int i = 0; i < 8; i++)
+    //{
+    //    // Left shift to zero-out rows below
+    //    uint64_t left_shifted = (0xFFFFFFFFFFFFFFFFull) << (8 * (i + 1));
+
+    //    // Right shift to zero-out rows above (adjusted by subtracting 1)
+    //    uint64_t right_shifted = (0xFFFFFFFFFFFFFFFFull) >> ((8 * (7 - i + 1)));
+    //    if (i <= 0)
+    //    {
+    //        right_shifted = 0ull;
+    //    }
+    //    //uint64_t right_shifted = (0xFFFFFFFFFFFFFFFFull) >> ((8 * (7 - i + 1));
+
+    //    // Print both bitboards
+    //    PrintBitboard(left_shifted);
+    //    PrintBitboard(right_shifted);
+    //}
+
     //std::cout << std::hex<<hash_key << std::dec;
 
     //parse_fen("2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - - ", main_board);

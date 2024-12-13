@@ -231,6 +231,12 @@ const int ISOLATED_PAWN_MALUS_EG = 25;
 const int DOUBLED_PAWN_MALUS_MG = 10;
 const int DOUBLED_PAWN_MALUS_EG = 50;
 
+
+// file masks [square]
+uint64_t fileMasks[64];
+
+// rank masks [square]
+uint64_t rankMasks[64];
 //enum Piece {
 //    P = 0, N, B, R, Q, K, p, n, b, r, q, k, NO_PIECE
 //};
@@ -251,6 +257,9 @@ int side_multiply[2]
 int gamephaseInc[12] = { 0,1,1,2,4,0,0,1,1,2,4,0 };
 int mg_table[12][64];
 int eg_table[12][64];
+
+uint64_t whitePassedMasks[64];
+uint64_t blackPassedMasks[64];
 void print_table(const int table[64]) {
     for (int rank = 0; rank < 8; rank++) {
         for (int file = 0; file < 8; file++) {
@@ -276,63 +285,120 @@ void print_tables() {
         std::cout << std::endl;
     }
 }
+uint64_t setFileRankMask(int file_number, int rank_number) {
+    // file or rank mask
+    uint64_t mask = 0ULL;
 
+    // loop over ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop over files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
+
+            if (file_number != -1)
+            {
+                // on file match
+                if (file == file_number) {
+                    
+                    uint64_t fileMask = (mask | 1ULL << square);
+                    // set bit on mask
+                    mask |= fileMask;
+                }
+
+            }
+
+            else if (rank_number != -1)
+            {
+                // on rank match
+                if (rank == rank_number) {
+                    uint64_t rankMask = (mask | 1ULL << square);
+                    // set bit on mask
+                    mask |= rankMask;
+                }
+
+            }
+        }
+    }
+
+    // return mask
+    return mask;
+}
 
 void precalculate_pawn_spans()
 {
-    //PrintBitboard(A_file);
-    for (int x = 0; x < 8; x++)
+    for (int rank = 0; rank < 8; rank++)
     {
-        for (int y = 0; y < 8; y++)
+        // loop over files
+        for (int file = 0; file < 8; file++)
         {
-            int square = 8 * y + x;
-            uint64_t occupancy = 18446744073709551615ULL;
-            
-            if (y == 0)
-            {
-                occupancy = 0ULL;
-            }
-            else
-            {
-                occupancy = occupancy >> (8 * (8 - y ));
-                uint64_t middlemask = (A_file << x);
-                uint64_t leftmask = (A_file << std::max(0, x-1));
-                uint64_t rightmask = (A_file << std::min(7, x+1));
-                
-                occupancy &= middlemask | leftmask | rightmask;
-                
-            }
-            //PrintBitboard(occupancy);
-            white_pawn_span[square] = occupancy;
-            
+            // init square
+            int square = rank * 8 + file;
+
+            // init file mask for a current square
+            fileMasks[square] |= setFileRankMask(file, -1);
+            //PrintBitboard(fileMasks[square]);
         }
     }
-    for (int x = 0; x < 8; x++)
+
+    /******** Init rank masks ********/
+
+    // loop over ranks
+    for (int rank = 0; rank < 8; rank++)
     {
-        for (int y = 0; y < 8; y++)
+        // loop over files
+        for (int file = 0; file < 8; file++)
         {
-            int square = 8 * y + x;
-            uint64_t occupancy = 18446744073709551615ULL;
+            // init square
+            int square = rank * 8 + file;
 
-            if (y == 0)
-            {
-                occupancy = 0ULL;
-            }
-            else
-            {
-                occupancy = occupancy << (8 * (y));
-                
-                uint64_t middlemask = (A_file << x);
-                uint64_t leftmask = (A_file << std::max(0, x - 1));
-                uint64_t rightmask = (A_file << std::min(7, x + 1));
-                
+            // init rank mask for a current square
+            rankMasks[square] |= setFileRankMask(-1, rank);
+        }
+    }
+    // loop over ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop over files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
 
-                occupancy &= middlemask | leftmask | rightmask;
-                
-            }
-            
-            black_pawn_span[square] = occupancy;
+            // init white passed pawns mask for a current square
+            whitePassedMasks[square] |= setFileRankMask(file - 1, -1);
+            whitePassedMasks[square] |= setFileRankMask(file, -1);
+            whitePassedMasks[square] |= setFileRankMask(file + 1, -1);
 
+            // loop over redudant ranks
+            for (int i = 0; i < (8 - rank); i++)
+                // reset redudant bits
+                whitePassedMasks[square] &= ~rankMasks[(7 - i) * 8 + file];
+        }
+    }
+
+    /******** Black passed masks ********/
+
+    // loop over ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop over files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
+
+            // init black passed pawns mask for a current square
+            blackPassedMasks[square] |= setFileRankMask(file - 1, -1);
+            blackPassedMasks[square] |= setFileRankMask(file, -1);
+            blackPassedMasks[square] |= setFileRankMask(file + 1, -1);
+
+            // loop over redudant ranks
+            for (int i = 0; i < rank + 1; i++)
+                // reset redudant bits
+                blackPassedMasks[square] &= ~rankMasks[i * 8 + file];
         }
     }
 
@@ -365,7 +431,7 @@ void init_tables()
     //PrintBitboard(files_bitboard[5]);
 }
 uint64_t getFileBitboard(uint64_t pieces, int file) {
-    return pieces & files_bitboard[file];
+    return pieces & fileMasks[file];
 }
 
 uint64_t detectDoubledPawns(uint64_t pawns) {
@@ -394,25 +460,47 @@ uint64_t detectIsolatedPawns(uint64_t pawns) {
     return isolatedPawns;
 }
 
-uint64_t detectPassedPawns(uint64_t pawns, uint64_t opponentPawns, bool isWhite) {
+uint64_t detectPassedPawns(const uint64_t pawns, const uint64_t opponentPawns, bool isWhite) {
     uint64_t passedPawns = 0;
 
     for (int file = 0; file < 8; ++file) {
         uint64_t pawnsInFile = getFileBitboard(pawns, file);
-
-        // Calculate the span of potential blocking pawns
+        
         uint64_t adjacentFiles = (file > 0 ? files_bitboard[file - 1] : 0) |
             files_bitboard[file] |
             (file < 7 ? files_bitboard[file + 1] : 0);
+        while (pawnsInFile)
+        {
+            // Calculate the span of potential blocking pawns
+            int square = get_ls1b(pawnsInFile);
 
-        uint64_t frontSpan = isWhite
-            ? (adjacentFiles & ~(0xFFull)) << 8 // All squares in front up to the promotion rank
-            : (adjacentFiles & ~(0xFFull << 56)) >> 8;
 
-        // Check if any opponent pawns are in the front span
-        if ((frontSpan & opponentPawns) == 0) {
-            passedPawns |= pawnsInFile; // Mark pawns in this file as passed
+            //// Left shift to zero-out rows below
+            //uint64_t left_shifted = (0xFFFFFFFFFFFFFFFFull) << (8 * (getRank(square) + 1));
+            //
+            //// Right shift to zero-out rows above (adjusted by subtracting 1)
+            //uint64_t right_shifted = (0xFFFFFFFFFFFFFFFFull) >> ((8 * (7 - getRank(square) + 1)));
+            //if (getRank(square) <= 0)
+            //{
+            //    right_shifted = 0ull;
+            //}
+
+            uint64_t frontSpan = isWhite
+                ? whitePassedMasks[square]
+                : blackPassedMasks[square];
+            //PrintBitboard(pawnsInFile);
+            //PrintBitboard(opponentPawns);
+            //PrintBitboard(frontSpan);
+
+                   
+
+            // Check if any opponent pawns are in the front span
+            if ((frontSpan & opponentPawns) == 0) {
+                passedPawns |= 1ULL << square; // Mark pawns in this file as passed
+            }
+            Pop_bit(pawnsInFile, square);
         }
+
     }
     return passedPawns;
 }
@@ -457,9 +545,10 @@ int Evaluate(Board& board)
     //int mgScore = mg[evalSide] + mg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_MG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_MG)/2;
     //int egScore = eg[evalSide] + eg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_EG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_EG)/2;
 
-    uint64_t eval_passer = detectPassedPawns(board.bitboards[get_piece(p, evalSide)], board.bitboards[get_piece(p, 1 - evalSide)], evalSide != White);
-    uint64_t opp_passer = detectPassedPawns(board.bitboards[get_piece(p, 1 - evalSide)], board.bitboards[get_piece(p, evalSide)], evalSide == White);
+    uint64_t eval_passer = detectPassedPawns(board.bitboards[get_piece(p, evalSide)], board.bitboards[get_piece(p, 1 - evalSide)], evalSide == White);
+    uint64_t opp_passer = detectPassedPawns(board.bitboards[get_piece(p, 1 - evalSide)], board.bitboards[get_piece(p, evalSide)], evalSide != White);
 
+    //PrintBitboard(board.bitboards[get_piece(p, evalSide)]);
     //PrintBitboard(eval_passer);
     //PrintBitboard(opp_passer);
     int passed_pawn_bonus_MG;
