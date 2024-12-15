@@ -189,12 +189,12 @@ static uint64_t Perft(Board& board, int depth)
             uint64_t nodes_added = Perft(board, depth - 1);
             nodes += nodes_added;
 
-            if (depth == perft_depth)
-            {
-                printMove(move);
-                std::cout << (":") << nodes_added << "\n";
+            //if (depth == perft_depth)
+            //{
+            //    printMove(move);
+            //    std::cout << (":") << nodes_added << "\n";
 
-            }
+            //}
 
 
         }
@@ -578,12 +578,12 @@ void ProcessUCI(std::string input)
 
 
     }
-    else if (main_command == "go")
+    else if (main_command == "perft")
     {
-        if (Commands[1] == "perft")
+        if (Commands[0] == "perft")
         {
 
-            perft_depth = std::stoi(Commands[2]);
+            perft_depth = std::stoi(Commands[1]);
 
             //std::cout << (perft_depth);
             auto start = std::chrono::high_resolution_clock::now();
@@ -598,15 +598,20 @@ void ProcessUCI(std::string input)
             double nps = nodes / second;
             double nps_in_millions = nps / 1000000.0;
 
-            std::cout << "Nodes: ";
+            //std::cout << "Nodes: ";
             std::cout << (nodes);
-            std::cout << " Time: ";
+            std::cout << "\n";
+            /*std::cout << " Time: ";
             std::cout << elapsedMS.count();
             std::cout << "ms NPS : ";
-            std::cout << std::fixed << std::setprecision(1) << nps_in_millions << "M n/s" << std::endl;
+            std::cout << std::fixed << std::setprecision(1) << nps_in_millions << "M n/s" << std::endl;*/
 
         }
-        else if (Commands[1] == "depth")
+        }
+    else if (main_command == "go")
+    {
+        
+        if (Commands[1] == "depth")
         {
             //Negamax_nodecount = 0;
             if (Commands.size() == 3)

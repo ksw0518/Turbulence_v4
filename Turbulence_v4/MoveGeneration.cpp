@@ -2921,7 +2921,7 @@ void UnmakeMove(Board& board, Move move, int captured_piece)
 
     board.side = 1 - board.side;
 }
-uint64_t get_attacked_squares(int side, Board board, uint64_t occupancy)
+uint64_t get_attacked_squares(int side, Board& board, uint64_t occupancy)
 {
     uint64_t attack_map = 0;
     uint64_t bb;

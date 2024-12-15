@@ -99,9 +99,6 @@ bool is_search_stopped;
 
 
 bool Print_Root = false;
-
-
-
 //constexpr int MAX_HISTORY = 16384;
 
 
@@ -109,16 +106,9 @@ int seldepth = 0;
 int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 Move killer_moves[2][99];
-Move counter_move[64][64];
-
+Move counter_move[12][64];
 
 int history_moves[2][64][64];
-int Oneply_ContHist[12][64][12][64];
-
-Search_data Search_stack[99];
-
-
-
 //struct Transposition_entry
 //{
 //	uint64_t zobrist_key;
@@ -134,7 +124,7 @@ Transposition_entry* TranspositionTable;
 std::vector<int> move_scores;
 std::vector<Move> public_movelist;
 
-
+Search_data Search_stack[99];
 
 
 
@@ -177,8 +167,6 @@ void update_history(int stm, int from, int to, int bonus)
 	//history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 	history_moves[stm][from][to] += clampedBonus - history_moves[stm][from][to] * abs(clampedBonus) / MAX_HISTORY;
-
-
 	//history_moves[stm][from][to] = std::clamp(history_moves[stm][from][to], -MAX_HISTORY, MAX_HISTORY);
 	//history_moves[stm][from][to] += bonus;
 }
@@ -383,58 +371,41 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 	}
 	else
 	{
-		 if (killer_moves[0][ply] == move)
-		 {
-			 return 150000;
-		 }
-		 //2nd killer
-		 else if (killer_moves[1][ply] == move)
-		 {
-			 return 100000;
-		 }
-		 else
-		 {
-			 // Return history score for non-capture and non-killer moves
+		if (killer_moves[0][ply] == move)
+		{
+			return 150000;
+		}
+		//2nd killer
+		else if (killer_moves[1][ply] == move)
+		{
+			return 100000;
+		}
+		else if (counter_move[Search_stack[ply - 1].move.Piece][Search_stack[ply - 1].move.To] == move)
+		{
+			return 90000;
+		}
+		else
+		{
+			// Return history score for non-capture and non-killer moves
 
 			 
 
-			 //int pieceType = get_piece(move.Piece, White); // Get piece type
+			//int pieceType = get_piece(move.Piece, White); // Get piece type
 
-			 //int targetSquare = move.To; // Get target square
+			//int targetSquare = move.To; // Get target square
+			int main_history = history_moves[board.side][move.From][move.To];
+			//int oneply_conthist = ;
+			int history = main_history - 100000;
 
-			 int history = history_moves[board.side][move.From][move.To];
-			 int oneply_CH = getContinuationHistoryScore(move);
+			if (history >= 80000)
+			{
+				return 80000;
+			}
+			else
+			{
+				return history;
+			}
 
-
-			 //printMove(Search_stack[ply].move);
-			 //std::cout << "\n";
-			 //printMove(move);
-			 //std::cout << "\n"<< oneply_CH<< "\n";
-			 
-			 //Move prevmove;
-			 //if (ply >= 1)
-			 //{//dicksucker
-				// prevmove = Search_stack[ply - 1].move;
-				// /*printMove(prevmove);
-				// std::cout << "\n";*/
-				// 
-				// //printMove(prevmove);
-				// //std::cout << "\n now:";
-				// //printMove(Search_stack[ply].move);
-				// //std::cout << "\n";
-			 //}
-			 //int oneply_conthist_value = 0;
-
-			 //if (ply >= 1)
-			 //{
-				// oneply_conthist_value = Oneply_ContHist[prevmove.Piece][prevmove.To][move.Piece][move.To] - 100000;
-				// //std::cout << oneply_conthist_value<<"\n";
-			 //}
-			 //
-			 
-			 return history + oneply_CH - 100000;
-
-			//return history;
 
 		 }
 		//1st killer
@@ -966,7 +937,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			else if (ttEntry.node_type == BetaFlag && ttEntry.score >= beta )
 			{
 				return beta;
-      }
+			}
+
 			//if (alpha >= beta)
 			//{
 			//	return ttEntry.score;
@@ -1089,32 +1061,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	Quiet_moves_list.reserve(50);
 
 	Move bestmove = Move(0, 0, 0, 0);
-
-	//Move prevmove;
-
-	//if (ply >= 0)
-	//{
-	//	//prevmove = Search_stack[ply].move;
-	//	//printMove(prevmove);
-	//	//std::cout << "\n";
-	//	//printMove(pv_table[ply-1][ply-1]);
-	//	//std::cout << "\n";
-	//	//std::cout << ply;
-
-	//	std::cout << "\n";
-	//	std::cout << "\n";
-	//	printMove(prevmove);
-	//	printMove(Search_stack[ply - 1].move);
-	//	//for (int i = 0; i < ply + 2; i++)
-	//	//{
-	//	//	printMove(Search_stack[i].move);
-	//	//	std::cout << "\n";
-	//	//}
-	//	//printMove(pv_table[ply][ply]);
-
-	//	std::cout << "\n";
-	//	std::cout << "\n";
-	//}
 	for (Move& move : moveList)
 	{
 		
@@ -1412,20 +1358,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				{
 					killer_moves[1][ply] = killer_moves[0][ply];
 					killer_moves[0][ply] = move;
-				} 
-
+				}
+				Move prevmove = Search_stack[ply - 1].move;
+				counter_move[prevmove.Piece][prevmove.To] = move;
 
 				//history_moves[board.side][move.From][move.To] += depth * depth;
 				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
-				//Move prevMove = Search_stack[ply - 1].move;
-
-				if (ply >= 1)
-				{
-					//printMove(prevMove);
-					//std::cout << "\n now:";
-					//printMove(move);
-					//std::cout << "\n";
-				}
 				for (const auto& move_quiet : Quiet_moves_list) {
 					if (move_quiet == move)
 					{
@@ -1439,11 +1377,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					else
 					{
 						update_history(board.side, move_quiet.From, move_quiet.To, -bonus);
-						//if (ply >= 1)
-						//{
-						//	updateContinuationHistoryScore(move, -bonus);
-						//	//update_conthist(prevMove.Piece, prevMove.To, move.Piece, move.To, -bonus);
-						//}
 					}
 					
 				}
@@ -1533,7 +1466,7 @@ void bench()
 
 
 		search_start = std::chrono::steady_clock::now();
-		IterativeDeepening(board, 12, -1, false, false);
+		IterativeDeepening(board, 10, -1, false, false);
 		search_end = std::chrono::steady_clock::now();
 
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
@@ -1590,9 +1523,6 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//		//history_moves[piece][square] = 0;
 	//	}
 	//}
-	// 
-	// 
-	//memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
 	//std::cout << "white";
 	//printTopHistory(0);
 	//std::cout << "black";
@@ -1606,6 +1536,10 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		seldepth = 0;
 		nodes_for_time_checking = 0;
 		is_search_stopped = false;
+		for (int i = 0; i < 99; i++)
+		{
+			Search_stack[i].move = Move(0, 0, 0, 0);
+		}
 		//memset(last_bestMove, 0, 64 * sizeof(int));
 
 		//if (curr_depth >= 4)
@@ -1684,7 +1618,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		//}
 
 
-		//printTopOneplyContHist();
+
 		//std::cout << "white";
 		//printTopHistory(0);
 		//std::cout << "black";
