@@ -106,9 +106,10 @@ int seldepth = 0;
 int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 Move killer_moves[2][99];
-Move counter_move[12][64];
+Move counter_move[64][64];
 
 int history_moves[2][64][64];
+int Oneply_ContHist[12][64][12][64];
 //struct Transposition_entry
 //{
 //	uint64_t zobrist_key;
@@ -181,12 +182,16 @@ int getSingleContinuationHistoryScore(Move move, const int offSet) {
 	
 	//return previousMove ? ss->continuationHistory[getMovePiece(previousMove)][getMoveTarget(previousMove)][getMovePiece(move)][getMoveTarget(move)] : 0;
 }
-int getContinuationHistoryScore(Move move) {
-	return getSingleContinuationHistoryScore(move, 1);
+int getContinuationHistoryScore(Move& move) {
+	if (ply >= 1)
+	{
+		return getSingleContinuationHistoryScore(move, 1);
+	}
+	return 0;
 	//return getSingleContinuationHistoryScore(move, 2);
 	//+ GetSingleCHScore(sd, ss, move, 4);
 }
-void updateSingleContinuationHistoryScore(Move move, const int bonus, const int offSet) {
+void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet) {
 	if (ply >= offSet) {
 		Move previousMove = Search_stack[ply - offSet].move;
 		int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
@@ -194,29 +199,29 @@ void updateSingleContinuationHistoryScore(Move move, const int bonus, const int 
 		Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 	}
 }
-void updateContinuationHistoryScore(Move move, const int bonus) {
+void updateContinuationHistoryScore(Move& move, const int bonus) {
 	//const int scaledBonus = bonus - getContinuationHistoryScore(move) * abs(bonus) / 8192;
 	updateSingleContinuationHistoryScore(move, bonus, 1);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 2);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 4);
 }
 
-//void update_conthist(int piece_a, int to_a, int piece_b, int to_b, int bonus)
-//{
-//	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-//	Oneply_ContHist[piece_a][to_a][piece_b][to_b] += clampedBonus - Oneply_ContHist[piece_a][to_a][piece_b][to_b] * abs(clampedBonus) / MAX_HISTORY;
-//	//std::cout << "piecea ";
-//	//std::cout << piece_a;
-//	//std::cout << "to_a: ";
-//	////square
-//	//std::cout << to_a;
-//	//std::cout << "pieceb ";
-//	//std::cout << piece_b;
-//	//std::cout << "to_b: ";
-//	//std::cout << to_b;
-//	//std::cout << "\n";
-//	//std::cout << Oneply_ContHist[piece_a][to_a][piece_b][to_b]<<"\n";
-//}
+void update_conthist(int piece_a, int to_a, int piece_b, int to_b, int bonus)
+{
+	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	Oneply_ContHist[piece_a][to_a][piece_b][to_b] += clampedBonus - Oneply_ContHist[piece_a][to_a][piece_b][to_b] * abs(clampedBonus) / MAX_HISTORY;
+	//std::cout << "piecea ";
+	//std::cout << piece_a;
+	//std::cout << "to_a: ";
+	////square
+	//std::cout << to_a;
+	//std::cout << "pieceb ";
+	//std::cout << piece_b;
+	//std::cout << "to_b: ";
+	//std::cout << to_b;
+	//std::cout << "\n";
+	//std::cout << Oneply_ContHist[piece_a][to_a][piece_b][to_b]<<"\n";
+}
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
 	{104, 204, 304, 404, 504, 604},
@@ -380,10 +385,10 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 		{
 			return 100000;
 		}
-		else if (counter_move[Search_stack[ply - 1].move.Piece][Search_stack[ply - 1].move.To] == move)
-		{
-			return 90000;
-		}
+		//else if (counter_move[Search_stack[ply - 1].move.From][Search_stack[ply - 1].move.To] == move)
+		//{
+		//	return 90000;
+		//}
 		else
 		{
 			// Return history score for non-capture and non-killer moves
@@ -394,8 +399,9 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 
 			//int targetSquare = move.To; // Get target square
 			int main_history = history_moves[board.side][move.From][move.To];
+			int oneply_conthist = getContinuationHistoryScore(move);
 			//int oneply_conthist = ;
-			int history = main_history - 100000;
+			int history = main_history +oneply_conthist - 100000;
 
 			if (history >= 80000)
 			{
@@ -1359,8 +1365,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					killer_moves[1][ply] = killer_moves[0][ply];
 					killer_moves[0][ply] = move;
 				}
-				Move prevmove = Search_stack[ply - 1].move;
-				counter_move[prevmove.Piece][prevmove.To] = move;
+				//if (ply >= 1)
+				//{
+				//	Move prevmove = Search_stack[ply - 1].move;
+				//	counter_move[prevmove.From][prevmove.To] = move;
+				//}
+
 
 				//history_moves[board.side][move.From][move.To] += depth * depth;
 				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
@@ -1368,15 +1378,19 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					if (move_quiet == move)
 					{
 						update_history(board.side, move_quiet.From, move_quiet.To, bonus);
-						//if (ply >= 1)
-						//{
-						//	updateContinuationHistoryScore(move, bonus);
-						//}
+						if (ply >= 1)
+						{
+							updateContinuationHistoryScore(move, bonus);
+						}
 						
 					}
 					else
 					{
 						update_history(board.side, move_quiet.From, move_quiet.To, -bonus);
+						if (ply >= 1)
+						{
+							updateContinuationHistoryScore(move, -bonus);
+						}
 					}
 					
 				}
@@ -1461,7 +1475,19 @@ void bench()
 		{
 			TranspositionTable[i] = Transposition_entry();
 		}
-
+		for (int piecea = 0; piecea < 12; piecea++)
+		{
+			for (int toa = 0; toa < 64; toa++)
+			{
+				for (int pieceb = 0; pieceb < 12; pieceb++)
+				{
+					for (int tob = 0; tob < 64; tob++)
+					{
+						Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
+					}
+				}
+			}
+		}
 		parse_fen(bench_fens[i], board);
 
 
@@ -1527,7 +1553,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//printTopHistory(0);
 	//std::cout << "black";
 	//printTopHistory(1);
-
+	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		//move_scores.cler();
@@ -1618,7 +1644,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		//}
 
 
-
+		//printTopOneplyContHist();
 		//std::cout << "white";
 		//printTopHistory(0);
 		//std::cout << "black";
