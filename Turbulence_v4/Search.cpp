@@ -175,6 +175,13 @@ int getSingleContinuationHistoryScore(Move move, const int offSet) {
 	if (ply >= offSet)
 	{
 		Move previousMove = Search_stack[ply - offSet].move;
+		
+		//printMove(previousMove);
+		//std::cout << "\n";
+		//printMove(move);
+		//std::cout << "\n";
+		//std::cout << "\n";
+		//std::cout << called_from_update<<"\n";
 		return Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 	}
 	return 0;
@@ -194,8 +201,10 @@ int getContinuationHistoryScore(Move& move) {
 void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet) {
 	if (ply >= offSet) {
 		Move previousMove = Search_stack[ply - offSet].move;
+
 		int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet) * abs(clampedBonus) / MAX_HISTORY;
+		//std::cout << scaledBonus;
 		Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 	}
 }
@@ -400,7 +409,8 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 			//int targetSquare = move.To; // Get target square
 			int main_history = history_moves[board.side][move.From][move.To];
 			int oneply_conthist = getContinuationHistoryScore(move);
-			//int oneply_conthist = ;
+			//int oneply_conthist = getContinuationHistoryScore(move);
+			//int oneply_conthist = 0;
 			int history = main_history +oneply_conthist - 100000;
 
 			if (history >= 80000)
@@ -1134,8 +1144,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
 
-
 		Search_stack[ply].move = move;
+		
 		ply++;
 		
 		if (seldepth < ply)
@@ -1180,6 +1190,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.side = lastside;
 			continue;
 		}
+		
 		if (isQuiet)
 		{
 			Quiet_moves_list.push_back(move);
@@ -1387,10 +1398,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					else
 					{
 						update_history(board.side, move_quiet.From, move_quiet.To, -bonus);
-						if (ply >= 1)
-						{
-							updateContinuationHistoryScore(move, -bonus);
-						}
+						//if (ply >= 1)
+						//{
+						//	updateContinuationHistoryScore(move, -bonus);
+						//}
 					}
 					
 				}
