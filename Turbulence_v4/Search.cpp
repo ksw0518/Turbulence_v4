@@ -131,6 +131,7 @@ Search_data Search_stack[99];
 
 
 constexpr int MAX_HISTORY = 512;
+constexpr int MAX_CONTHIST = 1024;
 
 constexpr int Minimum_lmr_depth = 3;
 
@@ -202,8 +203,8 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 	if (ply >= offSet) {
 		Move previousMove = Search_stack[ply - offSet].move;
 
-		int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet) * abs(clampedBonus) / MAX_HISTORY;
+		int clampedBonus = std::clamp(bonus, -MAX_CONTHIST, MAX_CONTHIST);
+		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet) * abs(clampedBonus) / MAX_CONTHIST;
 		//std::cout << scaledBonus;
 		Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 	}
@@ -215,22 +216,22 @@ void updateContinuationHistoryScore(Move& move, const int bonus) {
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 4);
 }
 
-void update_conthist(int piece_a, int to_a, int piece_b, int to_b, int bonus)
-{
-	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	Oneply_ContHist[piece_a][to_a][piece_b][to_b] += clampedBonus - Oneply_ContHist[piece_a][to_a][piece_b][to_b] * abs(clampedBonus) / MAX_HISTORY;
-	//std::cout << "piecea ";
-	//std::cout << piece_a;
-	//std::cout << "to_a: ";
-	////square
-	//std::cout << to_a;
-	//std::cout << "pieceb ";
-	//std::cout << piece_b;
-	//std::cout << "to_b: ";
-	//std::cout << to_b;
-	//std::cout << "\n";
-	//std::cout << Oneply_ContHist[piece_a][to_a][piece_b][to_b]<<"\n";
-}
+//void update_conthist(int piece_a, int to_a, int piece_b, int to_b, int bonus)
+//{
+//	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+//	Oneply_ContHist[piece_a][to_a][piece_b][to_b] += clampedBonus - Oneply_ContHist[piece_a][to_a][piece_b][to_b] * abs(clampedBonus) / MAX_HISTORY;
+//	//std::cout << "piecea ";
+//	//std::cout << piece_a;
+//	//std::cout << "to_a: ";
+//	////square
+//	//std::cout << to_a;
+//	//std::cout << "pieceb ";
+//	//std::cout << piece_b;
+//	//std::cout << "to_b: ";
+//	//std::cout << to_b;
+//	//std::cout << "\n";
+//	//std::cout << Oneply_ContHist[piece_a][to_a][piece_b][to_b]<<"\n";
+//}
 static int mvv_lva[6][6] = {
 	{105, 205, 305, 405, 505, 605},
 	{104, 204, 304, 404, 504, 604},
@@ -1385,23 +1386,23 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 				//history_moves[board.side][move.From][move.To] += depth * depth;
 				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
-				for (const auto& move_quiet : Quiet_moves_list) {
+				for (auto& move_quiet : Quiet_moves_list) {
 					if (move_quiet == move)
 					{
 						update_history(board.side, move_quiet.From, move_quiet.To, bonus);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move, bonus);
+							updateContinuationHistoryScore(move_quiet, bonus);
 						}
 						
 					}
 					else
 					{
 						update_history(board.side, move_quiet.From, move_quiet.To, -bonus);
-						//if (ply >= 1)
-						//{
-						//	updateContinuationHistoryScore(move, -bonus);
-						//}
+						if (ply >= 1)
+						{
+							updateContinuationHistoryScore(move_quiet, -bonus);
+						}
 					}
 					
 				}
