@@ -109,7 +109,7 @@ void Unmake_Nullmove(Board& board);
 void Make_Nullmove(Board& board);
 void MakeMove(Board& board, Move move);
 void UnmakeMove(Board& board, Move move, int captured_piece);
-uint64_t get_attacked_squares(int side, Board board, uint64_t occupancy);
+uint64_t get_attacked_squares(int side, Board& board, uint64_t occupancy);
 bool isMoveValid(Move& move, Board& board);
 
 void init_random_keys();

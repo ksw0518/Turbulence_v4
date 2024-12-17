@@ -189,12 +189,12 @@ static uint64_t Perft(Board& board, int depth)
             uint64_t nodes_added = Perft(board, depth - 1);
             nodes += nodes_added;
 
-            if (depth == perft_depth)
-            {
-                printMove(move);
-                std::cout << (":") << nodes_added << "\n";
+            //if (depth == perft_depth)
+            //{
+            //    printMove(move);
+            //    std::cout << (":") << nodes_added << "\n";
 
-            }
+            //}
 
 
         }
@@ -257,15 +257,15 @@ void ProcessUCI(std::string input)
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
 
-        for (int i = 0; i < option_name.size(); i++)
-        {
-            std::cout << "option name " << option_name[i];
-            std::cout << " type spin ";
-            std::cout << " default " << option_base[i];
-            std::cout << " min " << option_min[i];
-            std::cout << " max " << option_max[i];
-            std::cout << "\n";
-        }
+        //for (int i = 0; i < option_name.size(); i++)
+        //{
+        //    std::cout << "option name " << option_name[i];
+        //    std::cout << " type spin ";
+        //    std::cout << " default " << option_base[i];
+        //    std::cout << " min " << option_min[i];
+        //    std::cout << " max " << option_max[i];
+        //    std::cout << "\n";
+        //}
         std::cout << "uciok" << "\n";
     }
     else if (main_command == "setoption")
@@ -578,12 +578,12 @@ void ProcessUCI(std::string input)
 
 
     }
-    else if (main_command == "go")
+    else if (main_command == "perft")
     {
-        if (Commands[1] == "perft")
+        if (Commands[0] == "perft")
         {
 
-            perft_depth = std::stoi(Commands[2]);
+            perft_depth = std::stoi(Commands[1]);
 
             //std::cout << (perft_depth);
             auto start = std::chrono::high_resolution_clock::now();
@@ -598,15 +598,20 @@ void ProcessUCI(std::string input)
             double nps = nodes / second;
             double nps_in_millions = nps / 1000000.0;
 
-            std::cout << "Nodes: ";
+            //std::cout << "Nodes: ";
             std::cout << (nodes);
-            std::cout << " Time: ";
+            std::cout << "\n";
+            /*std::cout << " Time: ";
             std::cout << elapsedMS.count();
             std::cout << "ms NPS : ";
-            std::cout << std::fixed << std::setprecision(1) << nps_in_millions << "M n/s" << std::endl;
+            std::cout << std::fixed << std::setprecision(1) << nps_in_millions << "M n/s" << std::endl;*/
 
         }
-        else if (Commands[1] == "depth")
+        }
+    else if (main_command == "go")
+    {
+        
+        if (Commands[1] == "depth")
         {
             //Negamax_nodecount = 0;
             if (Commands.size() == 3)
