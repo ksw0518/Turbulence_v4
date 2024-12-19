@@ -526,8 +526,8 @@ int Evaluate(Board& board)
     uint64_t opp_passer = detectPassedPawns(board.bitboards[get_piece(p, 1 - evalSide)], board.bitboards[get_piece(p, evalSide)], evalSide != White);
 
     //PrintBitboard(board.bitboards[get_piece(p, evalSide)]);
-    PrintBitboard(eval_passer);
-    PrintBitboard(opp_passer);
+    //PrintBitboard(eval_passer);
+    //PrintBitboard(opp_passer);
     int passed_pawn_bonus_MG;
     int passed_pawn_bonus_EG;
     if (eval_passer)
