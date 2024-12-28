@@ -1642,7 +1642,40 @@ void bench()
 
 	}
 	std::cout << nodecount << " nodes "  << nodecount / (totalsearchtime + 1) * 1000 << " nps "  << "\n";
-	
+	for (int ply = 0; ply < 99; ply++)
+	{
+		killer_moves[0][ply] = Move();
+		killer_moves[1][ply] = Move();
+	}
+	for (int from = 0; from < 64; ++from)
+	{
+		for (int to = 0; to < 64; ++to)
+		{
+			history_moves[0][from][to] = 0;
+			history_moves[1][from][to] = 0;
+			//std::cout << to<<"\n";
+			//history_moves[piece][square] = 0;
+		}
+	}
+
+	for (int i = 0; i < TT_size; i++)
+	{
+		TranspositionTable[i] = Transposition_entry();
+	}
+	for (int piecea = 0; piecea < 12; piecea++)
+	{
+		for (int toa = 0; toa < 64; toa++)
+		{
+			for (int pieceb = 0; pieceb < 12; pieceb++)
+			{
+				for (int tob = 0; tob < 64; tob++)
+				{
+					Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
+				}
+			}
+		}
+	}
+	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 }
 
 void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info)
