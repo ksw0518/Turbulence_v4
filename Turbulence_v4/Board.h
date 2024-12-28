@@ -31,7 +31,7 @@ struct Move
     uint8_t Piece;
     
 
-    Move(uint8_t from, uint8_t to, uint8_t type, uint8_t piece);
+    Move(unsigned char from, unsigned char to, unsigned char type, unsigned char piece);
     Move();
 
 

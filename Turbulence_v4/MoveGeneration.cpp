@@ -397,7 +397,7 @@ int GetSquare(std::string squareName)
 }
 void printMove(Move move)
 {
-    std::cout << (CoordinatesToChessNotation(move.From) + CoordinatesToChessNotation(move.To));
+    std::cout << (CoordinatesToChessNotation(static_cast<uint8_t>(move.From)) + CoordinatesToChessNotation(static_cast<uint8_t>(move.To)));
     if (move.Type == queen_promo || move.Type == queen_promo_capture) std::cout << ("q");
     if (move.Type == rook_promo || move.Type == rook_promo_capture) std::cout << ("r");
     if (move.Type == bishop_promo || move.Type == bishop_promo_capture) std::cout << ("b");

@@ -1888,18 +1888,3 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	score_pv = 0;
 }
 
-//void printMoveSort(Board board)
-//{
-//	std::vector<Move> movelist;
-//	Generate_Legal_Moves(movelist,board, false);
-//
-//	sort_moves(movelist, board);
-//
-//	for (int i = 0; i < movelist.size(); i++)
-//	{
-//		printMove(movelist[i]);
-//		std::cout << " "<<get_move_score(movelist[i], board);
-//		std::cout << "\n";
-//	}
-//	//PrintLegalMoves(movelist);
-//}

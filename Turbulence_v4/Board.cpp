@@ -23,7 +23,7 @@ Board::Board()
 }
 
 // Move constructor
-Move::Move(uint8_t from, uint8_t to, uint8_t type, uint8_t piece)
+Move::Move(unsigned char from, unsigned char to, unsigned char type, unsigned char piece)
     : From(from), To(to), Type(type), Piece(piece){
 
 }
