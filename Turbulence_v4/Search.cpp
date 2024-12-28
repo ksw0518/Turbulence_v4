@@ -79,6 +79,7 @@ int PVS_NOISY_MULTIPLIER = 18;
 int HISTORY_BASE = 4;
 int HISTORY_MULTIPLIER = 2;
 
+const int mvv[12] = { 100, 300, 300, 500, 1200, 0, 100, 300, 300, 500, 1200, 0 };
 
 constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
 
@@ -89,6 +90,9 @@ auto start = std::chrono::steady_clock::now();
 
 int pv_length[99];
 Move pv_table[99][99];
+
+int follow_pv = 0;
+int score_pv = 0;
 
 int ply;
 int negamax_nodecount;
@@ -109,7 +113,11 @@ Move killer_moves[2][99];
 Move counter_move[64][64];
 
 int history_moves[2][64][64];
+
+int CaptureHistory[12][64][12];
+
 int Oneply_ContHist[12][64][12][64];
+
 //struct Transposition_entry
 //{
 //	uint64_t zobrist_key;
@@ -132,12 +140,26 @@ Search_data Search_stack[99];
 
 constexpr int MAX_HISTORY = 512;
 constexpr int MAX_CONTHIST = 1024;
+constexpr int MAX_CAPTHIST = 1024;
 
 constexpr int Minimum_lmr_depth = 3;
 
 constexpr int Maximum_pvs_see_depth = 8;
 int lmrTable[99][256];
 
+
+//static inline void enable_pv_scoring(std::vector<Move> &move_list)
+//{
+//	follow_pv = 0;
+//	for (int count = 0; count < move_list.size(); count++)
+//	{
+//		if (pv_table[0][ply] == move_list[count])
+//		{
+//			score_pv = 1;
+//			follow_pv = 1;
+//		}
+//	}
+//}
 bool is_quiet(int type)
 {
 	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //quiet move
@@ -171,6 +193,11 @@ void update_history(int stm, int from, int to, int bonus)
 	history_moves[stm][from][to] += clampedBonus - history_moves[stm][from][to] * abs(clampedBonus) / MAX_HISTORY;
 	//history_moves[stm][from][to] = std::clamp(history_moves[stm][from][to], -MAX_HISTORY, MAX_HISTORY);
 	//history_moves[stm][from][to] += bonus;
+}
+void update_capthist(int attacker, int to, int victim, int bonus)
+{
+	int clampedBonus = std::clamp(bonus, -MAX_CAPTHIST, MAX_CAPTHIST);
+	CaptureHistory[attacker][to][victim] += clampedBonus - CaptureHistory[attacker][to][victim] * abs(clampedBonus) / MAX_CAPTHIST;
 }
 int getSingleContinuationHistoryScore(Move move, const int offSet) {
 	if (ply >= offSet)
@@ -267,6 +294,33 @@ void printTopHistory(int side) {
 			<< std::endl;
 	}
 }
+void printTopCapthist(int side) {
+	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
+
+	// Populate the vector with scores and moves
+	for (int from = 0; from < 64; ++from) {
+		for (int to = 0; to < 64; ++to) {
+			int score = CaptureHistory[side][from][to];
+			moves.push_back({ score, from, to });
+		}
+	}
+
+	// Sort moves by score in descending order
+	std::sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+		return std::get<0>(a) < std::get<0>(b);
+		});
+
+	// Print the top 10 moves
+	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
+	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
+		auto [score, from, to] = moves[i];
+		std::cout << "from: " << CoordinatesToChessNotation(from)
+			<< " to: " << CoordinatesToChessNotation(to)
+			<< " score = " << score
+			<< " side_to_move = " << side
+			<< std::endl;
+	}
+}
 void printTopOneplyContHist() {
 	std::vector<std::tuple<int, int, int, int, int>> moves; // Stores <score, piece_from, from, piece_to, to>
 
@@ -319,6 +373,8 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 	// Transposition_entry& entry = TranspositionTable[board.Zobrist_key % TT_size];
 
 	// Check if the entry is valid and matches the current Zobrist key
+
+
 	if (entry.node_type != 0 && entry.zobrist_key == board.Zobrist_key)
 	{
 		// If the best move from TT matches the current move, return a high score
@@ -328,6 +384,16 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 			return 99999999;
 		}
 	}
+	//if (score_pv)
+	//{
+	//	if (pv_table[0][ply] == move)
+	//	{
+	//		score_pv = 0;
+	//		/*printMove(move);
+	//		std::cout << "\nply" << ply<<"\n";*/
+	//		return 9999999;
+	//	}
+	//}
 	//if ((move.Type & promotionFlag) != 0)
 	//{
 	//	if ((move.Type & queen_promo) != 0) // queen promotion
@@ -349,19 +415,26 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 
 	//}
 	 if ((move.Type & captureFlag) != 0) // if a move is a capture move
-	{			 if (move.Type == ep_capture)
-			 {
-				 return mvv_lva[P][P] * 10000;
-			 }
+	{		
 			 int victim = get_piece(board.mailbox[move.To], White);
+			 if (move.Type == ep_capture)
+			 {
+				 victim = P;
+			 }
 			 int attacker = get_piece(move.Piece, White);
+			 int score = mvv_lva[attacker][victim];
+			 //score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+			 score += SEE(board, move, -100) ? 200000 : -10000000;
+			 return score;
+			 
 			 //score moves based on mvv-lva scheme
+			
 			 //return 0;
 
 			 //std::cout << board.mailbox[move.To] << "\n";
 			 //std::cout << attacker << "\n";
 			 //return mvv_lva[victim][attacker];
-			 return mvv_lva[attacker][victim] * 10000;
+			 //return mvv_lva[attacker][victim] * 10000;
 		 //if (SEE(board, move, -50))
 		 //{
 
@@ -935,9 +1008,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int ttFlag = AlphaFlag;
 	uint64_t last_zobrist = board.Zobrist_key;
 	int bestValue = MINUS_INFINITY;
+	bool is_ttmove_found = false;
 	// Only check TT for depths greater than zero (ply != 0)
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
+		is_ttmove_found = true;
 		// Valid TT entry found
 		if (ply != 0 && ttEntry.depth >= depth)
 		{
@@ -976,7 +1051,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		return Quiescence(board, alpha, beta);
 		//return Evaluate(board);
 	}
-	
+	if (ply + 1 <= 99)
+	{
+		killer_moves[0][ply + 1] = Move(0, 0, 0, 0);
+		killer_moves[1][ply + 1] = Move(0, 0, 0, 0);
+	}
+
 
 	//bool moreSafeCutNodeReduction = false;
 	//if (!doNMP && depth >= 3) {
@@ -989,7 +1069,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//	//std::cout << 1 + (cutnode && !moreSafeCutNodeReduction);
 	//	--depth;
 	//}
-
+	//if ((is_pv_node) && depth >= 4 && !is_ttmove_found)
+	//{
+	//	depth--;
+	//}
 
 
 	int static_eval = Evaluate(board);
@@ -1005,9 +1088,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return static_eval - rfpThreshold;
 		}
 	}
-	if (doNMP)
+	if (!is_pv_node && doNMP)
 	{
-		if (!is_in_check(board) && depth >= 2 && ply)
+		if (!is_in_check(board) && depth >= 2 && ply && static_eval >= beta)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
@@ -1044,6 +1127,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//printMoveSort(board);
 	//PrintBoards(board);
 
+	//if (follow_pv)
+	//{
+	//	enable_pv_scoring(moveList);
+	//}
+
 	sort_moves(moveList, board, ttEntry);
 
 	
@@ -1076,8 +1164,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	std::vector<Move> Quiet_moves_list;
 	Quiet_moves_list.reserve(50);
+	/*std::vector<Move> Noisy_moves_list;
+	Noisy_moves_list.reserve(50);*/
 
 	Move bestmove = Move(0, 0, 0, 0);
+	int quiet_moves = 0;
 	for (Move& move : moveList)
 	{
 		
@@ -1195,7 +1286,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (isQuiet)
 		{
 			Quiet_moves_list.push_back(move);
+			quiet_moves++;
 		}
+		//else
+		//{
+		//	Noisy_moves_list.push_back(move);
+		//}
 
 
 		//for (int i = 0; i < board.history.size(); i++)
@@ -1227,6 +1323,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			
 			reduction = lmrTable[depth][legal_moves];
 
+			if (!is_pv_node && quiet_moves >= 4)
+			{
+				reduction++;
+			}
 
 			//asdf
 
@@ -1235,7 +1335,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//	reduction -= 1;
 			//}
 		}
-		
+		if (reduction < 0) reduction = 0;
 		is_reduced = reduction > 0;
 		
 		if (legal_moves <= 1)
@@ -1408,6 +1508,25 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 				//update_history(board.side, move.From, move.To, depth*depth);
 			}
+			//else
+			//{
+			//	int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+			//	for (auto& move_noisy : Noisy_moves_list) {
+			//		if (move_noisy == move)
+			//		{
+			//			update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, bonus);
+
+			//		}
+			//		else
+			//		{
+			//			update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, -bonus);
+
+			//		}
+
+			//	}
+			//	//update_history(board.side, move.From, move.To, depth*depth);
+			//}
+			
 			break;
 			//return score;
 		}
@@ -1500,6 +1619,7 @@ void bench()
 				}
 			}
 		}
+		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		parse_fen(bench_fens[i], board);
 
 
@@ -1547,6 +1667,10 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 
 
 	int score = 0;
+
+	follow_pv = 0;
+	score_pv = 0;
+
 	Print_Root = false;
 	//move_scores.clear();
 	//public_movelist.clear();
@@ -1566,6 +1690,8 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//std::cout << "black";
 	//printTopHistory(1);
 	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(pv_table, 0, sizeof(pv_table));
+	memset(pv_length, 0, sizeof(pv_length));
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		//move_scores.cler();
@@ -1573,6 +1699,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		ply = 0;
 		seldepth = 0;
 		nodes_for_time_checking = 0;
+		
 		is_search_stopped = false;
 		for (int i = 0; i < 99; i++)
 		{
@@ -1601,6 +1728,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		//std::cout << alpha_val << ","<<beta_val;
 		while (true)
 		{
+			follow_pv = 1;
 			score = Negamax(board, curr_depth, alpha_val, beta_val, true, false);
 			//std::cout << "alpha:" << alpha_val<<"\n";
 			//std::cout << "beta:" << beta_val << "\n";
@@ -1661,6 +1789,12 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		//printTopHistory(0);
 		//std::cout << "black";
 		//printTopHistory(1);
+		// 
+		// 
+		//std::cout << "white";
+		//printTopCapthist(0);
+		//std::cout << "black";
+		//printTopCapthist(1);
 		//if (Print_Root)
 		//{
 		//	//public_movelist.clear();
@@ -1750,6 +1884,8 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		std::cout << "\n";
 	}
 
+	follow_pv = 0;
+	score_pv = 0;
 }
 
 //void printMoveSort(Board board)
