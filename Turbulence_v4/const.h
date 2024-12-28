@@ -155,7 +155,7 @@ static int Side_value[] = { 0, 6 };
 static int Get_Whitepiece[] = { 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5 };
 
 
-inline uint8_t get_piece(int piece, int col)
+inline int get_piece(int piece, int col)
 {
     //std::cout << Get_Whitepiece[piece] << "\n";
     //std::cout << Side_value[col] << "\n";
