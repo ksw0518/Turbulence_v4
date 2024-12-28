@@ -282,101 +282,7 @@ void print_tables() {
 }
 
 
-void precalculate_pawn_spans()
-{
-    //PrintBitboard(A_file);
-    for (int x = 0; x < 8; x++)
-    {
-        for (int y = 0; y < 8; y++)
-        {
-            int square = 8 * y + x;
-            uint64_t occupancy = 18446744073709551615ULL;
-            
-            if (y == 0)
-            {
-                // on rank match
-                if (rank == rank_number) {
-                    uint64_t rankMask = mask | 1ULL << square;
-                    // set bit on mask
-                    mask |= rankMask;
-                }
 
-            }
-        }
-    }
-
-    // return mask
-    return mask;
-}
-
-void precalculate_pawn_spans()
-{
-    /******** White passed masks ********/
-        // loop over ranks
-    for (int rank = 0; rank < 8; rank++)
-    {
-        // loop over files
-        for (int file = 0; file < 8; file++)
-        {
-            // init square
-            int square = rank * 8 + file;
-
-            // init file mask for a current square
-            fileMasks[square] |= setFileRankMask(file, -1);
-            //PrintBitboard(fileMasks[square]);
-        }
-    }
-    for (int x = 0; x < 8; x++)
-    {
-        for (int y = 0; y < 8; y++)
-        {
-            int square = 8 * y + x;
-            uint64_t occupancy = 18446744073709551615ULL;
-
-            // init rank mask for a current square
-            rankMasks[square] |= setFileRankMask(-1, rank);
-            //PrintBitboard(rankMasks[square]);
-        }
-    }
- // loop over ranks
-    for (int rank = 0; rank < 8; rank++)
-    {
-        // loop over files
-        for (int file = 0; file < 8; file++)
-        {
-            // init square
-            int square = rank * 8 + file;
-
-            // init white passed pawns mask for a current square
-            whitePassedMasks[square] |= setFileRankMask(file - 1, -1);
-            whitePassedMasks[square] |= setFileRankMask(file, -1);
-            whitePassedMasks[square] |= setFileRankMask(file + 1, -1);
-
-            // loop over redudant ranks
-            for (int i = 0; i < (8 - rank); i++)
-                // reset redudant bits
-                whitePassedMasks[square] &= ~rankMasks[(7 - i) * 8 + file];
-
-            //PrintBitboard(whitePassedMasks[square]);
-        }
-    }
-
-                occupancy &= middlemask | leftmask | rightmask;
-                
-            }
-            
-            black_pawn_span[square] = occupancy;
-
-            // loop over redudant ranks
-            for (int i = 0; i < rank + 1; i++)
-                // reset redudant bits
-                blackPassedMasks[square] &= ~rankMasks[i * 8 + file];
-
-            //PrintBitboard(blackPassedMasks[square]);
-        }
-    }
-
-}
 
 void init_tables()
 {
@@ -402,7 +308,7 @@ void init_tables()
 
 
     }
-    precalculate_pawn_spans();
+    //precalculate_pawn_spans();
     //PrintBitboard(files_bitboard[5]);
 }
 uint64_t getFileBitboard(uint64_t pieces, int file) {
