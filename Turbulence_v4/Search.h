@@ -25,10 +25,11 @@ extern uint64_t TT_size;
 struct Transposition_entry
 {
 	uint64_t zobrist_key;
+	int32_t score;
 	Move best_move;
-	int depth;
-	int score;
-	int node_type;
+	uint8_t depth;
+	
+	uint8_t node_type;
 };
 
 struct Search_data

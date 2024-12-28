@@ -294,21 +294,36 @@ void precalculate_pawn_spans()
             
             if (y == 0)
             {
-                occupancy = 0ULL;
+                // on rank match
+                if (rank == rank_number) {
+                    uint64_t rankMask = mask | 1ULL << square;
+                    // set bit on mask
+                    mask |= rankMask;
+                }
+
             }
-            else
-            {
-                occupancy = occupancy >> (8 * (8 - y ));
-                uint64_t middlemask = (A_file << x);
-                uint64_t leftmask = (A_file << std::max(0, x-1));
-                uint64_t rightmask = (A_file << std::min(7, x+1));
-                
-                occupancy &= middlemask | leftmask | rightmask;
-                
-            }
-            //PrintBitboard(occupancy);
-            white_pawn_span[square] = occupancy;
-            
+        }
+    }
+
+    // return mask
+    return mask;
+}
+
+void precalculate_pawn_spans()
+{
+    /******** White passed masks ********/
+        // loop over ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop over files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
+
+            // init file mask for a current square
+            fileMasks[square] |= setFileRankMask(file, -1);
+            //PrintBitboard(fileMasks[square]);
         }
     }
     for (int x = 0; x < 8; x++)
@@ -318,18 +333,33 @@ void precalculate_pawn_spans()
             int square = 8 * y + x;
             uint64_t occupancy = 18446744073709551615ULL;
 
-            if (y == 0)
-            {
-                occupancy = 0ULL;
-            }
-            else
-            {
-                occupancy = occupancy << (8 * (y));
-                
-                uint64_t middlemask = (A_file << x);
-                uint64_t leftmask = (A_file << std::max(0, x - 1));
-                uint64_t rightmask = (A_file << std::min(7, x + 1));
-                
+            // init rank mask for a current square
+            rankMasks[square] |= setFileRankMask(-1, rank);
+            //PrintBitboard(rankMasks[square]);
+        }
+    }
+ // loop over ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop over files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
+
+            // init white passed pawns mask for a current square
+            whitePassedMasks[square] |= setFileRankMask(file - 1, -1);
+            whitePassedMasks[square] |= setFileRankMask(file, -1);
+            whitePassedMasks[square] |= setFileRankMask(file + 1, -1);
+
+            // loop over redudant ranks
+            for (int i = 0; i < (8 - rank); i++)
+                // reset redudant bits
+                whitePassedMasks[square] &= ~rankMasks[(7 - i) * 8 + file];
+
+            //PrintBitboard(whitePassedMasks[square]);
+        }
+    }
 
                 occupancy &= middlemask | leftmask | rightmask;
                 
@@ -337,6 +367,12 @@ void precalculate_pawn_spans()
             
             black_pawn_span[square] = occupancy;
 
+            // loop over redudant ranks
+            for (int i = 0; i < rank + 1; i++)
+                // reset redudant bits
+                blackPassedMasks[square] &= ~rankMasks[i * 8 + file];
+
+            //PrintBitboard(blackPassedMasks[square]);
         }
     }
 
@@ -423,6 +459,7 @@ uint64_t detectPassedPawns(uint64_t pawns, uint64_t opponentPawns, bool isWhite)
             uint64_t frontSpan = isWhite
                 ? whitePassedMasks[square]
                 : blackPassedMasks[square];
+            //PrintBitboard(frontSpan);
             //PrintBitboard(pawnsInFile);
             //PrintBitboard(opponentPawns);
             //PrintBitboard(frontSpan);
@@ -467,8 +504,8 @@ int Evaluate(Board& board)
     //uint64_t opp_passer = detectPassedPawns(board.bitboards[get_piece(p, 1 - evalSide)], board.bitboards[get_piece(p, evalSide)], evalSide != White);
 
     ////PrintBitboard(board.bitboards[get_piece(p, evalSide)]);
-    ////PrintBitboard(eval_passer);
-    ////PrintBitboard(opp_passer);
+    ///*PrintBitboard(eval_passer);
+    //PrintBitboard(opp_passer);*/
     //int passed_pawn_bonus_MG;
     //int passed_pawn_bonus_EG;
     //if (eval_passer)
@@ -517,7 +554,7 @@ int Evaluate(Board& board)
     //        //}
 
 
-    //        if (evalSide != White)
+    //        if (1- evalSide == White)
     //        {
     //            mg[1 - evalSide] += white_passed_pawn_bonus_middle[square];
     //            eg[1 - evalSide] += white_passed_pawn_bonus_endgame[square];

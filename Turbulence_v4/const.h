@@ -113,25 +113,25 @@ constexpr int Black = 1;
 constexpr int Both = 2;
 
 
-constexpr int promotionFlag = 0x1000;
-constexpr int captureFlag = 0x0100;
-constexpr int special1Flag = 0x0010;
-constexpr int special0Flag = 0x0001;
+constexpr uint8_t promotionFlag = 0b1000;
+constexpr uint8_t captureFlag = 0b0100;
+constexpr uint8_t special1Flag = 0b0010;
+constexpr uint8_t special0Flag = 0b0001;
 
-constexpr int quiet_move = 0;
-constexpr int double_pawn_push = special0Flag;
-constexpr int king_castle = special1Flag;
-constexpr int queen_castle = special0Flag | special1Flag;
-constexpr int capture = captureFlag;
-constexpr int ep_capture = captureFlag | special0Flag;
-constexpr int knight_promo = promotionFlag;
-constexpr int bishop_promo = promotionFlag | special0Flag;
-constexpr int rook_promo = promotionFlag | special1Flag;
-constexpr int queen_promo = promotionFlag | special1Flag | special0Flag;
-constexpr int knight_promo_capture = knight_promo | capture;
-constexpr int bishop_promo_capture = bishop_promo | capture;
-constexpr int rook_promo_capture = rook_promo | capture;
-constexpr int queen_promo_capture = queen_promo | capture;
+constexpr uint8_t quiet_move = 0;
+constexpr uint8_t double_pawn_push = special0Flag;
+constexpr uint8_t king_castle = special1Flag;
+constexpr uint8_t queen_castle = special0Flag | special1Flag;
+constexpr uint8_t capture = captureFlag;
+constexpr uint8_t ep_capture = captureFlag | special0Flag;
+constexpr uint8_t knight_promo = promotionFlag;
+constexpr uint8_t bishop_promo = promotionFlag | special0Flag;
+constexpr uint8_t rook_promo = promotionFlag | special1Flag;
+constexpr uint8_t queen_promo = promotionFlag | special1Flag | special0Flag;
+constexpr uint8_t knight_promo_capture = knight_promo | capture;
+constexpr uint8_t bishop_promo_capture = bishop_promo | capture;
+constexpr uint8_t rook_promo_capture = rook_promo | capture;
+constexpr uint8_t queen_promo_capture = queen_promo | capture;
 
 
 constexpr uint64_t WhiteKingCastleEmpty = (1ULL << f1) | (1ULL << g1);

@@ -25,13 +25,13 @@ public:
 
 struct Move
 {
-    int From;
-    int To;
-    int Type;
-    int Piece;
+    uint8_t From;
+    uint8_t To;
+    uint8_t Type;
+    uint8_t Piece;
     
 
-    Move(int from, int to, int type, int piece);
+    Move(uint8_t from, uint8_t to, uint8_t type, uint8_t piece);
     Move();
 
 
