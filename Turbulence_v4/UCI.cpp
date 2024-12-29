@@ -215,7 +215,11 @@ static uint64_t Perft(Board& board, int depth)
     return nodes;
 }
 
-int CalculateTime(int time, int incre)
+int Calculate_Hard_Bound(int time, int incre)
+{
+    return time / 3;
+}
+int Calculate_Soft_Bound(int time, int incre)
 {
     return time / 20 + incre / 2;
 }
@@ -652,17 +656,19 @@ void ProcessUCI(std::string input)
             }
             else
             {
-                int searchtime;
-
+                int hard_bound;
+                int soft_bound;
                 if (main_board.side == White)
                 {
-                    searchtime = CalculateTime(wtime, winc);
+                    hard_bound = Calculate_Hard_Bound(wtime, winc);
+                    soft_bound = Calculate_Soft_Bound(wtime, winc);
                 }
                 else
                 {
-                    searchtime = CalculateTime(btime, binc);
+                    hard_bound = Calculate_Hard_Bound(btime, binc);
+                    soft_bound = Calculate_Soft_Bound(btime, binc);
                 }
-                IterativeDeepening(main_board, 64, searchtime);
+                IterativeDeepening(main_board, 64, hard_bound, false, true, soft_bound);
             }
            
         }

@@ -1680,7 +1680,7 @@ void bench()
 
 }
 
-void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info)
+void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound)
 {
 
 	if (timeMS == -1)
@@ -1893,6 +1893,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 					printMove(pv_table[0][count]);
 					std::cout << " ";
 				}
+				std::cout << "\n";
 			}
 		}
 
@@ -1900,16 +1901,13 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 
 		
 
-		if (elapsedMS > Searchtime_MS)
+		if (elapsedMS > softbound)
 		{
 			//std::cout << elapsedMS << "\n";
 			//std::cout << Searchtime_MS << "\n";
 			break;
 		}
-		if (print_info)
-		{
-			std::cout << "\n";
-		}
+
 	}
 	//auto end = std::chrono::high_resolution_clock::now();
 	if (print_info)
