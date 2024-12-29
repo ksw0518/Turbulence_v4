@@ -869,6 +869,7 @@ int main(int argc, char* argv[])
             //std::cout << "Running benchmark..." << std::endl;
             // Call your benchmark function here
             bench();
+            return 0;
         }
     }
     while (true)

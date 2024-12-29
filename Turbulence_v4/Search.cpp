@@ -1621,10 +1621,11 @@ void bench()
 		}
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		parse_fen(bench_fens[i], board);
-
+		board.Zobrist_key = generate_hash_key(board);
+		board.history.push_back(board.Zobrist_key);
 
 		search_start = std::chrono::steady_clock::now();
-		IterativeDeepening(board, 10, -1, false, false);
+		IterativeDeepening(board, 11, -1, false, false);
 		search_end = std::chrono::steady_clock::now();
 
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
