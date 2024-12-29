@@ -11,7 +11,7 @@ Assuming you have clang++ compiler and Make, you can easily build the latest dev
 3.```Make```
 
 # estimated strength
-*rating with * means not tested on CCRL blitz list    
+rating with * means not tested on CCRL blitz list    
 v0.0.2 : 1700*    
 v0.0.3 : 2266    
 (next releasing coming soon)    
