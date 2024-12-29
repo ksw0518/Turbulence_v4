@@ -1900,13 +1900,17 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 
 
 		
-
-		if (elapsedMS > softbound)
+		if (softbound != -1)
 		{
-			//std::cout << elapsedMS << "\n";
-			//std::cout << Searchtime_MS << "\n";
-			break;
+			if (elapsedMS > softbound)
+			{
+				//std::cout << elapsedMS << "\n";
+				//std::cout << Searchtime_MS << "\n";
+				break;
+			}
+
 		}
+
 
 	}
 	//auto end = std::chrono::high_resolution_clock::now();
