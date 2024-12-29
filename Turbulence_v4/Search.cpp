@@ -1677,6 +1677,7 @@ void bench()
 		}
 	}
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
+
 }
 
 void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info)

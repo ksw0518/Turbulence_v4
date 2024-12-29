@@ -868,8 +868,12 @@ int main(int argc, char* argv[])
             // Run the benchmarking function
             //std::cout << "Running benchmark..." << std::endl;
             // Call your benchmark function here
+
             bench();
-            exit(0);
+            return EXIT_SUCCESS;
+
+
+            
            
         }
     }
