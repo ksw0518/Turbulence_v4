@@ -828,7 +828,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		//}
 		//if ((captureFlag & move.Type) == 0) continue;
 		
-		if (futilityMargin <= alpha && !SEE(board, move, 100))
+		if (futilityMargin <= alpha && !SEE(board, move, 50))
 		{
 			continue;
 		}
