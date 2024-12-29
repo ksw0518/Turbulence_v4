@@ -221,7 +221,7 @@ int Calculate_Hard_Bound(int time, int incre)
 }
 int Calculate_Soft_Bound(int time, int incre)
 {
-    return (time / 20 + incre / 2)*0.7;
+    return (time / 20 + incre / 2);
 }
 void Initialize_TT(int size)
 {
