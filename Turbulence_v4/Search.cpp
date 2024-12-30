@@ -172,6 +172,17 @@ bool is_quiet(int type)
 	}
 
 }
+bool is_capture(int type)
+{
+	if ((type & captureFlag) == 0) //quiet move
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
 void initializeLMRTable() {
 	for (int depth = 0; depth < 99; depth++) {
 		for (int move = 0; move < 256; move++) {
@@ -1078,7 +1089,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int static_eval = Evaluate(board);
 
 	int canPrune = !is_in_check(board) && !is_pv_node;
-	if (depth < 4 && canPrune)//rfp
+	if ((!is_ttmove_found || is_capture(ttEntry.best_move.Type)) && depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
 		int rfpThreshold = rfpMargin;
