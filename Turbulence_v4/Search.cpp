@@ -64,6 +64,8 @@ std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
+int RFP_MULTIPLIER_IMPROVING = 65;
+
 int RFP_MULTIPLIER = 85;
 int RFP_BASE = -49;
 
@@ -1112,7 +1114,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (improving)
 		{
-			rfpMargin = RFP_BASE + RFP_MULTIPLIER * (depth - 1);
+			rfpMargin = RFP_BASE + RFP_MULTIPLIER_IMPROVING * (depth - 1);
 		}
 		else
 		{
