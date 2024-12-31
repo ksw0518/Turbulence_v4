@@ -1042,6 +1042,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	}
 
+
+	if (is_pv_node && !is_ttmove_found && depth >= 5)
+	{
+		depth--;
+	}
 	
 	if (is_in_check(board))
 	{
@@ -1117,11 +1122,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	
 
-	
-	if (depth >= 4 && !is_ttmove_found)
-	{
-		depth--;
-	}
 	std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, false);
 
