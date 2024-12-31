@@ -1014,7 +1014,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		is_ttmove_found = true;
 		// Valid TT entry found
-		if (ply != 0 && ttEntry.depth >= depth)
+		if (!is_pv_node && ply != 0 && ttEntry.depth >= depth)
 		{
 			// Return immediately if exact score is found
 			if (ttEntry.node_type == ExactFlag)
