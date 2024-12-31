@@ -1041,6 +1041,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	}
 
+
+
 	
 	if (is_in_check(board))
 	{
@@ -1076,11 +1078,47 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	int static_eval = Evaluate(board);
+	Search_stack[ply].staticEval = static_eval;
+	Search_data* past_stack;
+	bool does_stack_exist = false;
+	bool improving = false;
+	if (ply >= 2)
+	{
+		if (Search_stack[ply - 2].staticEval != NO_EVAL)
+		{
+			past_stack = &Search_stack[ply - 2];
+			does_stack_exist = true;
+		}
+
+	}
+	else if (ply >= 4)
+	{
+		if (Search_stack[ply - 4].staticEval != NO_EVAL)
+		{
+			past_stack = &Search_stack[ply - 4];
+			does_stack_exist = true;
+		}
+	}
+	if (does_stack_exist && !is_in_check(board))
+	{
+		improving = static_eval > past_stack->staticEval;
+
+	}
 
 	int canPrune = !is_in_check(board) && !is_pv_node;
 	if (depth < 4 && canPrune)//rfp
 	{
-		int rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
+		int rfpMargin;
+
+		if (improving)
+		{
+			rfpMargin = RFP_BASE + RFP_MULTIPLIER * (depth - 1);
+		}
+		else
+		{
+			rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
+		}
+		
 		int rfpThreshold = rfpMargin;
 
 		if (static_eval - rfpThreshold >= beta)

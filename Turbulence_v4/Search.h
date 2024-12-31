@@ -22,6 +22,8 @@ extern int HISTORY_BASE;
 extern int HISTORY_MULTIPLIER;
 
 extern uint64_t TT_size;
+
+const int NO_EVAL = -10000000;
 struct Transposition_entry
 {
 	uint64_t zobrist_key;
@@ -35,7 +37,7 @@ struct Transposition_entry
 struct Search_data
 {
 	Move move;
-
+	int staticEval = NO_EVAL;
 };
 void initializeLMRTable();
 extern Transposition_entry* TranspositionTable;
