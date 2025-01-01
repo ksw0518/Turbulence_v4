@@ -1199,6 +1199,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//}
 			
 		}
+
 		if (depth <= Maximum_pvs_see_depth)
 		{
 			if (isQuiet)
