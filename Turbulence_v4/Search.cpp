@@ -827,6 +827,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		//	continue;
 		//}
 		//if ((captureFlag & move.Type) == 0) continue;
+		
 		if (!SEE(board, move, 0))
 		{
 			continue;
