@@ -1182,23 +1182,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 
-		bool isNotMated = alpha > -49000 + 99;
-		int lmr_R = lmrTable[depth][legal_moves + 1];
-		int lmr_depth = std::max(1, depth - 1 - lmr_R);
-		if (ply != 0 && isQuiet && isNotMated)
-		{
-			if (legal_moves >= lmp_threshold)
-			{
-				skip_quiets = true;
-			}
-			//bool is_checked = is_in_check(board);
-			////int lmr_depth = std::max(1, depth - (lmrTable[depth][legal_moves]));
-			//if (!is_pv_node && ply != 0 && isNotMated && depth < 4 && !is_checked && isQuiet && (static_eval + (depth * 177 + 133)) <= alpha)
-			//{
-			//	skip_quiets = true;
-			//}
-			
-		}
+
 
 		if (depth <= Maximum_pvs_see_depth)
 		{
@@ -1216,6 +1200,23 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					continue;
 				}
 			}
+		}
+		bool isNotMated = alpha > -49000 + 99;
+		int lmr_R = lmrTable[depth][legal_moves + 1];
+		int lmr_depth = std::max(1, depth - 1 - lmr_R);
+		if (ply != 0 && isQuiet && isNotMated)
+		{
+			if (!isCurrentInCheck && legal_moves >= lmp_threshold)
+			{
+				skip_quiets = true;
+			}
+			//bool is_checked = is_in_check(board);
+			////int lmr_depth = std::max(1, depth - (lmrTable[depth][legal_moves]));
+			//if (!is_pv_node && ply != 0 && isNotMated && depth < 4 && !is_checked && isQuiet && (static_eval + (depth * 177 + 133)) <= alpha)
+			//{
+			//	skip_quiets = true;
+			//}
+
 		}
 		// 
 		// 
