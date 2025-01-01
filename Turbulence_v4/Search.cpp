@@ -1191,7 +1191,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skip_quiets = true;
 			}
-			else if (lmr_depth <= 3 && static_eval + lmr_depth * 200 + 150 <= alpha)
+			else if (lmr_depth <= 2 && static_eval + lmr_depth * 200 + 150 <= alpha)
 			{
 				skip_quiets = true;
 			}
