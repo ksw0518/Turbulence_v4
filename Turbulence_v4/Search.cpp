@@ -1184,7 +1184,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool isNotMated = alpha > -49000 + 99;
 		int lmr_R = lmrTable[depth][legal_moves + 1];
 		int lmr_depth = std::max(1, depth - 1 - lmr_R);
-		if (ply != 0 && isQuiet && isNotMated && !isCurrentInCheck)
+		if (ply != 0 && isQuiet && isNotMated)
 		{
 			if (legal_moves >= lmp_threshold)
 			{
