@@ -1086,7 +1086,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (static_eval - rfpThreshold >= beta)
 		{
-			return (static_eval + beta) / 2;
+			return static_eval - rfpThreshold;
 		}
 	}
 	if (!is_pv_node && doNMP)
@@ -1326,7 +1326,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 			if (!is_pv_node && quiet_moves >= 4)
 			{
-				reduction++;
+				reduction += 1 + (depth / 10);
 			}
 
 			//asdf
