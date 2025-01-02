@@ -111,7 +111,7 @@ int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 
 
-constexpr int CORRHIST_WEIGHT_SCALE = 256;
+constexpr int CORRHIST_WEIGHT_SCALE = 1024;
 constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
