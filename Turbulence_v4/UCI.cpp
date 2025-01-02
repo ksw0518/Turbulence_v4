@@ -827,6 +827,7 @@ static void InitAll()
     init_sliders_attacks(0);
     init_tables();
     init_random_keys();
+    
 }
 int main(int argc, char* argv[])
 {

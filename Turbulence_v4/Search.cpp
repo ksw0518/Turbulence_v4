@@ -156,7 +156,9 @@ constexpr int Minimum_lmr_depth = 3;
 constexpr int Maximum_pvs_see_depth = 8;
 int lmrTable[99][256];
 
-
+constexpr int HFLOWER = 0;
+constexpr int HFEXACT = 1;
+constexpr int HFUPPER = 2;
 //static inline void enable_pv_scoring(std::vector<Move> &move_list)
 //{
 //	follow_pv = 0;
@@ -181,12 +183,50 @@ bool is_quiet(int type)
 	}
 
 }
-void initializeLMRTable() {
-	for (int depth = 0; depth < 99; depth++) {
-		for (int move = 0; move < 256; move++) {
+void initializeLMRTable() 
+{
+	for (int depth = 0; depth < 99; depth++) 
+	{
+		for (int move = 0; move < 256; move++)
+		{
 			lmrTable[depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
 		}
 	}
+	for (int ply = 0; ply < 99; ply++)
+	{
+		killer_moves[0][ply] = Move();
+		killer_moves[1][ply] = Move();
+	}
+	for (int from = 0; from < 64; ++from)
+	{
+		for (int to = 0; to < 64; ++to)
+		{
+			history_moves[0][from][to] = 0;
+			history_moves[1][from][to] = 0;
+			//std::cout << to<<"\n";
+			//history_moves[piece][square] = 0;
+		}
+	}
+
+
+	for (int piecea = 0; piecea < 12; piecea++)
+	{
+		for (int toa = 0; toa < 64; toa++)
+		{
+			for (int pieceb = 0; pieceb < 12; pieceb++)
+			{
+				for (int tob = 0; tob < 64; tob++)
+				{
+					Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
+				}
+			}
+		}
+	}
+	memset(CaptureHistory, 0, sizeof(CaptureHistory));
+	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
+
+
+
 }
 int scaledBonus(int score, int bonus)
 {
@@ -206,7 +246,7 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 {
 	uint64_t pawnKey = generate_Pawn_Hash(board);
 	const int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
-	int mate_found = -49000 + 99;
+	int mate_found = 49000 - 99;
 	return std::clamp(rawEval + entry / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void update_history(int stm, int from, int to, int bonus)
@@ -252,7 +292,8 @@ int getContinuationHistoryScore(Move& move) {
 	//return getSingleContinuationHistoryScore(move, 2);
 	//+ GetSingleCHScore(sd, ss, move, 4);
 }
-void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet) {
+void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet) 
+{
 	if (ply >= offSet) {
 		Move previousMove = Search_stack[ply - offSet].move;
 
@@ -1535,6 +1576,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 					
 				}
+				int bound = bestValue >= beta ? HFLOWER : alpha != alpha_org ? HFEXACT : HFUPPER;
+				if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || !is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
+				{
+					update_Pawn_Corrhist(board, depth, bestValue - static_eval);
+				}
 				//update_history(board.side, move.From, move.To, depth*depth);
 			}
 			//else
@@ -1649,6 +1695,8 @@ void bench()
 			}
 		}
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
+		memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
+
 		parse_fen(bench_fens[i], board);
 		board.Zobrist_key = generate_hash_key(board);
 		board.history.push_back(board.Zobrist_key);
