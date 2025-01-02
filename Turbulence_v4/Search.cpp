@@ -111,7 +111,7 @@ int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 
 
-constexpr int CORRHIST_WEIGHT_SCALE = 1024;
+constexpr int CORRHIST_WEIGHT_SCALE = 256;
 constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
@@ -238,7 +238,7 @@ void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 	uint64_t pawnKey = generate_Pawn_Hash(board);
 	int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth * depth + 2 * depth + 1, 128);
+	const int newWeight = std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
