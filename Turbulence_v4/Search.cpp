@@ -859,6 +859,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int score = 0;
 
 	int evaluation = Evaluate(board);
+	evaluation = adjustEvalWithCorrHist(board, evaluation);
 
 	if (evaluation >= beta)
 	{
@@ -1577,7 +1578,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					
 				}
 				int bound = bestValue >= beta ? HFLOWER : alpha != alpha_org ? HFEXACT : HFUPPER;
-				if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || !is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
+				if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
 				{
 					update_Pawn_Corrhist(board, depth, bestValue - static_eval);
 				}
