@@ -162,7 +162,32 @@ uint64_t generate_hash_key(Board& board)
     }
     return final_key;
 }
+uint64_t generate_Pawn_Hash(Board &board)
+{
+    uint64_t final_key = 0ULL;
+    uint64_t bitboard;
 
+    bitboard = board.bitboards[P];
+
+    while (bitboard)
+    {
+        int square = get_ls1b(bitboard);
+
+        final_key ^= piece_keys[P][square];
+        Pop_bit(bitboard, square);
+    }
+
+    bitboard = board.bitboards[p];
+
+    while (bitboard)
+    {
+        int square = get_ls1b(bitboard);
+
+        final_key ^= piece_keys[p][square];
+        Pop_bit(bitboard, square);
+    }
+    return final_key;
+}
 
 static int bishop_relevant_bits[] =
 {

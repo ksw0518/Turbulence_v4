@@ -109,6 +109,13 @@ bool Print_Root = false;
 int seldepth = 0;
 int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
+
+
+constexpr int CORRHIST_WEIGHT_SCALE = 1024;
+constexpr int CORRHIST_GRAIN = 256;
+constexpr int CORRHIST_SIZE = 16384;
+constexpr int CORRHIST_MAX = 16384;
+
 Move killer_moves[2][99];
 Move counter_move[64][64];
 
@@ -117,6 +124,8 @@ int history_moves[2][64][64];
 int CaptureHistory[12][64][12];
 
 int Oneply_ContHist[12][64][12][64];
+
+int pawn_Corrhist[2][CORRHIST_SIZE];
 
 //struct Transposition_entry
 //{
@@ -182,6 +191,23 @@ void initializeLMRTable() {
 int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
+}
+
+void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
+{
+	uint64_t pawnKey = generate_Pawn_Hash(board);
+	int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
+	const int scaledDiff = diff * CORRHIST_GRAIN;
+	const int newWeight = std::min(depth * depth + 2 * depth + 1, 128);
+	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
+}
+int adjustEvalWithCorrHist(Board& board, const int rawEval)
+{
+	uint64_t pawnKey = generate_Pawn_Hash(board);
+	const int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
+	int mate_found = -49000 + 99;
+	return std::clamp(rawEval + entry / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void update_history(int stm, int from, int to, int bonus)
 {
@@ -1075,7 +1101,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//}
 
 
-	int static_eval = Evaluate(board);
+	int raw_eval = Evaluate(board);
+
+	int static_eval = adjustEvalWithCorrHist(board, raw_eval);
 
 	int canPrune = !is_in_check(board) && !is_pv_node;
 	if (depth < 4 && canPrune)//rfp
