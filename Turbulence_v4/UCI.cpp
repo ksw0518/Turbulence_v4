@@ -217,11 +217,11 @@ static uint64_t Perft(Board& board, int depth)
 
 int Calculate_Hard_Bound(int time, int incre)
 {
-    return time / 20 + incre / 2;
+    return time / 2;
 }
 int Calculate_Soft_Bound(int time, int incre)
 {
-    return (time / 20 + incre / 2);
+    return  0.6 * (static_cast<float>(time) / static_cast<float>(20) + static_cast<float>(incre) * static_cast<float>(3) / static_cast<float>(4));
 }
 void Initialize_TT(int size)
 {
