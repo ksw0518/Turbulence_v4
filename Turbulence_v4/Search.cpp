@@ -111,7 +111,7 @@ int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 
 
-constexpr int CORRHIST_WEIGHT_SCALE = 1024;
+constexpr int CORRHIST_WEIGHT_SCALE = 256;
 constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
@@ -237,17 +237,26 @@ void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 {
 	uint64_t pawnKey = generate_Pawn_Hash(board);
 	int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
-	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
-	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
+	int weight = std::min(1 + depth, 16);
+	int scaledBonus = diff * CORRHIST_WEIGHT_SCALE;
+
+	int newValue = (entry * (256 - weight) + scaledBonus * weight);
+	entry = newValue;
+	/*const int scaledDiff = diff * CORRHIST_GRAIN;
+	const int newWeight = std::min(depth + 1, 16);*/
+	//entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	//entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
 int adjustEvalWithCorrHist(Board& board, const int rawEval)
 {
 	uint64_t pawnKey = generate_Pawn_Hash(board);
 	const int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
-	return std::clamp(rawEval + entry / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
+	//return std::clamp(rawEval + entry / 256 * CORRHIST_WEIGHT_SCALE, -mate_found + 1, mate_found - 1);*/
+	int correction = entry;
+	int corrected = rawEval + entry / (256 * CORRHIST_WEIGHT_SCALE);
+	return std::clamp(corrected, -mate_found, mate_found);
+
 }
 void update_history(int stm, int from, int to, int bonus)
 {
