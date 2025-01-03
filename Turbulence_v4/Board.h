@@ -13,7 +13,6 @@ public:
     uint64_t castle;
     int halfmove;
     uint64_t Zobrist_key;
-    uint64_t Pawn_key;
 
     std::vector<uint64_t> history;
 

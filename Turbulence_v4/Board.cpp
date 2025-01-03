@@ -6,7 +6,7 @@
 #include "const.h"
 #include <iostream>
 Board::Board()
-    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0), Pawn_key(0){
+    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0){
     // Initialize arrays
     for (int i = 0; i < 12; ++i) {
         bitboards[i] = 0;

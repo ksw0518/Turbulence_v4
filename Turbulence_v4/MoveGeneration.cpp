@@ -1679,12 +1679,11 @@ void MakeMove(Board& board, Move move)
 
         //remove previous place
         board.Zobrist_key ^= piece_keys[move.Piece][move.From];
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
 
         board.mailbox[move.To] = move.Piece;
 
         board.Zobrist_key ^= piece_keys[move.Piece][move.To];
-        board.Pawn_key ^= piece_keys[move.Piece][move.To];
+
         //update enpassent square
 
         if (side == White)
@@ -1731,12 +1730,6 @@ void MakeMove(Board& board, Move move)
 
         board.mailbox[move.To] = move.Piece;
         board.Zobrist_key ^= piece_keys[move.Piece][move.To];
-
-        if (move.Piece == P || move.Piece == p)
-        {
-            board.Pawn_key ^= piece_keys[move.Piece][move.From];
-            board.Pawn_key ^= piece_keys[move.Piece][move.To];
-        }
         //update enpassent square
         //if (move.Type == double_pawn_push)
         //{
@@ -1816,18 +1809,8 @@ void MakeMove(Board& board, Move move)
                 }
             }
         }
-
         //update piece bitboard
         int captured_piece = board.mailbox[move.To];
-        if (captured_piece == P || captured_piece == p)//pawn is being captured, need to update pawn key
-        {
-            board.Pawn_key ^= piece_keys[captured_piece][move.To];
-        }
-        if (move.Piece == P || move.Piece == p)//pawn is capturing something, need to update pawn key
-        {
-            board.Pawn_key ^= piece_keys[move.Piece][move.From];
-            board.Pawn_key ^= piece_keys[move.Piece][move.To];
-        }
         //PrintBoards(board);
         //print_mailbox(board.mailbox);
         //printMove(move);
@@ -2024,7 +2007,6 @@ void MakeMove(Board& board, Move move)
     }
     case queen_promo:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         board.bitboards[move.Piece] &= ~(1ULL << move.From);
         board.bitboards[get_piece(q, side)] |= (1ULL << move.To);
 
@@ -2038,12 +2020,8 @@ void MakeMove(Board& board, Move move)
         //update mailbox
         board.mailbox[move.From] = NO_PIECE;
         board.Zobrist_key ^= piece_keys[move.Piece][move.From];
-        
         board.mailbox[move.To] = get_piece(q, side);
         board.Zobrist_key ^= piece_keys[get_piece(q, side)][move.To];
-
-       
-        
         //Zobrist ^= PIECES[move.Piece][move.From];
         //Zobrist ^= PIECES[get_piece(q, side)][move.To];
         board.side = 1 - board.side;
@@ -2057,7 +2035,6 @@ void MakeMove(Board& board, Move move)
     }
     case rook_promo:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         board.bitboards[move.Piece] &= ~(1ULL << move.From);
         board.bitboards[get_piece(r, side)] |= (1ULL << move.To);
 
@@ -2086,7 +2063,6 @@ void MakeMove(Board& board, Move move)
     }
     case bishop_promo:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         board.bitboards[move.Piece] &= ~(1ULL << move.From);
         board.bitboards[get_piece(b, side)] |= (1ULL << move.To);
 
@@ -2117,7 +2093,6 @@ void MakeMove(Board& board, Move move)
     }
     case knight_promo:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         board.bitboards[move.Piece] &= ~(1ULL << move.From);
         board.bitboards[get_piece(n, side)] |= (1ULL << move.To);
 
@@ -2147,7 +2122,6 @@ void MakeMove(Board& board, Move move)
     }
     case queen_promo_capture:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         if (board.mailbox[move.To] == get_piece(r, 1 - side))
         {
             if (getFile(move.To) == 0) // a file rook captured; delete queen castle
@@ -2239,7 +2213,6 @@ void MakeMove(Board& board, Move move)
     }
     case rook_promo_capture:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         if (board.mailbox[move.To] == get_piece(r, 1 - side))
         {
             if (getFile(move.To) == 0) // a file rook captured; delete queen castle
@@ -2332,7 +2305,6 @@ void MakeMove(Board& board, Move move)
     }
     case bishop_promo_capture:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         if (board.mailbox[move.To] == get_piece(r, 1 - side))
         {
             if (getFile(move.To) == 0) // a file rook captured; delete queen castle
@@ -2426,7 +2398,6 @@ void MakeMove(Board& board, Move move)
     }
     case knight_promo_capture:
     {
-        board.Pawn_key ^= piece_keys[move.Piece][move.From];
         if (board.mailbox[move.To] == get_piece(r, 1 - side))
         {
             if (getFile(move.To) == 0) // a file rook captured; delete queen castle
@@ -2552,15 +2523,12 @@ void MakeMove(Board& board, Move move)
         //update mailbox
 
         board.Zobrist_key ^= piece_keys[board.mailbox[move.From]][move.From];
-        board.Pawn_key ^= piece_keys[board.mailbox[move.From]][move.From];
         board.mailbox[move.From] = NO_PIECE;
         
         board.mailbox[move.To] = move.Piece;
         board.Zobrist_key ^= piece_keys[move.Piece][move.To];
-        board.Pawn_key ^= piece_keys[move.Piece][move.To];
 
         board.Zobrist_key ^= piece_keys[board.mailbox[capture_square]][capture_square];
-        board.Pawn_key ^= piece_keys[board.mailbox[capture_square]][capture_square];
         board.mailbox[capture_square] = NO_PIECE;
         
         board.side = 1 - board.side;
