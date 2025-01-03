@@ -1580,11 +1580,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 				//update_history(board.side, move.From, move.To, depth*depth);
 			}
-			int bound = bestValue >= beta ? HFLOWER : alpha != alpha_org ? HFEXACT : HFUPPER;
-			if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
-			{
-				update_Pawn_Corrhist(board, depth, bestValue - static_eval);
-			}
+
 			//else
 			//{
 			//	int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
@@ -1634,7 +1630,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//	ttEntry.best_move = Move(0, 0, 0, 0);
 	//}
 	
-
+	int bound = bestValue >= beta ? HFLOWER : alpha != alpha_org ? HFEXACT : HFUPPER;
+	if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
+	{
+		update_Pawn_Corrhist(board, depth, bestValue - static_eval);
+	}
 
 	TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
 
