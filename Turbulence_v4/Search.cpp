@@ -1170,7 +1170,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				uint64_t lzob = board.Zobrist_key;
 				ply++;
 				Make_Nullmove(board);
-				int score = -Negamax(board, depth - 1 - 2, -beta, -beta + 1, false, !cutnode);
+				int R = 3 + depth / 3;
+				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
 
 				Unmake_Nullmove(board);
 				ply--;
