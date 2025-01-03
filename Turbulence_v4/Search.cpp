@@ -235,8 +235,7 @@ int scaledBonus(int score, int bonus)
 
 void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 {
-	//uint64_t pawnKey = generate_Pawn_Hash(board);
-	uint64_t pawnKey = board.Pawn_key;
+	uint64_t pawnKey = generate_Pawn_Hash(board);
 	int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
@@ -245,8 +244,7 @@ void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 }
 int adjustEvalWithCorrHist(Board& board, const int rawEval)
 {
-	//uint64_t pawnKey = generate_Pawn_Hash(board);
-	uint64_t pawnKey = board.Pawn_key;
+	uint64_t pawnKey = generate_Pawn_Hash(board);
 	const int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 	return std::clamp(rawEval + entry / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
@@ -884,7 +882,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	int pvNode = beta - alpha > 1;
 	int futilityMargin = evaluation + 120;
-	uint64_t last_pawnkey = board.Pawn_key;
 	for (Move& move : moveList)
 	{
 		if (is_quiet(move.Type)) continue; //skip non capture moves
@@ -929,7 +926,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
-			board.Pawn_key = last_pawnkey;
 			continue;
 		}
 
@@ -962,7 +958,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
-			board.Pawn_key = last_pawnkey;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -973,7 +968,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
-		board.Pawn_key = last_pawnkey;
 		if (score > bestValue)
 		{
 			bestValue = score;
@@ -1081,7 +1075,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 	int score = 0;
 	int ttFlag = AlphaFlag;
-
+	uint64_t last_zobrist = board.Zobrist_key;
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	// Only check TT for depths greater than zero (ply != 0)
@@ -1246,9 +1240,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	Move bestmove = Move(0, 0, 0, 0);
 	int quiet_moves = 0;
-
-	uint64_t last_zobrist = board.Zobrist_key;
-	uint64_t last_pawnkey = board.Pawn_key;
 	for (Move& move : moveList)
 	{
 		
@@ -1357,7 +1348,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.history.pop_back();
 			board.last_irreversible_ply = last_irreversible;
 			board.Zobrist_key = last_zobrist;
-			board.Pawn_key = last_pawnkey;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
@@ -1463,7 +1453,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 			board.history.pop_back();
 			board.last_irreversible_ply = last_irreversible;
-			board.Pawn_key = last_pawnkey;
+
 			board.Zobrist_key = last_zobrist;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
@@ -1489,7 +1479,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.history.pop_back();
 		board.last_irreversible_ply = last_irreversible;
 		board.Zobrist_key = last_zobrist;
-		board.Pawn_key = last_pawnkey;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
@@ -1712,7 +1701,6 @@ void bench()
 
 		parse_fen(bench_fens[i], board);
 		board.Zobrist_key = generate_hash_key(board);
-		board.Pawn_key = generate_Pawn_Hash(board);
 		board.history.push_back(board.Zobrist_key);
 
 		search_start = std::chrono::steady_clock::now();

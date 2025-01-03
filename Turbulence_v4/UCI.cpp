@@ -164,9 +164,6 @@ static uint64_t Perft(Board& board, int depth)
         int captured_piece = board.mailbox[move.To];
 
         uint64_t last_zobrist = board.Zobrist_key;
-        uint64_t last_pawnkey = board.Pawn_key;
-
-        
         //std::vector<uint64_t> last_history(board.history);
 
 
@@ -183,18 +180,7 @@ static uint64_t Perft(Board& board, int depth)
             std::cout << "ep " << CoordinatesToChessNotation(board.enpassent)<< board.enpassent;
             std::cout << "\n\n";
         }*/
-        uint64_t pawn_key_generated_from_scratch = generate_Pawn_Hash(board);
 
-        if (board.Pawn_key != pawn_key_generated_from_scratch)
-        {
-            std::cout << last_pawnkey << "\n";
-            std::cout << "CRITICAL ERROR: pawn key doesn't match\n";
-            std::cout << pawn_key_generated_from_scratch<<"\n";
-            std::cout << board.Pawn_key << "\n";
-            printMove(move);
-            //std::cout << "ep " << CoordinatesToChessNotation(board.enpassent) << board.enpassent;
-            std::cout << "\n\n";
-        }
 
         //u64 nodes_added
         if (isMoveValid(move, board))//isMoveValid(move, board)
@@ -222,7 +208,6 @@ static uint64_t Perft(Board& board, int depth)
         board.castle = lastCastle;
         board.side = lastside;
         board.Zobrist_key = last_zobrist;
-        board.Pawn_key = last_pawnkey;
         //Zobrist = lastZobrist;
 
     }
@@ -331,7 +316,6 @@ void ProcessUCI(std::string input)
 
                 parse_fen(start_pos, main_board);
                 main_board.Zobrist_key = generate_hash_key(main_board);
-                main_board.Pawn_key = generate_Pawn_Hash(main_board);
                 main_board.history.push_back(main_board.Zobrist_key);
             }
             else
@@ -339,7 +323,6 @@ void ProcessUCI(std::string input)
                 //std::cout << ("fuck");
                 parse_fen(start_pos, main_board);
                 main_board.Zobrist_key = generate_hash_key(main_board);
-                main_board.Pawn_key = generate_Pawn_Hash(main_board);
                 main_board.history.push_back(main_board.Zobrist_key);
 
                 std::string moves_in_string = TryGetLabelledValue(input, "moves", position_commands);
@@ -473,14 +456,12 @@ void ProcessUCI(std::string input)
             {
                 parse_fen(fen, main_board);
                 main_board.Zobrist_key = generate_hash_key(main_board);
-                main_board.Pawn_key = generate_Pawn_Hash(main_board);
                 main_board.history.push_back(main_board.Zobrist_key);
             }
             else
             {
                 parse_fen(fen, main_board);
                 main_board.Zobrist_key = generate_hash_key(main_board);
-                main_board.Pawn_key = generate_Pawn_Hash(main_board);
                 main_board.history.push_back(main_board.Zobrist_key);
                 std::string moves_in_string = TryGetLabelledValue(input, "moves", position_commands);
                 if (moves_in_string != "") // move is not empty
@@ -596,7 +577,6 @@ void ProcessUCI(std::string input)
         {
             parse_fen(kiwipete, main_board);
             main_board.Zobrist_key = generate_hash_key(main_board);
-            main_board.Pawn_key = generate_Pawn_Hash(main_board);
             main_board.history.push_back(main_board.Zobrist_key);
         }
         //std::cout << generate_Pawn_Hash(main_board);
@@ -858,7 +838,6 @@ int main(int argc, char* argv[])
     
     parse_fen(start_pos, main_board);
     main_board.Zobrist_key = generate_hash_key(main_board);
-    main_board.Pawn_key = generate_Pawn_Hash(main_board);
     main_board.history.push_back(main_board.Zobrist_key);
     std::vector<Move> move_list;
     Generate_Legal_Moves(move_list, main_board, false);
