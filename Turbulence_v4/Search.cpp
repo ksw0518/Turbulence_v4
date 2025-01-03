@@ -1363,7 +1363,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.side = lastside;
 			continue;
 		}
-		
+
 		if (isQuiet)
 		{
 			Quiet_moves_list.push_back(move);
