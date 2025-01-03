@@ -111,7 +111,7 @@ int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move last_bestMove[99];
 
 
-constexpr int CORRHIST_WEIGHT_SCALE = 1024;
+constexpr int CORRHIST_WEIGHT_SCALE = 256;
 constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
@@ -1577,12 +1577,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 					
 				}
-				int bound = bestValue >= beta ? HFLOWER : alpha != alpha_org ? HFEXACT : HFUPPER;
-				if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
-				{
-					update_Pawn_Corrhist(board, depth, bestValue - static_eval);
-				}
+
 				//update_history(board.side, move.From, move.To, depth*depth);
+			}
+			int bound = bestValue >= beta ? HFLOWER : alpha != alpha_org ? HFEXACT : HFUPPER;
+			if (!is_in_check(board) && (bestmove == Move(0, 0, 0, 0) || is_quiet(bestmove.Type)) && !(bound == HFLOWER && bestValue <= static_eval) && !(bound == HFUPPER && bestValue >= static_eval))
+			{
+				update_Pawn_Corrhist(board, depth, bestValue - static_eval);
 			}
 			//else
 			//{
