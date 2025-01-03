@@ -579,7 +579,7 @@ void ProcessUCI(std::string input)
             main_board.Zobrist_key = generate_hash_key(main_board);
             main_board.history.push_back(main_board.Zobrist_key);
         }
-
+        //std::cout << generate_Pawn_Hash(main_board);
 
     }
     else if (main_command == "perft")
@@ -827,6 +827,7 @@ static void InitAll()
     init_sliders_attacks(0);
     init_tables();
     init_random_keys();
+    
 }
 int main(int argc, char* argv[])
 {

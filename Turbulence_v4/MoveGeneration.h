@@ -115,3 +115,4 @@ bool isMoveValid(Move& move, Board& board);
 void init_random_keys();
 
 uint64_t generate_hash_key(Board& board);
+uint64_t generate_Pawn_Hash(Board& board);
