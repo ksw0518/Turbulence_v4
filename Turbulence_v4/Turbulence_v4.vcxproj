@@ -130,7 +130,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <CompileAs>Default</CompileAs>
       <ShowIncludes>true</ShowIncludes>
-      <AdditionalOptions>-Ofast-march=native -flto %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-march=native -flto %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
