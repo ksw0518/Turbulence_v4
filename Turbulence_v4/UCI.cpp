@@ -260,7 +260,8 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
-
+        is_Pretty_Printing = false;
+        
         //for (int i = 0; i < option_name.size(); i++)
         //{
         //    std::cout << "option name " << option_name[i];

@@ -22,6 +22,8 @@ extern int HISTORY_BASE;
 extern int HISTORY_MULTIPLIER;
 
 extern uint64_t TT_size;
+
+extern bool is_Pretty_Printing;
 struct Transposition_entry
 {
 	uint64_t zobrist_key;
