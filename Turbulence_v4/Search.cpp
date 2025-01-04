@@ -1899,14 +1899,14 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 		setColor(ConsoleColor::BrightRed);
 	}
 	std::cout  << window_change;
-	setColor(ConsoleColor::BrightCyan);
-	std::string aspiration_window = " (" + std::to_string(asp_alpha) + "," + std::to_string(asp_beta) + ") ";
-	int space = std::max(0, 12 - static_cast<int>(aspiration_window.length()));
-	for (int i = 0; i < space; i++)
-	{
-		std::cout << " ";
-	}
-	std::cout << aspiration_window;
+	//setColor(ConsoleColor::BrightCyan);
+	//std::string aspiration_window = " (" + std::to_string(asp_alpha) + "," + std::to_string(asp_beta) + ") ";
+	//int space = std::max(0, 12 - static_cast<int>(aspiration_window.length()));
+	//for (int i = 0; i < space; i++)
+	//{
+	//	std::cout << " ";
+	//}
+	//std::cout << aspiration_window;
 	//std::cout << " (" << asp_alpha << "," << asp_beta << ") ";
 
 	if (std::abs(score) > 40000)
