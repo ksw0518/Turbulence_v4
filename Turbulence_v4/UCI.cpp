@@ -809,7 +809,7 @@ void ProcessUCI(std::string input)
     }
     else if(main_command == "bench")
     {
-        //bench();
+        bench();
     }
 
 }
@@ -871,7 +871,7 @@ int main(int argc, char* argv[])
             // Run the benchmarking function
             //std::cout << "Running benchmark..." << std::endl;
             // Call your benchmark function here
-
+            bench();
             //bench();
             return EXIT_SUCCESS;
 

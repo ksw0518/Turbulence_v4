@@ -42,7 +42,8 @@ extern int HISTORY_MULTIPLIER;
 //extern uint64_t TT_size;
 // 
 // 
-void startSearch(const Board& pos, int hardBound = -1, int softBound = -1, int maxDepth = 256);
+void bench();
+void startSearch(const Board& pos, int hardBound = -1, int softBound = -1, int maxDepth = 256, bool printInfo = true);
 //
 //extern bool is_Pretty_Printing;
 //struct Transposition_entry
