@@ -662,7 +662,7 @@ void ProcessUCI(std::string input)
                     hard_bound = Calculate_Hard_Bound(btime, binc);
                     soft_bound = Calculate_Soft_Bound(btime, binc);
                 }
-                
+                 
                 startSearch(main_board, hard_bound, -1, MAXDEPTH);
                 //IterativeDeepening(main_board, 64, hard_bound, false, true, soft_bound);
             }
