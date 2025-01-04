@@ -14,9 +14,10 @@ Assuming you have clang++ compiler and Make, you can easily build the latest dev
 rating with * means not tested on CCRL blitz list    
 v0.0.2 : 1700*    
 v0.0.3 : 2266    
+v0.0.4 : 2650*
 (next releasing coming soon)    
 >>>>>>>>>>>>>>>>>>>>>>>>>>>
-dev    : 2500~2600*    
+dev    : 2600~2700*    
 
 # additional info
 I'm trying to go 3000 with current eval, which is pesto + bishop pair bonus
