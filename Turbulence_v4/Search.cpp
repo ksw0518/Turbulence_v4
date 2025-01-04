@@ -202,7 +202,7 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 	std::vector<Move> MoveList;
 	MoveList.reserve(256);
 	Generate_Legal_Moves(MoveList, pos, false);
-	//sort_moves(MoveList, pos);
+	sort_moves(MoveList, pos);
 
 
 	
