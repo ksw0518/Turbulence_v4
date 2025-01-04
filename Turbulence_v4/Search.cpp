@@ -276,6 +276,12 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 		}
 
 		int depthToSearch = depth - 1;
+		int elapsedMS = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - SearchStartTime).count());
+
+		if (elapsedMS >= hardBound)
+		{
+			isSearchStopped = true;
+		}
 		int childValue = -NegaMax(pos, depthToSearch, -beta, -alpha, hardBound);
 		TotalNodes++;
 
