@@ -255,12 +255,13 @@ void ProcessUCI(std::string input)
     if (main_command == "uci")
     {
         
-        std::cout << "id name Turbulence_v4 v0.0.3" << "\n";;
+        std::cout << "id name Turbulence_v4 v0.0.4" << "\n";;
         std::cout << "id author ksw0518" << "\n";;
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
-
+        is_Pretty_Printing = false;
+        
         //for (int i = 0; i < option_name.size(); i++)
         //{
         //    std::cout << "option name " << option_name[i];

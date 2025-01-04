@@ -5,6 +5,8 @@
 #include "Search.h"
 #include "BitManipulation.h"
 #include "const.h"
+#define NOMINMAX
+#include <windows.h>
 #include <vector>
 #include <iostream>
 #include <chrono>
@@ -12,6 +14,24 @@
 #include <algorithm>
 
 
+enum class ConsoleColor {
+	Black = 0,
+	Blue = 1,
+	Green = 2,
+	Cyan = 3,
+	Red = 4,
+	Magenta = 5,
+	Yellow = 6,
+	White = 7,
+	Gray = 8,
+	BrightBlue = 9,
+	BrightGreen = 10,
+	BrightCyan = 11,
+	BrightRed = 12,
+	BrightMagenta = 13,
+	BrightYellow = 14,
+	BrightWhite = 15
+};
 std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
 	"4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
@@ -159,6 +179,8 @@ int lmrTable[99][256];
 constexpr int HFLOWER = 0;
 constexpr int HFEXACT = 1;
 constexpr int HFUPPER = 2;
+
+bool is_Pretty_Printing = true;
 //static inline void enable_pv_scoring(std::vector<Move> &move_list)
 //{
 //	follow_pv = 0;
@@ -226,7 +248,7 @@ void initializeLMRTable()
 	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 
 
-
+	is_Pretty_Printing = true;
 }
 int scaledBonus(int score, int bonus)
 {
@@ -1759,6 +1781,250 @@ void bench()
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 
 }
+void setColor(ConsoleColor color) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hConsole, static_cast<WORD>(color));
+}
+void print_UCI(Move (&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps)
+{
+	bestmove = pv_table[0][0];
+	int hashfull = get_hashfull();
+	last_bestMove[curr_depth - 1] = bestmove;
+	std::cout << "info depth " << curr_depth;
+	std::cout << " seldepth " << seldepth;
+	if (std::abs(score) > 40000)
+	{
+		int mate_ply = 49000 - std::abs(score);
+		int mate_fullmove = std::ceil(static_cast<double>(mate_ply) / 2);
+
+		if (score < 0)
+		{
+			mate_fullmove *= -1;
+		}
+		std::cout << " score mate " << mate_fullmove;
+
+	}
+	else
+	{
+		std::cout << " score cp " << score;
+	}
+
+	std::cout << " time " << static_cast<int>(std::round(elapsedMS)) << " nodes " << negamax_nodecount << " nps " << static_cast<int>(std::round(nps)) << " hashfull " << hashfull << " pv " << std::flush;
+	for (int count = 0; count < pv_length[0]; count++)
+	{
+		printMove(pv_table[0][count]);
+		std::cout << " ";
+	}
+	std::cout << "\n";
+}
+void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps, int window_change, int asp_alpha, int asp_beta)
+{
+	setColor(ConsoleColor::White);
+	std::cout << "depth ";
+	setColor(ConsoleColor::BrightBlue);
+	if (curr_depth < 10)
+	{
+		std::cout << " ";
+	}
+
+	std::cout<< curr_depth;
+	setColor(ConsoleColor::White);
+	std::cout << " / ";
+	setColor(ConsoleColor::BrightBlue);
+
+
+	if (seldepth < 10)
+	{
+		std::cout << " ";
+	}
+	std::cout<< seldepth;
+
+	setColor(ConsoleColor::White);
+	std::cout << " TT ";
+	setColor(ConsoleColor::Green);
+	int hashful = get_hashfull() / 10;
+	if (hashful < 10)
+	{
+		std::cout << "  ";
+	}
+	else if (hashful < 100)
+	{
+		std::cout << " ";
+	}
+	std::cout << hashful;
+	std::cout << "% ";
+
+	setColor(ConsoleColor::Blue);
+	std::cout << " ";
+	//if((std::round((elapsedMS / 1000) * 10)) / 10))
+	int time = std::round((elapsedMS / 1000));
+	if (time < 10)
+	{
+		std::cout << "   ";
+	}
+	else if (time < 100)
+	{
+		std::cout << "  ";
+	}
+	else if (time < 1000)
+	{
+		std::cout << " ";
+	}
+	std::cout << time;
+	setColor(ConsoleColor::Gray);
+	std::cout << "S ";
+
+	setColor(ConsoleColor::BrightGreen);
+	float nps_in_M = (std::round((nps / 1000000) * 10)) / 10;
+	std::cout<< nps_in_M;
+	if (std::round(nps_in_M) == nps_in_M)
+	{
+		std::cout << ".0";
+	}
+	setColor(ConsoleColor::Gray);
+	std::cout << "MN/S";
+
+	setColor(ConsoleColor::White);
+	std::cout << " Try: ";
+	if (window_change == 1)
+	{
+		setColor(ConsoleColor::BrightGreen);
+	}
+	else if(window_change == 2)
+	{
+		setColor(ConsoleColor::BrightYellow);
+	}
+	else
+	{
+		setColor(ConsoleColor::BrightRed);
+	}
+	std::cout  << window_change;
+	setColor(ConsoleColor::BrightCyan);
+	std::string aspiration_window = " (" + std::to_string(asp_alpha) + "," + std::to_string(asp_beta) + ") ";
+	int space = std::max(0, 12 - static_cast<int>(aspiration_window.length()));
+	for (int i = 0; i < space; i++)
+	{
+		std::cout << " ";
+	}
+	std::cout << aspiration_window;
+	//std::cout << " (" << asp_alpha << "," << asp_beta << ") ";
+
+	if (std::abs(score) > 40000)
+	{
+		int mate_ply = 49000 - std::abs(score);
+		int mate_fullmove = std::ceil(static_cast<double>(mate_ply) / 2);
+		setColor(ConsoleColor::Green);
+		if (score < 0)
+		{
+			setColor(ConsoleColor::Red);
+			mate_fullmove *= -1;
+		}
+		
+		std::cout << " Mate in " << mate_fullmove;
+		std::cout << " ";
+	}
+	else
+	{
+		if (std::abs(score) < 50)
+		{
+			setColor(ConsoleColor::White);
+		}
+		else if (score < 0)//score <= -50
+		{
+			if (score <= -500)
+			{
+				setColor(ConsoleColor::Red);
+			}
+			else if (score <= -100)
+			{
+				setColor(ConsoleColor::BrightRed);
+			}
+			else
+			{
+				setColor(ConsoleColor::BrightYellow);
+			}
+			//std::cout << "+";
+		}
+		else //score >= 50
+		{
+			if (score >= 500)
+			{
+				setColor(ConsoleColor::Green);
+			}
+			else if (score >= 100)
+			{
+				setColor(ConsoleColor::BrightGreen);
+			}
+			else
+			{
+				setColor(ConsoleColor::BrightBlue);
+			}
+		}
+		float score_fullPawn = (std::round((static_cast<float>(score) / 100) * 10)) / 10;
+		
+		
+		//if (score < 0)
+		//{
+		//	length--;
+		//}
+		//if (length < 2)
+		//{
+		//	std::cout << "   ";
+		//}
+		//else if (length < 3)
+		//{
+		//	std::cout << "  ";
+		//}
+		//else if (length < 4)
+		//{
+		//	std::cout << " ";
+		//}
+		int abs_score = std::abs(std::round(score_fullPawn));
+		if (abs_score < 10)
+		{
+			std::cout << "  ";
+		}
+		else if (abs_score < 100)
+		{
+			std::cout << " ";
+		}
+		else if (abs_score < 1000)
+		{
+			std::cout << "";
+		}
+		if (score > 0)
+		{
+			std::cout << "+";
+		}
+
+		std::cout << score_fullPawn;
+		if (std::round(score_fullPawn) == score_fullPawn)
+		{
+			std::cout << ".0";
+		}
+		std::cout << " ";
+	}
+	
+	setColor(ConsoleColor::Gray);
+	std::cout << " pv ";
+	for (int count = 0; count < pv_length[0]; count++)
+	{
+		if (count <= 2)
+		{
+			setColor(ConsoleColor::White);
+		}
+		else
+		{
+			setColor(ConsoleColor::Gray);
+		}
+		if (count >= 10) break;
+		printMove(pv_table[0][count]);
+		std::cout << " ";
+	}
+	
+	setColor(ConsoleColor::White);
+	std::cout << "\n";
+}
 
 void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound)
 {
@@ -1840,9 +2106,31 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		int delta = asp_window_initial;
 		int alpha_val = std::max(MINUS_INFINITY ,score - delta);
 		int beta_val = std::min(PLUS_INFINITY, score + delta);
+		int window_change = 1;
 		//std::cout << alpha_val << ","<<beta_val;
 		while (true)
 		{
+			auto end = std::chrono::steady_clock::now();
+			float MS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			if (softbound != -1)
+			{
+				if (MS > softbound)
+				{
+					//std::cout << elapsedMS << "\n";
+					//std::cout << Searchtime_MS << "\n";
+					break;
+				}
+
+			}
+			else
+			{
+				if (timeMS != -1 && MS > timeMS)
+				{
+					//std::cout << elapsedMS << "\n";
+					//std::cout << Searchtime_MS << "\n";
+					break;
+				}
+			}
 			follow_pv = 1;
 			score = Negamax(board, curr_depth, alpha_val, beta_val, true, false);
 			//std::cout << "alpha:" << alpha_val<<"\n";
@@ -1869,6 +2157,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 			{
 				delta = PLUS_INFINITY;
 			}
+			window_change++;
 		}
 		
 		
@@ -1946,6 +2235,21 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 			if (!is_search_stopped)
 			{
 				bestmove = pv_table[0][0];
+				if (is_Pretty_Printing)
+				{
+					print_Pretty(pv_table, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val);
+				}
+				else
+				{
+					print_UCI(pv_table, bestmove, score, elapsedMS, nps);
+				}
+
+			}
+
+
+			/*if (!is_search_stopped)
+			{
+				bestmove = pv_table[0][0];
 				int hashfull = get_hashfull();
 				last_bestMove[curr_depth - 1] = bestmove;
 				std::cout << "info depth " << curr_depth;
@@ -1974,7 +2278,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 					std::cout << " ";
 				}
 				std::cout << "\n";
-			}
+			}*/
 		}
 
 
@@ -1989,6 +2293,15 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 				break;
 			}
 
+		}
+		else
+		{
+			if (timeMS != -1 && elapsedMS > timeMS)
+			{
+				//std::cout << elapsedMS << "\n";
+				//std::cout << Searchtime_MS << "\n";
+				break;
+			}
 		}
 
 
