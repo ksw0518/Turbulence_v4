@@ -119,6 +119,7 @@ static inline int get_move_score(Move move, Board& board, TranspositionEntry ttE
 			return 1000000000;
 		}
 	}
+
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
 		int victim = get_piece(board.mailbox[move.To], White);
@@ -200,14 +201,13 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposit
 		moves[i] = scored_moves[i].second;
 	}
 }
-void getTranspositionEntry(TranspositionEntry& ttEntry, Board& board)
+TranspositionEntry getTranspositionEntry(TranspositionEntry ttEntry, Board& board)
 {
 	int ttIndex = board.Zobrist_key % TtSize;
 	//std::cout << TtSize<<"\n";
-	if(ttEntry.zobristKey == board.Zobrist_key)
-	{
-		ttEntry = TranspositionTable[ttIndex];
-	}
+
+	return TranspositionTable[ttIndex];
+
 	
 	//ttEntry = TranspositionTable[ttIndex];
 }
@@ -224,7 +224,7 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 	}
 	TranspositionEntry ttEntry;
 	//TranspositionTable[0].depth = 256;
-	getTranspositionEntry(ttEntry, pos);
+	ttEntry = getTranspositionEntry(ttEntry, pos);
 	//std::cout << static_cast<int>(ttEntry.depth);
 	//system("pause");
 	if (depth <= 0)
@@ -343,6 +343,7 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 		ttEntry.nodeType = ExactFlag;
 	}
 	TranspositionTable[pos.Zobrist_key % TtSize] = ttEntry;
+	//std::cout<< TranspositionTable[pos.Zobrist_key % TtSize].depth;
 	return bestScore;
 }
 void printSearchInfo(int depth, int score, int timeMS, int nodes, Move(&pvTable)[MAXDEPTH][MAXDEPTH])
