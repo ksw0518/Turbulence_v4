@@ -12,7 +12,8 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
-
+#include <iomanip>
+#include <sstream>
 
 enum class ConsoleColor {
 	Black = 0,
@@ -1785,6 +1786,25 @@ void setColor(ConsoleColor color) {
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(hConsole, static_cast<WORD>(color));
 }
+int countDecimalPlaces(float number) {
+	// Round to a maximum of 2 decimal places
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(2) << number; // Round to 2 decimals
+
+	// Get the string representation of the number
+	std::string str = ss.str();
+
+	// Find the position of the decimal point
+	size_t pos = str.find('.');
+
+	// If there is no decimal point, return 0 (no decimal places)
+	if (pos == std::string::npos) {
+		return 0;
+	}
+
+	// Count the number of digits after the decimal point
+	return str.length() - pos - 1;
+}
 void print_UCI(Move (&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps)
 {
 	bestmove = pv_table[0][0];
@@ -1875,30 +1895,27 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 	std::cout << "S ";
 
 	setColor(ConsoleColor::BrightGreen);
-	float nps_in_M = (std::round((nps / 1000000) * 10)) / 10;
+	float nps_in_M = (std::round((nps / 1000000) * 100)) / 100;
 	std::cout<< nps_in_M;
-	if (std::round(nps_in_M) == nps_in_M)
-	{
-		std::cout << ".0";
-	}
+
 	setColor(ConsoleColor::Gray);
 	std::cout << "MN/S";
 
-	setColor(ConsoleColor::White);
-	std::cout << " Try: ";
-	if (window_change == 1)
-	{
-		setColor(ConsoleColor::BrightGreen);
-	}
-	else if(window_change == 2)
-	{
-		setColor(ConsoleColor::BrightYellow);
-	}
-	else
-	{
-		setColor(ConsoleColor::BrightRed);
-	}
-	std::cout  << window_change;
+	//setColor(ConsoleColor::White);
+	//std::cout << " Try: ";
+	//if (window_change == 1)
+	//{
+	//	setColor(ConsoleColor::BrightGreen);
+	//}
+	//else if(window_change == 2)
+	//{
+	//	setColor(ConsoleColor::BrightYellow);
+	//}
+	//else
+	//{
+	//	setColor(ConsoleColor::BrightRed);
+	//}
+	//std::cout  << window_change;
 	//setColor(ConsoleColor::BrightCyan);
 	//std::string aspiration_window = " (" + std::to_string(asp_alpha) + "," + std::to_string(asp_beta) + ") ";
 	//int space = std::max(0, 12 - static_cast<int>(aspiration_window.length()));
@@ -1960,8 +1977,8 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 				setColor(ConsoleColor::BrightBlue);
 			}
 		}
-		float score_fullPawn = (std::round((static_cast<float>(score) / 100) * 10)) / 10;
-		
+		float score_fullPawn = (std::round((static_cast<float>(score) / 100) * 100)) / 100;
+
 		
 		//if (score < 0)
 		//{
@@ -1996,13 +2013,20 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 		{
 			std::cout << "+";
 		}
+		std::cout << std::fixed << std::setprecision(2) << score_fullPawn;
+		//std::cout << score_fullPawn;
 
-		std::cout << score_fullPawn;
-		if (std::round(score_fullPawn) == score_fullPawn)
-		{
-			std::cout << ".0";
-		}
-		std::cout << " ";
+		//std::cout<<countDecimalPlaces(score_fullPawn);
+		//if (countDecimalPlaces(score_fullPawn) == 1)
+		//{
+		//	std::cout << "0";
+		//}
+		//else if (countDecimalPlaces(score_fullPawn) == 0)
+		//{
+		//	std::cout << ".00";
+		//}
+
+		std::setprecision(1);
 	}
 	
 	setColor(ConsoleColor::Gray);
