@@ -215,9 +215,9 @@ static uint64_t Perft(Board& board, int depth)
     return nodes;
 }
 
-int Calculate_Hard_Bound(int time, int incre)
+int Calculate_Hard_Bound(int time, int inc)
 {
-    return time / 2;
+    return time / 20 + inc / 2;
 }
 int Calculate_Soft_Bound(int time, int incre)
 {
@@ -228,21 +228,21 @@ void Initialize_TT(int size)
     //std::cout <<"size" << size << "\n";
     uint64_t bytes = static_cast<uint64_t>(size) * 1024ULL * 1024ULL;
 
-    //std::cout << bytes<<"\n";
-    TT_size = bytes / sizeof(Transposition_entry);
+    ////std::cout << bytes<<"\n";
+    //TT_size = bytes / sizeof(Transposition_entry);
 
-    if (TT_size % 2 != 0)
-    {
-        TT_size -= 1;
-    }
-    TranspositionTable = new Transposition_entry[TT_size]();
-
-    //std::cout<<"\n"<<TranspositionTable[1].zobrist_key << "a";
-    
-    //std::cout << TT_size;
-    //for (int i = 0; i < TT_size; ++i) {
-    //    TranspositionTable[i] = new Transposition_entry;  // 0 means empty entry
+    //if (TT_size % 2 != 0)
+    //{
+    //    TT_size -= 1;
     //}
+    //TranspositionTable = new Transposition_entry[TT_size]();
+
+    ////std::cout<<"\n"<<TranspositionTable[1].zobrist_key << "a";
+    //
+    ////std::cout << TT_size;
+    ////for (int i = 0; i < TT_size; ++i) {
+    ////    TranspositionTable[i] = new Transposition_entry;  // 0 means empty entry
+    ////}
    
 }
 void ProcessUCI(std::string input)
@@ -260,7 +260,7 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
-        is_Pretty_Printing = false;
+        //is_Pretty_Printing = false;
         
         //for (int i = 0; i < option_name.size(); i++)
         //{
@@ -622,23 +622,16 @@ void ProcessUCI(std::string input)
             if (Commands.size() == 3)
             {
                 int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth);
+                startSearch(main_board, -1, -1, depth);
 
-            }
-            else if (Commands.size() > 3)
-            {
-                if (Commands[3] == "root")
-                {
-                    int depth = std::stoi(Commands[2]);
-                    IterativeDeepening(main_board, depth, -1, true);
-                }
             }
 
         }
         else if (Commands[1] == "movetime")
         {
             int movetime = std::stoi(Commands[2]);
-            IterativeDeepening(main_board, 99, movetime);
+            startSearch(main_board, movetime, -1, MAXDEPTH);
+            //IterativeDeepening(main_board, 99, movetime);
         }
         else if (Commands[1] == "wtime")
         {
@@ -652,7 +645,7 @@ void ProcessUCI(std::string input)
             if (depth != 0)
             {
                 //int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth);
+                startSearch(main_board, -1, -1, depth);
                 
             }
             else
@@ -669,13 +662,15 @@ void ProcessUCI(std::string input)
                     hard_bound = Calculate_Hard_Bound(btime, binc);
                     soft_bound = Calculate_Soft_Bound(btime, binc);
                 }
-                IterativeDeepening(main_board, 64, hard_bound, false, true, soft_bound);
+                
+                startSearch(main_board, hard_bound, -1, depth);
+                //IterativeDeepening(main_board, 64, hard_bound, false, true, soft_bound);
             }
            
         }
         else
         {
-            IterativeDeepening(main_board, 99);
+            startSearch(main_board, -1, -1, MAXDEPTH);
         }
         //else if (Commands[1] == "perft")
         //{
@@ -814,7 +809,7 @@ void ProcessUCI(std::string input)
     }
     else if(main_command == "bench")
     {
-        bench();
+        //bench();
     }
 
 }
@@ -833,7 +828,7 @@ static void InitAll()
 int main(int argc, char* argv[])
 {
 
-    initializeLMRTable();
+    //initializeLMRTable();
     std::cout.sync_with_stdio(false);
     InitAll();
     
@@ -877,7 +872,7 @@ int main(int argc, char* argv[])
             //std::cout << "Running benchmark..." << std::endl;
             // Call your benchmark function here
 
-            bench();
+            //bench();
             return EXIT_SUCCESS;
 
 
