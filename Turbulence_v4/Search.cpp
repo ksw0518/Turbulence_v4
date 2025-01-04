@@ -86,7 +86,7 @@ std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
-
+Move killerMoves[2][99];
 Move pvTable[MAXDEPTH][MAXDEPTH];
 int pvLength[MAXDEPTH];
 static int mvv_lva[6][6] = {
@@ -110,21 +110,21 @@ static inline int get_move_score(Move move, Board& board)
 		int score = mvv_lva[attacker][victim];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		//score += SEE(board, move, -100) ? 200000 : -10000000;
-		return score;
+		return score + 20000000;
 
 
 	}
 	else
 	{
-	//	if (killer_moves[0][ply] == move)
-	//	{
-	//		return 150000;
-	//	}
-	//	//2nd killer
-	//	else if (killer_moves[1][ply] == move)
-	//	{
-	//		return 100000;
-	//	}
+		if (killerMoves[0][ply] == move)
+		{
+			return 150000;
+		}
+		//2nd killer
+		else if (killerMoves[1][ply] == move)
+		{
+			return 100000;
+		}
 	//	//else if (counter_move[Search_stack[ply - 1].move.From][Search_stack[ply - 1].move.To] == move)
 	//	//{
 	//	//	return 90000;
@@ -181,7 +181,14 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board) {
 	}
 }
 
-
+bool isQuiet(int moveType)
+{
+	if ((moveType & captureFlag) == 0)
+	{
+		return true;
+	}
+	return false;
+}
 int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 {
 	pvLength[ply] = ply;
@@ -270,7 +277,14 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 		if (alpha >= beta)//beta cutoff
 		{
 
-
+			if (isQuiet(CurrentMove.Type))
+			{
+				if (!(killerMoves[0][ply] == CurrentMove))
+				{
+					killerMoves[1][ply] = killerMoves[0][ply];
+					killerMoves[0][ply] = CurrentMove;
+				}
+			}
 			break;
 		}
 
@@ -375,6 +389,11 @@ void bench()
 	int totalsearchtime = 0;
 	for (int i = 0; i < 50; i++)
 	{
+		for (int i = 0; i < 99; i++)
+		{
+			killerMoves[0][i] == Move(0, 0, 0, 0);
+			killerMoves[1][i] == Move(0, 0, 0, 0);
+		}
 		parse_fen(bench_fens[i], board);
 		board.Zobrist_key = generate_hash_key(board);
 		board.history.push_back(board.Zobrist_key);
