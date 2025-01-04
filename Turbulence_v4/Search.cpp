@@ -15,6 +15,11 @@
 #include <iomanip>
 #include <sstream>
 
+uint64_t TtSize = 16;
+TranspositionEntry* TranspositionTable;
+
+
+
 int RFP_MULTIPLIER = 85;
 int RFP_BASE = -49;
 
@@ -97,8 +102,23 @@ static int mvv_lva[6][6] = {
 	{101, 201, 301, 401, 501, 601},
 	{100, 200, 300, 400, 500, 600}
 };
-static inline int get_move_score(Move move, Board& board)
+bool isTTEntryFound(TranspositionEntry& ttEntry, Board& pos)
 {
+	if (ttEntry.nodeType != 0 && ttEntry.zobristKey == pos.Zobrist_key)
+	{
+		return true;
+	}
+}
+static inline int get_move_score(Move move, Board& board, TranspositionEntry ttEntry)
+{
+	if (isTTEntryFound(ttEntry, board))
+	{
+		//return 1000000000;
+		if (ttEntry.bestMove == move)
+		{
+			return 1000000000;
+		}
+	}
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
 		int victim = get_piece(board.mailbox[move.To], White);
@@ -161,12 +181,12 @@ static inline int get_move_score(Move move, Board& board)
 
 	return 0;
 }
-static inline void sort_moves(std::vector<Move>& moves, Board& board) {
+static inline void sort_moves(std::vector<Move>& moves, Board& board, TranspositionEntry& ttEntry) {
 	// Precompute scores for all moves
 	std::vector<std::pair<int, Move>> scored_moves;
 	scored_moves.reserve(moves.size());
 	for (const Move& move : moves) {
-		int score = get_move_score(move, board);
+		int score = get_move_score(move, board, ttEntry);
 		scored_moves.emplace_back(score, move);
 	}
 
@@ -180,7 +200,17 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board) {
 		moves[i] = scored_moves[i].second;
 	}
 }
-
+void getTranspositionEntry(TranspositionEntry& ttEntry, Board& board)
+{
+	int ttIndex = board.Zobrist_key % TtSize;
+	//std::cout << TtSize<<"\n";
+	if(ttEntry.zobristKey == board.Zobrist_key)
+	{
+		ttEntry = TranspositionTable[ttIndex];
+	}
+	
+	//ttEntry = TranspositionTable[ttIndex];
+}
 
 int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 {
@@ -192,6 +222,11 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 	{
 		isSearchStopped = true;
 	}
+	TranspositionEntry ttEntry;
+	//TranspositionTable[0].depth = 256;
+	getTranspositionEntry(ttEntry, pos);
+	//std::cout << static_cast<int>(ttEntry.depth);
+	//system("pause");
 	if (depth <= 0)
 	{
 		return Evaluate(pos);
@@ -202,10 +237,12 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 	std::vector<Move> MoveList;
 	MoveList.reserve(256);
 	Generate_Legal_Moves(MoveList, pos, false);
-	//sort_moves(MoveList, pos);
-
-
 	
+	//printMove(ttEntry.bestMove);
+	sort_moves(MoveList, pos, ttEntry);
+
+	Move bestMove;
+	int alphaOrg = alpha;
 	for (size_t i = 0; i < MoveList.size(); i++) {
 		Move CurrentMove = MoveList[i];
 
@@ -254,6 +291,7 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 		bestScore = std::max(childValue, bestScore);
 		if (bestScore > alpha)//alpha was raised
 		{
+			bestMove = CurrentMove;
 			//update pv table
 			pvTable[ply][ply] = CurrentMove;
 			
@@ -279,6 +317,26 @@ int NegaMax(Board& pos, int depth, int alpha, int beta, int hardBound)
 
 		
 	}
+	//update TT
+	
+	ttEntry.zobristKey = pos.Zobrist_key;
+	ttEntry.bestMove = bestMove;
+	
+	ttEntry.depth = depth;
+	ttEntry.score = bestScore;
+	if (bestScore <= alphaOrg)
+	{
+		ttEntry.nodeType = AlphaFlag;
+	}
+	else if (bestScore >= beta)
+	{
+		ttEntry.nodeType = BetaFlag;
+	}
+	else
+	{
+		ttEntry.nodeType = ExactFlag;
+	}
+	TranspositionTable[pos.Zobrist_key % TtSize] = ttEntry;
 	return bestScore;
 }
 void printSearchInfo(int depth, int score, int timeMS, int nodes, Move(&pvTable)[MAXDEPTH][MAXDEPTH])
@@ -336,6 +394,7 @@ void startSearch(const Board& pos, int hardBound, int softBound, int maxDepth, b
 	int Score = NOSCORE;
 	Move previousBestMove;
 	memset(pvLength, 0, sizeof(pvLength));
+	//std::cout << TranspositionTable[0].depth;
 	for (int depth = 1; depth < maxDepth + 1; depth++)
 	{
 		ply = 0;
@@ -375,12 +434,16 @@ void bench()
 	int totalsearchtime = 0;
 	for (int i = 0; i < 50; i++)
 	{
+		for (int i = 0; i < TtSize; i++)
+		{
+			TranspositionTable[i] = TranspositionEntry();
+		}
 		parse_fen(bench_fens[i], board);
 		board.Zobrist_key = generate_hash_key(board);
 		board.history.push_back(board.Zobrist_key);
 
 		search_start = std::chrono::steady_clock::now();
-		startSearch(board, -1, -1, 4, false);
+		startSearch(board, -1, -1, 5, false);
 		search_end = std::chrono::steady_clock::now();
 
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();

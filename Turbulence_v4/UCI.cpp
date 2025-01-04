@@ -228,21 +228,21 @@ void Initialize_TT(int size)
     //std::cout <<"size" << size << "\n";
     uint64_t bytes = static_cast<uint64_t>(size) * 1024ULL * 1024ULL;
 
-    ////std::cout << bytes<<"\n";
-    //TT_size = bytes / sizeof(Transposition_entry);
+    //std::cout << bytes<<"\n";
+    TtSize = bytes / sizeof(TranspositionEntry);
 
-    //if (TT_size % 2 != 0)
-    //{
-    //    TT_size -= 1;
+    if (TtSize % 2 != 0)
+    {
+        TtSize -= 1;
+    }
+    TranspositionTable = new TranspositionEntry[TtSize]();
+
+    //std::cout<<"\n"<<TranspositionTable[1].zobrist_key << "a";
+    
+    //std::cout << TT_size;
+    //for (int i = 0; i < TT_size; ++i) {
+    //    TranspositionTable[i] = new Transposition_entry;  // 0 means empty entry
     //}
-    //TranspositionTable = new Transposition_entry[TT_size]();
-
-    ////std::cout<<"\n"<<TranspositionTable[1].zobrist_key << "a";
-    //
-    ////std::cout << TT_size;
-    ////for (int i = 0; i < TT_size; ++i) {
-    ////    TranspositionTable[i] = new Transposition_entry;  // 0 means empty entry
-    ////}
    
 }
 void ProcessUCI(std::string input)

@@ -20,6 +20,9 @@ extern int PVS_NOISY_MULTIPLIER;
 
 extern int HISTORY_BASE;
 extern int HISTORY_MULTIPLIER;
+
+extern uint64_t TtSize;
+
 //extern int pv_length[99];
 //extern Move pv_table[99][99];
 //
@@ -46,15 +49,16 @@ void bench();
 void startSearch(const Board& pos, int hardBound = -1, int softBound = -1, int maxDepth = 256, bool printInfo = true);
 //
 //extern bool is_Pretty_Printing;
-//struct Transposition_entry
-//{
-//	uint64_t zobrist_key;
-//	int32_t score;
-//	Move best_move;
-//	uint8_t depth;
-//	
-//	uint8_t node_type;
-//};
+struct TranspositionEntry
+{
+	uint64_t zobristKey = 0;
+	int32_t score = 0;
+	Move bestMove;
+	uint16_t depth = 0;
+	
+	uint8_t nodeType = 0;
+};
+extern TranspositionEntry* TranspositionTable;
 //
 //struct Search_data
 //{
