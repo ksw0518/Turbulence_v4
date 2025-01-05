@@ -1115,12 +1115,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else if (ttEntry.node_type == AlphaFlag && ttEntry.score <= alpha)
 			{
-				return alpha;
+				return ttEntry.score;
 				//alpha = ttEntry.score;
 			}
 			else if (ttEntry.node_type == BetaFlag && ttEntry.score >= beta )
 			{
-				return beta;
+				return ttEntry.score;
 			}
 
 			//if (alpha >= beta)
