@@ -1282,7 +1282,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	/*std::vector<Move> Noisy_moves_list;
 	Noisy_moves_list.reserve(50);*/
 
-	Move bestmove = Move(0, 0, 0, 0);
+	Move bestmove = ttEntry.best_move;
 	int quiet_moves = 0;
 	for (Move& move : moveList)
 	{
