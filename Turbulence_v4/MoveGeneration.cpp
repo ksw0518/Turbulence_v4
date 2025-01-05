@@ -1,11 +1,11 @@
 #include "MoveGeneration.h"
 #include "Board.h"
 
-
-
 #include "BitManipulation.h"
 #include "const.h"
+
 #include <cstdint>
+#include <cmath>
 #include <vector>
 #include <string>
 #include <iostream>
