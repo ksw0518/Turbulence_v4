@@ -235,6 +235,10 @@ void Initialize_TT(int size)
     {
         TT_size -= 1;
     }
+
+	if (TranspositionTable)
+    	delete [] TranspositionTable;
+
     TranspositionTable = new Transposition_entry[TT_size]();
 
     //std::cout<<"\n"<<TranspositionTable[1].zobrist_key << "a";

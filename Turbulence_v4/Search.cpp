@@ -174,7 +174,7 @@ int pawn_Corrhist[2][CORRHIST_SIZE];
 //};
 
 size_t TT_size = 16;
-Transposition_entry* TranspositionTable;
+Transposition_entry* TranspositionTable = nullptr;
 
 std::vector<int> move_scores;
 std::vector<Move> public_movelist;
