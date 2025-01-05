@@ -287,7 +287,7 @@ void ProcessUCI(std::string input)
         }
         else
         {
-            for (int i = 0; i < option_name.size(); i++)
+            for (size_t i = 0; i < option_name.size(); i++)
             {
                 if (option == option_name[i])
                 {
@@ -334,7 +334,7 @@ void ProcessUCI(std::string input)
                     std::vector<Move> moveList;
                     //std::cout << (moves_seperated[0]);
 
-                    for (int i = 0; i < moves_seperated.size(); i++)
+                    for (size_t i = 0; i < moves_seperated.size(); i++)
                     {
                         std::string From = std::string(1, moves_seperated[i][0]) + std::string(1, moves_seperated[i][1]);
                         std::string To = std::string(1, moves_seperated[i][2]) + std::string(1, moves_seperated[i][3]);
@@ -363,7 +363,7 @@ void ProcessUCI(std::string input)
                         moveList.clear();
                         Generate_Legal_Moves(moveList, main_board, false);
 
-                        for (int j = 0; j < moveList.size(); j++)
+                        for (size_t j = 0; j < moveList.size(); j++)
                         {
                             //Console.WriteLine("12");
                             //nodes = 0;
@@ -471,7 +471,7 @@ void ProcessUCI(std::string input)
                     std::vector<Move> moveList;
 
 
-                    for (int i = 0; i < moves_seperated.size(); i++)
+                    for (size_t i = 0; i < moves_seperated.size(); i++)
                     {
                         std::string From = std::string(1, moves_seperated[i][0]) + std::string(1, moves_seperated[i][1]);
                         std::string To = std::string(1, moves_seperated[i][2]) + std::string(1, moves_seperated[i][3]);
@@ -490,7 +490,7 @@ void ProcessUCI(std::string input)
                         moveList.clear();
                         Generate_Legal_Moves(moveList, main_board, false);
 
-                        for (int j = 0; j < moveList.size(); j++)
+                        for (size_t j = 0; j < moveList.size(); j++)
                         {
                             //Console.WriteLine("12");
                             //nodes = 0;
@@ -726,7 +726,7 @@ void ProcessUCI(std::string input)
         moveList.clear();
         Generate_Legal_Moves(moveList, main_board, false);
 
-        for (int j = 0; j < moveList.size(); j++)
+        for (size_t j = 0; j < moveList.size(); j++)
         {
             //Console.WriteLine("12");
             //nodes = 0;

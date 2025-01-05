@@ -1,19 +1,34 @@
-
 #include "MoveGeneration.h"
 #include "Evaluation.h"
 #include "Board.h"
 #include "Search.h"
 #include "BitManipulation.h"
 #include "const.h"
-#define NOMINMAX
-#include <windows.h>
-#include <vector>
-#include <iostream>
+
+#include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <algorithm>
+#include <cstring>
 #include <iomanip>
+#include <iostream>
+#include <limits>
 #include <sstream>
+#include <tuple>
+#include <vector>
+
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
+#define NOMINMAX
+
+#include <windows.h>
+
+#undef NOMINMAX
+#undef VC_EXTRALEAN
+#undef WIN32_LEAN_AND_MEAN
+
+#endif
 
 enum class ConsoleColor {
 	Black = 0,
@@ -33,6 +48,7 @@ enum class ConsoleColor {
 	BrightYellow = 14,
 	BrightWhite = 15
 };
+
 std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
 	"4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
@@ -157,7 +173,7 @@ int pawn_Corrhist[2][CORRHIST_SIZE];
 //	int node_type;
 //};
 
-uint64_t TT_size = 16;
+size_t TT_size = 16;
 Transposition_entry* TranspositionTable;
 
 std::vector<int> move_scores;
@@ -208,9 +224,9 @@ bool is_quiet(int type)
 }
 void initializeLMRTable() 
 {
-	for (int depth = 0; depth < 99; depth++) 
+	for (int depth = 1; depth < 99; depth++) 
 	{
-		for (int move = 0; move < 256; move++)
+		for (int move = 1; move < 256; move++)
 		{
 			lmrTable[depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
 		}
@@ -364,12 +380,12 @@ void printTopHistory(int side) {
 	for (int from = 0; from < 64; ++from) {
 		for (int to = 0; to < 64; ++to) {
 			int score = history_moves[side][from][to];
-			moves.push_back({ score, from, to });
+			moves.emplace_back(score, from, to);
 		}
 	}
 
 	// Sort moves by score in descending order
-	std::sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
 		return std::get<0>(a) < std::get<0>(b);
 		});
 
@@ -391,12 +407,12 @@ void printTopCapthist(int side) {
 	for (int from = 0; from < 64; ++from) {
 		for (int to = 0; to < 64; ++to) {
 			int score = CaptureHistory[side][from][to];
-			moves.push_back({ score, from, to });
+			moves.emplace_back(score, from, to);
 		}
 	}
 
 	// Sort moves by score in descending order
-	std::sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
 		return std::get<0>(a) < std::get<0>(b);
 		});
 
@@ -420,14 +436,14 @@ void printTopOneplyContHist() {
 			for (int piece_to = 0; piece_to < 12; ++piece_to) {
 				for (int to = 0; to < 64; ++to) {
 					int score = Oneply_ContHist[piece_from][from][piece_to][to];
-					moves.push_back({ score, piece_from, from, piece_to, to }); // 5 values pushed
+					moves.emplace_back(score, piece_from, from, piece_to, to); // 5 values pushed
 				}
 			}
 		}
 	}
 
 	// Sort moves by score in descending order
-	std::sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
 		return std::get<0>(a) < std::get<0>(b);
 		});
 
@@ -506,11 +522,15 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 	//}
 	 if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{		
-			 int victim = get_piece(board.mailbox[move.To], White);
+			 int victim;
 			 if (move.Type == ep_capture)
 			 {
 				 victim = P;
 			 }
+			 else
+             {
+                 victim = get_piece(board.mailbox[move.To], White);
+             }
 			 int attacker = get_piece(move.Piece, White);
 			 int score = mvv_lva[attacker][victim];
 			 //score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
@@ -832,7 +852,7 @@ static inline void sort_moves_captures(std::vector<Move>& moves, Board& board) {
 		});
 
 	// Sort only the capture moves
-	std::sort(moves.begin(), capture_end, [&board](const Move& move1, const Move& move2) {
+	std::stable_sort(moves.begin(), capture_end, [&board](const Move& move1, const Move& move2) {
 		return get_move_score_capture(move1, board) > get_move_score_capture(move2, board);
 		});
 
@@ -852,7 +872,7 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposit
     }
 
     // Sort the scored moves based on the scores
-    std::sort(scored_moves.begin(), scored_moves.end(), [](const auto& a, const auto& b) {
+    std::stable_sort(scored_moves.begin(), scored_moves.end(), [](const auto& a, const auto& b) {
         return a.first > b.first; // Sort by score (descending)
     });
 
@@ -1703,7 +1723,7 @@ void bench()
 			}
 		}
 
-		for (int i = 0; i < TT_size; i++)
+		for (size_t i = 0; i < TT_size; i++)
 		{
 			TranspositionTable[i] = Transposition_entry();
 		}
@@ -1762,7 +1782,7 @@ void bench()
 		}
 	}
 
-	for (int i = 0; i < TT_size; i++)
+	for (size_t i = 0; i < TT_size; i++)
 	{
 		TranspositionTable[i] = Transposition_entry();
 	}
@@ -1782,9 +1802,11 @@ void bench()
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 
 }
-void setColor(ConsoleColor color) {
+void setColor([[maybe_unused]] ConsoleColor color) {
+#ifdef _WIN32
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(hConsole, static_cast<WORD>(color));
+#endif
 }
 int countDecimalPlaces(float number) {
 	// Round to a maximum of 2 decimal places
@@ -2055,7 +2077,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 
 	if (timeMS == -1)
 	{
-		Searchtime_MS = INT_MAX;
+        Searchtime_MS = std::numeric_limits<int>::max();
 	}
 	else
 	{
