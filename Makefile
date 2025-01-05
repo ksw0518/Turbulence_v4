@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX = clang++          # Fixed to clang++
+CXX = clang++ # Fixed to clang++
 CXXFLAGS ?= -O3 -std=c++17 -Wall -Wextra # Default compiler flags
 
 # Automatically find all source files in the correct folder
@@ -10,6 +10,13 @@ OBJ = $(SRC:.cpp=.o)
 
 # Output binary (default)
 EXE ?= Turbulence.exe
+
+RM := rm -f
+RMDIR := "Turbulence_v4/"*.o
+ifeq ($(OS),Windows_NT)
+    RM := del /F /Q
+    RMDIR := "Turbulence_v4\*.o"
+endif
 
 # Default target
 all: $(EXE)
@@ -24,7 +31,8 @@ $(EXE): $(OBJ)
 
 # Clean up build files
 clean:
-	del /f /q "Turbulence_v4\*.o" "$(EXE)"
+	$(RM) $(RMDIR)
+	$(RM) "$(EXE)"
 
 # Phony targets
 .PHONY: all clean
