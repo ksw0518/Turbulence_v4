@@ -4,7 +4,6 @@
 #include "MoveGeneration.h"
 #include "BitManipulation.h"
 #include "const.h"
-#include <cctype>
 #include <iostream>
 Board::Board()
     : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0){
@@ -147,7 +146,7 @@ void PrintBoards(Board board)
     
     
 
-    for (size_t i = 0; i < board.history.size(); i++)
+    for (int i = 0; i < board.history.size(); i++)
     {
         std::cout << std::hex << board.history[i] << std::dec << "\n";
     }
@@ -211,7 +210,7 @@ void parse_fen(std::string fen, Board& board)
     // Console.WriteLine(fen);
     int square = 0;
     int index = 0;
-    for (size_t i = 0; i < fen.length(); i++)
+    for (int i = 0; i < fen.length(); i++)
     {
         char text = fen[i];
         //int file = square % 8;
@@ -227,7 +226,7 @@ void parse_fen(std::string fen, Board& board)
             continue;
 
         }
-        if (std::isdigit(text))
+        if (text >= '0' && text <= '9')
         {
             //Console.WriteLine(square);
             square += text - '0';
@@ -235,7 +234,7 @@ void parse_fen(std::string fen, Board& board)
         }
 
         //Console.WriteLine(i);
-        if (std::isalpha(text))
+        if (text >= 'a' && text <= 'z' || text >= 'A' && text <= 'Z')
         {
             int piece = getPieceFromChar(text);
             board.mailbox[square] = piece;
