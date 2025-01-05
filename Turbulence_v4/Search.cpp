@@ -1271,7 +1271,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool skip_quiets = false;
 
 
-	pv_table[ply][ply] = ttEntry.best_move;
+	//pv_table[ply][ply] = ttEntry.best_move;
 	int lmp_threshold = LMP_BASE + LMP_MULTIPLIER * depth * depth;
 
 	int quiet_SEE_margin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
@@ -1551,20 +1551,23 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//{
 			//	std::cout << ply << "\n";
 			//}
-
-			pv_table[ply][ply] = move;
-			bestmove = move;
-
-
-
-
-			//copy move from deeper ply into a current ply's line
-			for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
+			if (is_pv_node)
 			{
-				pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+				pv_table[ply][ply] = move;
+				bestmove = move;
+
+
+
+
+				//copy move from deeper ply into a current ply's line
+				for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
+				{
+					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+				}
+
+				pv_length[ply] = pv_length[ply + 1];
 			}
 
-			pv_length[ply] = pv_length[ply + 1];
 
 
 
@@ -1664,7 +1667,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	ttEntry.node_type = ttFlag;
 	ttEntry.depth = depth;
 	ttEntry.zobrist_key = board.Zobrist_key;
-	ttEntry.best_move = pv_table[ply][ply];
+	ttEntry.best_move = bestmove;
 	//if (!(bestmove == Move(0, 0, 0, 0)))
 	//{
 	//
