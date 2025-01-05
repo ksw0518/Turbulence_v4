@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX = clang++          # Fixed to clang++
+CXX = clang++ # Fixed to clang++
 CXXFLAGS ?= -O3 -std=c++17 -Wall -Wextra # Default compiler flags
 
 # Automatically find all source files in the correct folder

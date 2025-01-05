@@ -237,7 +237,7 @@ void Initialize_TT(int size)
     }
 
 	if (TranspositionTable)
-    	delete [] TranspositionTable;
+		delete [] TranspositionTable;
 
     TranspositionTable = new Transposition_entry[TT_size]();
 
