@@ -948,7 +948,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		//std::cout << "fuck";
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
-	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0 && ttEntry.depth >= 1)
+	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
 		if (ttEntry.node_type == ExactFlag)
 		{
