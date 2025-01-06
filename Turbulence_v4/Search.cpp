@@ -165,6 +165,7 @@ int Twoply_ContHist[12][64][12][64];
 
 int pawn_Corrhist[2][CORRHIST_SIZE];
 int minor_Corrhist[2][CORRHIST_SIZE];
+int major_Corrhist[2][CORRHIST_SIZE];
 
 //struct Transposition_entry
 //{
@@ -266,6 +267,7 @@ void initializeLMRTable()
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 	memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
+	memset(major_Corrhist, 0, sizeof(major_Corrhist));
 
 
 	is_Pretty_Printing = true;
@@ -273,6 +275,15 @@ void initializeLMRTable()
 int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
+}
+void update_Major_Corrhist(Board& board, const int depth, const int diff)
+{
+	uint64_t majorKey = generate_Major_Hash(board);
+	int& entry = major_Corrhist[board.side][majorKey % CORRHIST_SIZE];
+	const int scaledDiff = diff * CORRHIST_GRAIN;
+	const int newWeight = std::min(depth + 1, 16);
+	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
 void update_Minor_Corrhist(Board& board, const int depth, const int diff)
 {
@@ -301,10 +312,12 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	uint64_t minorKey = generate_Minor_Hash(board);
 	const int& minorEntry = minor_Corrhist[board.side][minorKey % CORRHIST_SIZE];
 
+	uint64_t majorKey = generate_Major_Hash(board);
+	const int& majorEntry = major_Corrhist[board.side][majorKey % CORRHIST_SIZE];
 
 	int mate_found = 49000 - 99;
 
-	int adjust = pawnEntry + minorEntry;
+	int adjust = pawnEntry + minorEntry + majorEntry;
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void update_history(int stm, int from, int to, int bonus)
@@ -1722,6 +1735,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		update_Pawn_Corrhist(board, depth, bestValue - static_eval);
 		update_Minor_Corrhist(board, depth, bestValue - static_eval);
+		update_Major_Corrhist(board, depth, bestValue - static_eval);
 	}
 
 	TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;

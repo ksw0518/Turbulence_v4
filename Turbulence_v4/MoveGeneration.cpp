@@ -27,6 +27,7 @@ static uint64_t betweenTable[64][64] = {};
 uint32_t random_state = 1804289383;
 
 int MinorPieces[6] = { B, b, N, n, K, k };
+int MajorPieces[6] = { R, r, Q, q, K, k };
 
 uint64_t all_attackers_to_square(Board &board, uint64_t occupied, int sq) {
 
@@ -199,6 +200,29 @@ uint64_t generate_Minor_Hash(Board& board)
 	for (int i = 0; i < 6; i++)
 	{
 		int piece = MinorPieces[i];
+		bitboard = board.bitboards[piece];
+
+		while (bitboard)
+		{
+			int square = get_ls1b(bitboard);
+
+			final_key ^= piece_keys[piece][square];
+			Pop_bit(bitboard, square);
+		}
+	}
+
+
+	return final_key;
+}
+uint64_t generate_Major_Hash(Board& board)
+{
+	uint64_t final_key = 0ULL;
+	uint64_t bitboard;
+
+
+	for (int i = 0; i < 6; i++)
+	{
+		int piece = MajorPieces[i];
 		bitboard = board.bitboards[piece];
 
 		while (bitboard)
