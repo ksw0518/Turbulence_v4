@@ -900,7 +900,14 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposit
     }
 }
 
-
+inline bool is_in_check(Board& board)
+{
+	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
+	{
+		return true;
+	}
+	return false;
+}
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
 
@@ -919,18 +926,24 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		//std::cout << "fuck";
 	int score = 0;
 
-	int evaluation = Evaluate(board);
-	evaluation = adjustEvalWithCorrHist(board, evaluation);
-
-	if (evaluation >= beta)
+	bool isInCheck = is_in_check(board);
+	int evaluation = 0;
+	if (!isInCheck)
 	{
-		return evaluation;
+		evaluation = Evaluate(board);
+		evaluation = adjustEvalWithCorrHist(board, evaluation);
+
+		if (evaluation >= beta)
+		{
+			return evaluation;
+		}
+
+		if (evaluation > alpha)
+		{
+			alpha = evaluation;
+		}
 	}
 
-	if (evaluation > alpha)
-	{
-		alpha = evaluation;
-	}
 
 	std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, false);
@@ -942,7 +955,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	//PrintBoards(board);
 
 	int pvNode = beta - alpha > 1;
-	int futilityMargin = evaluation + 120;
+	//int futilityMargin = evaluation + 120;
 	for (Move& move : moveList)
 	{
 		if (is_quiet(move.Type)) continue; //skip non capture moves
@@ -1058,6 +1071,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	if (legal_moves == 0) // quiet position
 	{
+		if (isInCheck)
+		{
+			evaluation = Evaluate(board);
+		}
 		return evaluation;
 	}
 	return alpha;
@@ -1069,14 +1086,7 @@ inline Transposition_entry ttLookUp(uint64_t zobrist)
 	return TranspositionTable[tt_index];
 }
 
-inline bool is_in_check(Board &board)
-{
-	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
-	{
-		return true;
-	}
-	return false;
-}
+
 
 bool is_checking(Board& board)
 {
