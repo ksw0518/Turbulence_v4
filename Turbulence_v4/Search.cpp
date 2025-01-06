@@ -924,6 +924,11 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposit
     }
 }
 
+inline Transposition_entry ttLookUp(uint64_t zobrist)
+{
+	int tt_index = zobrist % TT_size;
+	return TranspositionTable[tt_index];
+}
 
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
@@ -941,6 +946,28 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 		// evaluate position
 		//std::cout << "fuck";
+
+	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0 && ttEntry.depth >= 1)
+	{
+		if (ttEntry.node_type == ExactFlag)
+		{
+			return ttEntry.score;
+		}
+		else if (ttEntry.node_type == AlphaFlag)
+		{
+			alpha = std::max(alpha, ttEntry.score);
+		}
+		else if (ttEntry.node_type == BetaFlag)
+		{
+			beta = std::min(beta, ttEntry.score);
+		}
+		if (alpha >= beta)
+		{
+			return ttEntry.score;
+		}
+
+	}
 	int score = 0;
 
 	int evaluation = Evaluate(board);
@@ -1086,11 +1113,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 	return alpha;
 	//negamax_nodecount++;
-}
-inline Transposition_entry ttLookUp(uint64_t zobrist)
-{
-	int tt_index = zobrist % TT_size;
-	return TranspositionTable[tt_index];
 }
 
 inline bool is_in_check(Board &board)
