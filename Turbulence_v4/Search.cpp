@@ -161,6 +161,7 @@ int history_moves[2][64][64];
 int CaptureHistory[12][64][12];
 
 int Oneply_ContHist[12][64][12][64];
+int Twoply_ContHist[12][64][12][64];
 
 int pawn_Corrhist[2][CORRHIST_SIZE];
 int minor_Corrhist[2][CORRHIST_SIZE];
@@ -332,8 +333,16 @@ int getSingleContinuationHistoryScore(Move move, const int offSet) {
 		//printMove(move);
 		//std::cout << "\n";
 		//std::cout << "\n";
-		//std::cout << called_from_update<<"\n";
-		return Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		//std::cout << called_from_update<<"\n";'
+		if (offSet == 1)
+		{
+			return Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
+		else if(offSet == 2)
+		{
+			return Twoply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
+		
 	}
 	return 0;
 
@@ -343,7 +352,12 @@ int getSingleContinuationHistoryScore(Move move, const int offSet) {
 int getContinuationHistoryScore(Move& move) {
 	if (ply >= 1)
 	{
-		return getSingleContinuationHistoryScore(move, 1);
+		int onePly = getSingleContinuationHistoryScore(move, 1);
+		int twoPly = getSingleContinuationHistoryScore(move, 2);
+
+
+		int finalScore = onePly + twoPly;
+		return finalScore;
 	}
 	return 0;
 	//return getSingleContinuationHistoryScore(move, 2);
@@ -357,12 +371,22 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		int clampedBonus = std::clamp(bonus, -MAX_CONTHIST, MAX_CONTHIST);
 		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet) * abs(clampedBonus) / MAX_CONTHIST;
 		//std::cout << scaledBonus;
-		Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+
+		if (offSet == 1)
+		{
+			Oneply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
+		else if(offSet == 2)
+		{
+			Twoply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
+		
 	}
 }
 void updateContinuationHistoryScore(Move& move, const int bonus) {
 	//const int scaledBonus = bonus - getContinuationHistoryScore(move) * abs(bonus) / 8192;
 	updateSingleContinuationHistoryScore(move, bonus, 1);
+	updateSingleContinuationHistoryScore(move, bonus, 2);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 2);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 4);
 }
@@ -1626,6 +1650,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 						if (ply >= 1)
 						{
 							updateContinuationHistoryScore(move_quiet, bonus);
+
 						}
 
 					}
@@ -2136,6 +2161,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//std::cout << "black";
 	//printTopHistory(1);
 	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
 	memset(pv_table, 0, sizeof(pv_table));
 	memset(pv_length, 0, sizeof(pv_length));
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
