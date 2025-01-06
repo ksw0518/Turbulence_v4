@@ -989,6 +989,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
+		uint64_t lastZobrist = board.Zobrist_key;
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
@@ -1011,6 +1012,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
+			board.Zobrist_key = lastZobrist;
 			continue;
 		}
 
@@ -1043,6 +1045,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
+			board.Zobrist_key = lastZobrist;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -1053,6 +1056,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
+		board.Zobrist_key = lastZobrist;
 		if (score > bestValue)
 		{
 			bestValue = score;
