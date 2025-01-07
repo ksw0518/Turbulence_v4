@@ -1137,16 +1137,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//std::cout << ("\n    Number :     ") << ;
 	//std::cout << ("\n");
 
-	if (is_threefold(board.history, board.last_irreversible_ply))
+
+	if (ply != 0 && is_threefold(board.history, board.last_irreversible_ply))
 	{
 
 		//std::cout << "rep";
 		//PrintBoards(board);
 
-		if (ply != 0)
-		{
-			return 0;
-		}
+
+		return 0;
+
 
 
 
