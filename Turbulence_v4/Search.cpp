@@ -162,6 +162,7 @@ int CaptureHistory[12][64][12];
 
 int Oneply_ContHist[12][64][12][64];
 int Twoply_ContHist[12][64][12][64];
+int Fourply_ContHist[12][64][12][64];
 
 int pawn_Corrhist[2][CORRHIST_SIZE];
 int minor_Corrhist[2][CORRHIST_SIZE];
@@ -342,6 +343,10 @@ int getSingleContinuationHistoryScore(Move move, const int offSet) {
 		{
 			return Twoply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
+		else if (offSet == 4)
+		{
+			return Fourply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
 		
 	}
 	return 0;
@@ -354,9 +359,10 @@ int getContinuationHistoryScore(Move& move) {
 	{
 		int onePly = getSingleContinuationHistoryScore(move, 1);
 		int twoPly = getSingleContinuationHistoryScore(move, 2);
+		int fourPly = getSingleContinuationHistoryScore(move, 4);
 
 
-		int finalScore = onePly + twoPly;
+		int finalScore = onePly + twoPly + fourPly;
 		return finalScore;
 	}
 	return 0;
@@ -380,6 +386,10 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		{
 			Twoply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
+		else if (offSet == 4)
+		{
+			Fourply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
 		
 	}
 }
@@ -387,6 +397,7 @@ void updateContinuationHistoryScore(Move& move, const int bonus) {
 	//const int scaledBonus = bonus - getContinuationHistoryScore(move) * abs(bonus) / 8192;
 	updateSingleContinuationHistoryScore(move, bonus, 1);
 	updateSingleContinuationHistoryScore(move, bonus, 2);
+	updateSingleContinuationHistoryScore(move, bonus, 4);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 2);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 4);
 }
@@ -1771,19 +1782,10 @@ void bench()
 		{
 			TranspositionTable[i] = Transposition_entry();
 		}
-		for (int piecea = 0; piecea < 12; piecea++)
-		{
-			for (int toa = 0; toa < 64; toa++)
-			{
-				for (int pieceb = 0; pieceb < 12; pieceb++)
-				{
-					for (int tob = 0; tob < 64; tob++)
-					{
-						Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
-					}
-				}
-			}
-		}
+		memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+		memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
+		memset(Fourply_ContHist, 0, sizeof(Fourply_ContHist));
+
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 
