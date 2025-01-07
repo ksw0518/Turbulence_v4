@@ -924,7 +924,11 @@ static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposit
     }
 }
 
-
+inline Transposition_entry ttLookUp(uint64_t zobrist)
+{
+	int tt_index = zobrist % TT_size;
+	return TranspositionTable[tt_index];
+}
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
 
@@ -954,6 +958,17 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	if (evaluation > alpha)
 	{
 		alpha = evaluation;
+	}
+
+	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
+	{
+		if (ttEntry.node_type == ExactFlag
+			|| ttEntry.node_type == AlphaFlag && ttEntry.score <= alpha
+			|| ttEntry.node_type == BetaFlag && ttEntry.score >= beta)
+		{
+			return ttEntry.score;
+		}
 	}
 
 	std::vector<Move> moveList;
@@ -992,13 +1007,18 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
+		uint64_t lastZobrist = board.Zobrist_key;
 		ply++;
 		if (seldepth < ply)
 		{
 			seldepth = ply;
 		}
 		MakeMove(board, move);
-
+		//uint64_t zobrist_debug = generate_hash_key(board);
+		//if (board.Zobrist_key != zobrist_debug)
+		//{
+		//	std::cout << "fuck";
+		//}
 		//u64 nodes_added
 		if (!isMoveValid(move, board))//isMoveValid(move, board)
 		{
@@ -1011,6 +1031,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
+			board.Zobrist_key = lastZobrist;
 			continue;
 		}
 
@@ -1043,6 +1064,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
+			board.Zobrist_key = lastZobrist;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -1053,6 +1075,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
+		board.Zobrist_key = lastZobrist;
 		if (score > bestValue)
 		{
 			bestValue = score;
@@ -1087,11 +1110,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	return alpha;
 	//negamax_nodecount++;
 }
-inline Transposition_entry ttLookUp(uint64_t zobrist)
-{
-	int tt_index = zobrist % TT_size;
-	return TranspositionTable[tt_index];
-}
+
 
 inline bool is_in_check(Board &board)
 {
