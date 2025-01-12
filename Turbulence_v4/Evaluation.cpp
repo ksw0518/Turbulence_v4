@@ -38,7 +38,7 @@ int calculateIndex(int perspective, int square, int pieceType, int side)
 {
 	if (perspective == Black)
 	{
-		side = 1 - side;             // Flip side
+		side = ~side;             // Flip side
 		square = square ^ 0b111000; // Mirror square
 	}
 	return side * 64 * 6 + Get_Whitepiece[pieceType] * 64 + square;
@@ -75,7 +75,7 @@ void accumulatorSub(struct Network* const network, struct Accumulator* accumulat
 
 int16_t SCReLU(int16_t value, int16_t min, int16_t max)
 {
-	return std::clamp(static_cast<int>(value), 0, 1) * std::clamp(static_cast<int>(value), 0, 1);
+	return  std::clamp(static_cast<int>(value), 0, static_cast<int>(max)) * std::clamp(static_cast<int>(value), 0, static_cast<int>(max));
 }
 
 
