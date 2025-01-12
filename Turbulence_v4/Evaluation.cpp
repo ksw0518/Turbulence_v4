@@ -34,13 +34,24 @@ struct AccumulatorPair {
 };
 
 Network nnueNetwork;
+int mirrorSquare(int square) {
+
+	int file = square % 8;       // Get the file (column) 0-7
+	int rank = square / 8;       // Get the rank (row) 0-7
+	int mirrored_file = 7 - file; // Mirror the file
+
+	return rank * 8 + mirrored_file;
+}
 int calculateIndex(int perspective, int square, int pieceType, int side)
 {
+	square = mirrorSquare(square);
+	//square = 64 - square;
 	if (perspective == Black)
 	{
 		side = ~side;             // Flip side
 		square = square ^ 0b111000; // Mirror square
 	}
+	
 	return side * 64 * 6 + Get_Whitepiece[pieceType] * 64 + square;
 }
 void initializeAccumulator(struct Network* network, struct Accumulator* accumulator) {
@@ -101,7 +112,7 @@ int32_t forward(struct Network* const network,
 	}
 
 	// Uncomment the following dequantization step when using SCReLU
-	// eval /= QA;
+	 eval /= QA;
 	eval += network->output_bias;
 
 	eval *= SCALE;
@@ -186,9 +197,9 @@ int Evaluate(Board& board)
 		nstmAcc = &whiteAcc;
 	}
 	eval = forward(&nnueNetwork, stmAcc, nstmAcc);
-	if (board.side == Black)
-	{
-		eval *= -1;
-	}
+	//if (board.side == Black)
+	//{
+	//	eval *= -1;
+	//}
 	return eval;
 }
