@@ -38,7 +38,7 @@ int calculateIndex(int perspective, int square, int pieceType, int side)
 {
 	if (perspective == Black)
 	{
-		side = !side;             // Flip side
+		side = 1 - side;             // Flip side
 		square = square ^ 0b111000; // Mirror square
 	}
 	return side * 64 * 6 + Get_Whitepiece[pieceType] * 64 + square;
@@ -50,19 +50,19 @@ void initializeAccumulator(struct Network* network, struct Accumulator* accumula
 }
 void accumulatorAdd(struct Network* const network, struct Accumulator* accumulator, size_t index)
 {
-	if (index >= INPUT_SIZE) {
-		std::cerr << "Error: index out of bounds: " << index << std::endl;
-		// You might want to throw an exception or return an error code here
-		return; // Or throw an exception
-	}
-	if (!network) {
-		std::cerr << "Error: network is null" << std::endl;
-		return;
-	}
-	if (!accumulator) {
-		std::cerr << "Error: accumulator is null" << std::endl;
-		return;
-	}
+	//if (index >= INPUT_SIZE) {
+	//	std::cerr << "Error: index out of bounds: " << index << std::endl;
+	//	// You might want to throw an exception or return an error code here
+	//	return; // Or throw an exception
+	//}
+	//if (!network) {
+	//	std::cerr << "Error: network is null" << std::endl;
+	//	return;
+	//}
+	//if (!accumulator) {
+	//	std::cerr << "Error: accumulator is null" << std::endl;
+	//	return;
+	//}
 	for (int i = 0; i < HL_SIZE; i++)
 		accumulator->values[i] += network->accumulator_weights[index][i];
 }
@@ -78,7 +78,7 @@ int16_t SCReLU(int16_t value, int16_t min, int16_t max)
 	return std::clamp(static_cast<int>(value), 0, 1) * std::clamp(static_cast<int>(value), 0, 1);
 }
 
-// Example: CReLU activation
+
 int32_t activation(int16_t value)
 {
 	return SCReLU(value, 0, QA);
