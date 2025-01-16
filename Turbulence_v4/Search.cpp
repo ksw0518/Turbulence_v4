@@ -1213,7 +1213,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	}
-	if (is_pv_node && ply != 0 && depth >= 4 && !is_ttmove_found)
+	if (depth >= 4 && !is_ttmove_found)
 	{
 		depth -= 1;
 	}
