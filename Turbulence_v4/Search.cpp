@@ -1383,8 +1383,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skip_quiets = true;
 			}
-			if (ply != 0 && depth <= 5 && static_eval + depth * 250 + 250 <= alpha)
-			{
+			if (canPrune && depth <= 2 && static_eval + 82 * depth <= alpha) {
 				skip_quiets = true;
 			}
 			//bool is_checked = is_in_check(board);
