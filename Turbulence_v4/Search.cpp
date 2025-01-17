@@ -1213,9 +1213,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	}
+	bool isInCheck = is_in_check(board);
 
-
-	if (is_in_check(board))
+	if (isInCheck)
 	{
 		depth = std::max(depth + 1, 1);
 	}
@@ -1252,7 +1252,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int static_eval = adjustEvalWithCorrHist(board, raw_eval);
 
-	int canPrune = !is_in_check(board) && !is_pv_node;
+	
+
+	int canPrune = !isInCheck && !is_pv_node;
 	if (depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
@@ -1265,7 +1267,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (!is_pv_node && doNMP)
 	{
-		if (!is_in_check(board) && depth >= 2 && ply && static_eval >= beta)
+		if (!isInCheck && depth >= 2 && ply && static_eval >= beta)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
@@ -1612,20 +1614,24 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//{
 			//	std::cout << ply << "\n";
 			//}
-
-			pv_table[ply][ply] = move;
 			bestmove = move;
-
-
-
-
-			//copy move from deeper ply into a current ply's line
-			for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
+			if(is_pv_node)
 			{
-				pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-			}
+				pv_table[ply][ply] = move;
+				
 
-			pv_length[ply] = pv_length[ply + 1];
+
+
+
+				//copy move from deeper ply into a current ply's line
+				for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
+				{
+					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+				}
+
+				pv_length[ply] = pv_length[ply + 1];
+			}
+			
 
 
 
@@ -1809,6 +1815,7 @@ void bench()
 		}
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
+		memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
 
 		parse_fen(bench_fens[i], board);
 		board.Zobrist_key = generate_hash_key(board);
