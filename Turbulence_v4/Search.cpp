@@ -1391,7 +1391,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//}
 
 		}
-
+		if (ply != 0 && depth <= 8 && static_eval + depth * 150 + 150 <= alpha)
+		{
+			skip_quiets = true;
+		}
 		//
 		//
 		//int futility_margin = 60+250*depth;
