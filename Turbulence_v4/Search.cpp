@@ -116,9 +116,9 @@ int PVS_NOISY_MULTIPLIER = 18;
 int HISTORY_BASE = 4;
 int HISTORY_MULTIPLIER = 2;
 
-const int mvv[12] = { 100, 300, 300, 500, 1200, 0, 100, 300, 300, 500, 1200, 0 };
+//const int mvv[12] = { 100, 300, 300, 500, 1200, 0, 100, 300, 300, 500, 1200, 0 };
 
-constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
+//constexpr int UNIT_EVERYNODE = 8000; //check for things like time bound every 4096 nodes to balance speed and accuracy
 
 constexpr int asp_window_initial = 40;
 constexpr int asp_window_max = 300;
@@ -963,9 +963,9 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
-		if (ttEntry.node_type == ExactFlag
-			|| ttEntry.node_type == AlphaFlag && ttEntry.score <= alpha
-			|| ttEntry.node_type == BetaFlag && ttEntry.score >= beta)
+		if ((ttEntry.node_type == ExactFlag)
+			|| (ttEntry.node_type == AlphaFlag && ttEntry.score <= alpha)
+			|| (ttEntry.node_type == BetaFlag && ttEntry.score >= beta))
 		{
 			return ttEntry.score;
 		}
@@ -980,8 +980,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int legal_moves = 0;
 	//PrintBoards(board);
 
-	int pvNode = beta - alpha > 1;
-	int futilityMargin = evaluation + 120;
+	//int pvNode = beta - alpha > 1;
+	//int futilityMargin = evaluation + 120;
 	for (Move& move : moveList)
 	{
 		if (is_quiet(move.Type)) continue; //skip non capture moves
@@ -1142,7 +1142,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 	pv_length[ply] = ply;
-	bool found_pv = false;
+	//bool found_pv = false;
 	//for (int i = 0; i < board.history.size(); i++)
 	//{
 	//	std::cout << std::hex << board.history[i] << std::dec << "\n";
@@ -1604,7 +1604,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (bestValue > alpha)
 		{
-			found_pv = true;
+			//found_pv = true;
 			ttFlag = ExactFlag;
 			alpha = score;
 
@@ -1821,9 +1821,9 @@ void bench()
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
 		//std::chrono::duration<double, std::milli> elapsedS = end - start;
 
-		float second = (elapsedMS + 1) / 1000;
+		//float second = (elapsedMS + 1) / 1000;
 
-		double nps = negamax_nodecount / second;
+		//double nps = negamax_nodecount / second;
 
 
 		nodecount += negamax_nodecount;
@@ -2342,7 +2342,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		float second = (elapsedMS + 1) / 1000;
 
 		double nps = negamax_nodecount / second;
-		double nps_in_millions = nps / 1000000.0;
+		//double nps_in_millions = nps / 1000000.0;
 
 		if (print_info)
 		{
