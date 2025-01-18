@@ -156,7 +156,7 @@ constexpr int CORRHIST_MAX = 16384;
 Move killer_moves[2][99];
 Move counter_move[64][64];
 
-int history_moves[2][64][64];
+int history_moves[2][64][64][2][2];
 
 int CaptureHistory[12][64][12];
 
@@ -238,31 +238,12 @@ void initializeLMRTable()
 		killer_moves[0][ply] = Move();
 		killer_moves[1][ply] = Move();
 	}
-	for (int from = 0; from < 64; ++from)
-	{
-		for (int to = 0; to < 64; ++to)
-		{
-			history_moves[0][from][to] = 0;
-			history_moves[1][from][to] = 0;
-			//std::cout << to<<"\n";
-			//history_moves[piece][square] = 0;
-		}
-	}
+	memset(history_moves, 0, sizeof(history_moves));
+
+	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
 
 
-	for (int piecea = 0; piecea < 12; piecea++)
-	{
-		for (int toa = 0; toa < 64; toa++)
-		{
-			for (int pieceb = 0; pieceb < 12; pieceb++)
-			{
-				for (int tob = 0; tob < 64; tob++)
-				{
-					Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
-				}
-			}
-		}
-	}
+
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 	memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
@@ -307,14 +288,14 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	int adjust = pawnEntry + minorEntry;
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
-void update_history(int stm, int from, int to, int bonus)
+void update_history(int stm, int from, int to, int bonus, uint64_t opp_threat)
 {
 	//int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 
 	//std::cout<< clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 	//history_moves[piece][to] += clampedBonus - history_moves[piece][to] * std::abs(clampedBonus) / MAX_HISTORY;
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	history_moves[stm][from][to] += clampedBonus - history_moves[stm][from][to] * abs(clampedBonus) / MAX_HISTORY;
+	history_moves[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - history_moves[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
 	//history_moves[stm][from][to] = std::clamp(history_moves[stm][from][to], -MAX_HISTORY, MAX_HISTORY);
 	//history_moves[stm][from][to] += bonus;
 }
@@ -415,33 +396,33 @@ static int mvv_lva[6][6] = {
 	{101, 201, 301, 401, 501, 601},
 	{100, 200, 300, 400, 500, 600}
 };
-void printTopHistory(int side) {
-	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
-
-	// Populate the vector with scores and moves
-	for (int from = 0; from < 64; ++from) {
-		for (int to = 0; to < 64; ++to) {
-			int score = history_moves[side][from][to];
-			moves.emplace_back(score, from, to);
-		}
-	}
-
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
-	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
-		auto [score, from, to] = moves[i];
-		std::cout << "from: " << CoordinatesToChessNotation(from)
-			<< " to: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< " side_to_move = " << side
-			<< std::endl;
-	}
-}
+//void printTopHistory(int side) {
+//	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
+//
+//	// Populate the vector with scores and moves
+//	for (int from = 0; from < 64; ++from) {
+//		for (int to = 0; to < 64; ++to) {
+//			int score = history_moves[side][from][to];
+//			moves.emplace_back(score, from, to);
+//		}
+//	}
+//
+//	// Sort moves by score in descending order
+//	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+//		return std::get<0>(a) < std::get<0>(b);
+//		});
+//
+//	// Print the top 10 moves
+//	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
+//	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
+//		auto [score, from, to] = moves[i];
+//		std::cout << "from: " << CoordinatesToChessNotation(from)
+//			<< " to: " << CoordinatesToChessNotation(to)
+//			<< " score = " << score
+//			<< " side_to_move = " << side
+//			<< std::endl;
+//	}
+//}
 void printTopCapthist(int side) {
 	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
 
@@ -506,7 +487,7 @@ void printTopOneplyContHist() {
 
 
 
-static inline int get_move_score(Move move, Board& board, Transposition_entry &entry)
+static inline int get_move_score(Move move, Board& board, Transposition_entry &entry, uint64_t opp_threat)
 {
 
 
@@ -633,7 +614,7 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 			//int pieceType = get_piece(move.Piece, White); // Get piece type
 
 			//int targetSquare = move.To; // Get target square
-			int main_history = history_moves[board.side][move.From][move.To];
+			int main_history = history_moves[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
 			int oneply_conthist = getContinuationHistoryScore(move);
 			//int oneply_conthist = getContinuationHistoryScore(move);
 			//int oneply_conthist = 0;
@@ -904,12 +885,12 @@ static inline void sort_moves_captures(std::vector<Move>& moves, Board& board) {
 
 
 
-static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposition_entry &tt_entry) {
+static inline void sort_moves(std::vector<Move>& moves, Board& board, Transposition_entry &tt_entry, uint64_t opp_threat) {
     // Precompute scores for all moves
     std::vector<std::pair<int, Move>> scored_moves;
     scored_moves.reserve(moves.size());
     for (const Move& move : moves) {
-        int score = get_move_score(move, board, tt_entry);
+        int score = get_move_score(move, board, tt_entry, opp_threat);
         scored_moves.emplace_back(score, move);
     }
 
@@ -1309,8 +1290,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//{
 	//	enable_pv_scoring(moveList);
 	//}
-
-	sort_moves(moveList, board, ttEntry);
+	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
+	sort_moves(moveList, board, ttEntry, oppThreats);
 
 
 	//std::vector<uint64_t> last_history;
@@ -1347,6 +1328,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	Move bestmove = Move(0, 0, 0, 0);
 	int quiet_moves = 0;
+
+	
+	
 	for (Move& move : moveList)
 	{
 
@@ -1671,7 +1655,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				for (auto& move_quiet : Quiet_moves_list) {
 					if (move_quiet == move)
 					{
-						update_history(board.side, move_quiet.From, move_quiet.To, bonus);
+						update_history(board.side, move_quiet.From, move_quiet.To, bonus, oppThreats);
 						if (ply >= 1)
 						{
 							updateContinuationHistoryScore(move_quiet, bonus);
@@ -1681,7 +1665,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 					else
 					{
-						update_history(board.side, move_quiet.From, move_quiet.To, -bonus);
+						update_history(board.side, move_quiet.From, move_quiet.To, -bonus, oppThreats);
 						if (ply >= 1)
 						{
 							updateContinuationHistoryScore(move_quiet, -bonus);
@@ -1785,34 +1769,12 @@ void bench()
 			killer_moves[0][ply] = Move();
 			killer_moves[1][ply] = Move();
 		}
-		for (int from = 0; from < 64; ++from)
-		{
-			for (int to = 0; to < 64; ++to)
-			{
-				history_moves[0][from][to] = 0;
-				history_moves[1][from][to] = 0;
-				//std::cout << to<<"\n";
-				//history_moves[piece][square] = 0;
-			}
-		}
-
+		memset(history_moves, 0, sizeof(history_moves));
 		for (size_t i = 0; i < TT_size; i++)
 		{
 			TranspositionTable[i] = Transposition_entry();
 		}
-		for (int piecea = 0; piecea < 12; piecea++)
-		{
-			for (int toa = 0; toa < 64; toa++)
-			{
-				for (int pieceb = 0; pieceb < 12; pieceb++)
-				{
-					for (int tob = 0; tob < 64; tob++)
-					{
-						Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
-					}
-				}
-			}
-		}
+		memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 		memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
@@ -1845,35 +1807,15 @@ void bench()
 		killer_moves[0][ply] = Move();
 		killer_moves[1][ply] = Move();
 	}
-	for (int from = 0; from < 64; ++from)
-	{
-		for (int to = 0; to < 64; ++to)
-		{
-			history_moves[0][from][to] = 0;
-			history_moves[1][from][to] = 0;
-			//std::cout << to<<"\n";
-			//history_moves[piece][square] = 0;
-		}
-	}
-
+	memset(history_moves, 0, sizeof(history_moves));
 	for (size_t i = 0; i < TT_size; i++)
 	{
 		TranspositionTable[i] = Transposition_entry();
 	}
-	for (int piecea = 0; piecea < 12; piecea++)
-	{
-		for (int toa = 0; toa < 64; toa++)
-		{
-			for (int pieceb = 0; pieceb < 12; pieceb++)
-			{
-				for (int tob = 0; tob < 64; tob++)
-				{
-					Oneply_ContHist[piecea][toa][pieceb][tob] = 0;;
-				}
-			}
-		}
-	}
+	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
+	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
+	memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
 
 }
 void setColor([[maybe_unused]] ConsoleColor color) {
