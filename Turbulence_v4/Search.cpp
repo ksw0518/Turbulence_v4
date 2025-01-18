@@ -1323,7 +1323,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//for (int i = 0; i < board.history.size(); i++)
 	//{
-	//	last_history.push_back(board.history[i]);
+	//	last_history.push_back(board.history[i]); 
 	//}
 
 	int alpha_org = alpha;
