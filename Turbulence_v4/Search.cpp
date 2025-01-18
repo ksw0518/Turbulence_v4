@@ -158,7 +158,7 @@ Move counter_move[64][64];
 
 int history_moves[2][64][64][2][2];
 
-int CaptureHistory[12][64][12];
+int CaptureHistory[12][64][12];//piece, to, victim
 
 int Oneply_ContHist[12][64][12][64];
 int Twoply_ContHist[12][64][12][64];
@@ -423,33 +423,7 @@ static int mvv_lva[6][6] = {
 //			<< std::endl;
 //	}
 //}
-void printTopCapthist(int side) {
-	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
 
-	// Populate the vector with scores and moves
-	for (int from = 0; from < 64; ++from) {
-		for (int to = 0; to < 64; ++to) {
-			int score = CaptureHistory[side][from][to];
-			moves.emplace_back(score, from, to);
-		}
-	}
-
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
-	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
-		auto [score, from, to] = moves[i];
-		std::cout << "from: " << CoordinatesToChessNotation(from)
-			<< " to: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< " side_to_move = " << side
-			<< std::endl;
-	}
-}
 void printTopOneplyContHist() {
 	std::vector<std::tuple<int, int, int, int, int>> moves; // Stores <score, piece_from, from, piece_to, to>
 
@@ -485,7 +459,36 @@ void printTopOneplyContHist() {
 	}
 }
 
+void printTopCapthist() {
+	// Vector to store values and their indices
+	std::vector<std::tuple<int, int, int, int>> entries;
 
+	// Collect all elements with their indices
+	for (int piece = 0; piece < 12; ++piece) {
+		for (int to = 0; to < 64; ++to) {
+			for (int victim = 0; victim < 12; ++victim) {
+				entries.emplace_back(CaptureHistory[piece][to][victim], piece, to, victim);
+			}
+		}
+	}
+
+	// Sort the entries in descending order based on the value
+	std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+		return std::get<0>(a) > std::get<0>(b); // Compare by value (first element)
+		});
+
+	// Print the top 20 entries
+	std::cout << "Top 20 CaptureHistory entries:\n";
+	for (size_t i = 0; i < std::min(entries.size(), size_t(20)); ++i) {
+		int value = std::get<0>(entries[i]);
+		int piece = std::get<1>(entries[i]);
+		int to = std::get<2>(entries[i]);
+		int victim = std::get<3>(entries[i]);
+		std::cout << "Value: " << value << ", Indices: [Piece=" << getCharFromPiece(piece)
+			<< ", To=" << CoordinatesToChessNotation(to) << ", Victim=" << getCharFromPiece(victim) << "]\n";
+	}
+	
+}
 
 static inline int get_move_score(Move move, Board& board, Transposition_entry &entry, uint64_t opp_threat)
 {
@@ -556,7 +559,7 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 			 }
 			 int attacker = get_piece(move.Piece, White);
 			 int score = mvv_lva[attacker][victim];
-			 //score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+			 score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 2;
 			 score += SEE(board, move, -100) ? 200000 : -10000000;
 			 return score;
 
@@ -1323,6 +1326,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	std::vector<Move> Quiet_moves_list;
 	Quiet_moves_list.reserve(50);
+	std::vector<Move> Noisy_moves_list;
+	Noisy_moves_list.reserve(50);
+	std::vector<int> capture_victims;
+	capture_victims.reserve(50);
 	/*std::vector<Move> Noisy_moves_list;
 	Noisy_moves_list.reserve(50);*/
 
@@ -1449,6 +1456,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			Quiet_moves_list.push_back(move);
 			quiet_moves++;
+		}
+		else
+		{
+			Noisy_moves_list.push_back(move);
+			capture_victims.push_back(captured_piece);
 		}
 		//else
 		//{
@@ -1673,28 +1685,31 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 
 				}
+				int bonus_capture = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				for (size_t i = 0; i < Noisy_moves_list.size(); i++) {
+					Move& move_noisy = Noisy_moves_list[i];
+					int capturedPiece = capture_victims[i]; // Retrieve the corresponding captured piece
+					update_capthist(move_noisy.Piece, move_noisy.To, capturedPiece, -bonus_capture);
+				}
 
 				//update_history(board.side, move.From, move.To, depth*depth);
 			}
+			else//capthist
+			{
+				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				for (size_t i = 0; i < Noisy_moves_list.size(); i++) {
+					Move& move_noisy = Noisy_moves_list[i];
+					int capturedPiece = capture_victims[i]; // Retrieve the corresponding captured piece
 
-			//else
-			//{
-			//	int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
-			//	for (auto& move_noisy : Noisy_moves_list) {
-			//		if (move_noisy == move)
-			//		{
-			//			update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, bonus);
-
-			//		}
-			//		else
-			//		{
-			//			update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, -bonus);
-
-			//		}
-
-			//	}
-			//	//update_history(board.side, move.From, move.To, depth*depth);
-			//}
+					if (move_noisy == move) {
+						update_capthist(move_noisy.Piece, move_noisy.To, capturedPiece, bonus);
+					}
+					else {
+						update_capthist(move_noisy.Piece, move_noisy.To, capturedPiece, -bonus);
+					}
+				}
+				//update_history(board.side, move.From, move.To, depth*depth);
+			}
 
 			break;
 			//return score;
@@ -2258,10 +2273,9 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		//printTopHistory(1);
 		//
 		//
-		//std::cout << "white";
-		//printTopCapthist(0);
-		//std::cout << "black";
-		//printTopCapthist(1);
+
+		//printTopCapthist();
+
 		//if (Print_Root)
 		//{
 		//	//public_movelist.clear();
