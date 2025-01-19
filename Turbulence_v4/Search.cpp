@@ -102,7 +102,7 @@ std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
 int RFP_MULTIPLIER = 85;
-int RFP_IMPROVING_MULTIPLIER = 30;
+int RFP_IMPROVING_MULTIPLIER = 60;
 int RFP_BASE = -49;
 int RFP_IMPROVING_BASE = -49;
 
