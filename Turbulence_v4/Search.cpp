@@ -102,7 +102,9 @@ std::string bench_fens[] = { // fens from alexandria, ultimately from bitgenie
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
 int RFP_MULTIPLIER = 85;
+int RFP_IMPROVING_MULTIPLIER = 60;
 int RFP_BASE = -49;
+int RFP_IMPROVING_BASE = -49;
 
 int LMP_BASE = 0;
 int LMP_MULTIPLIER = 1;
@@ -1233,12 +1235,22 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int static_eval = adjustEvalWithCorrHist(board, raw_eval);
 
-	
+	Search_stack[ply].static_eval = static_eval;
+
+	bool improving = !isInCheck && ply > 1 && static_eval > Search_stack[ply - 2].static_eval;
 
 	int canPrune = !isInCheck && !is_pv_node;
 	if (depth < 4 && canPrune)//rfp
 	{
-		int rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
+		int rfpMargin;
+		if (improving)
+		{
+			rfpMargin = RFP_IMPROVING_BASE + RFP_IMPROVING_MULTIPLIER * depth;
+		}
+		else
+		{
+			rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
+		}
 		int rfpThreshold = rfpMargin;
 
 		if (static_eval - rfpThreshold >= beta)

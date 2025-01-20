@@ -37,7 +37,7 @@ struct Transposition_entry
 struct Search_data
 {
 	Move move;
-
+	int static_eval;
 };
 void initializeLMRTable();
 extern Transposition_entry* TranspositionTable;
