@@ -1330,7 +1330,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//pv_table[ply][ply] = ttEntry.best_move;
 	int lmp_threshold;
-	if (improving)
+	if (improving) 
 	{
 		lmp_threshold = LMP_BASE + LMP_IMPROVING_MULTIPLIER * depth * depth;
 	}
