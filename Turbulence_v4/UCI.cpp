@@ -42,6 +42,8 @@ int HISTORY_MULTIPLIER = 1;
 // generate 32-bit pseudo legal numbers
 
 
+
+
 const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const std::string kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
 
@@ -663,17 +665,24 @@ void ProcessUCI(std::string input)
             {
                 int hard_bound;
                 int soft_bound;
+				int baseTime = 0;
+				int maxTime = 0;
                 if (main_board.side == White)
                 {
                     hard_bound = Calculate_Hard_Bound(wtime, winc);
                     soft_bound = Calculate_Soft_Bound(wtime, winc);
-                }
+					baseTime = wtime * DEF_TIME_MULTIPLIER + winc * DEF_INC_MULTIPLIER;
+					maxTime = std::max(1.00, wtime * MAX_TIME_MULTIPLIER);
+				}
                 else
                 {
                     hard_bound = Calculate_Hard_Bound(btime, binc);
                     soft_bound = Calculate_Soft_Bound(btime, binc);
-                }
-                IterativeDeepening(main_board, 64, hard_bound, false, true, soft_bound);
+					baseTime = btime * DEF_TIME_MULTIPLIER + binc * DEF_INC_MULTIPLIER;
+					maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
+				}
+
+                IterativeDeepening(main_board, 99, hard_bound, false, true, soft_bound, baseTime, maxTime);
             }
            
         }

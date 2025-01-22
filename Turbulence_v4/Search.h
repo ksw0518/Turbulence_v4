@@ -24,6 +24,12 @@ extern int HISTORY_MULTIPLIER;
 extern uint64_t TT_size;
 
 extern bool is_Pretty_Printing;
+
+extern double DEF_TIME_MULTIPLIER;
+extern double DEF_INC_MULTIPLIER;
+extern double MAX_TIME_MULTIPLIER;
+extern double HARD_LIMIT_MULTIPLIER;
+extern double SOFT_LIMIT_MULTIPLIER;
 struct Transposition_entry
 {
 	uint64_t zobrist_key;
@@ -41,7 +47,7 @@ struct Search_data
 };
 void initializeLMRTable();
 extern Transposition_entry* TranspositionTable;
-void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1);
+void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1);
 int SEE(Board& pos, Move move, int threshold);
 
 void bench();

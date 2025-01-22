@@ -202,6 +202,14 @@ constexpr int HFEXACT = 1;
 constexpr int HFUPPER = 2;
 
 bool is_Pretty_Printing = true;
+
+
+
+double DEF_TIME_MULTIPLIER = 0.054;
+double DEF_INC_MULTIPLIER = 0.85;
+double MAX_TIME_MULTIPLIER = 0.76;
+double HARD_LIMIT_MULTIPLIER = 3.04;
+double SOFT_LIMIT_MULTIPLIER = 0.76;
 //static inline void enable_pv_scoring(std::vector<Move> &move_list)
 //{
 //	follow_pv = 0;
@@ -2102,8 +2110,11 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 	setColor(ConsoleColor::White);
 	std::cout << "\n";
 }
-
-void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound)
+void scaleTime(int& softLimit, uint8_t bestMoveStability, int baseSoft, int maxTime) {
+	double bestMoveScale[5] = { 2.43, 1.35, 1.09, 0.88, 0.68 };
+	softLimit = std::min(static_cast<int>(baseSoft * bestMoveScale[bestMoveStability]), maxTime);
+}
+void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime)
 {
 
 	if (timeMS == -1)
@@ -2151,6 +2162,9 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
 	memset(pv_table, 0, sizeof(pv_table));
 	memset(pv_length, 0, sizeof(pv_length));
+
+	int bestMoveStability = 0;
+	int baseSoft = softbound;
 	for (curr_depth = 1; curr_depth <= depth; curr_depth++)
 	{
 		//move_scores.cler();
@@ -2239,65 +2253,6 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		}
 
 
-
-		//score = Negamax(board, curr_depth, alpha_val, beta_val, true);
-
-		//
-		////int last_alpha = alpha_val;
-		////int last_beta = beta_val;
-
-		//// Continue re-searching until the search is successful
-		//while (score <= alpha_val || score >= beta_val)
-		//{
-		//	if (score <= alpha_val) // Failed low
-		//	{
-		//		alpha_val -= 50; // Widen alpha by decreasing it
-		//	}
-		//	else if (score >= beta_val) // Failed high
-		//	{
-		//		beta_val += 50; // Widen beta by increasing it
-		//	}
-
-		//	// Perform the search again with the widened window
-		//	//move_scores.clear();
-		//	//public_movelist.clear();
-		//	score = Negamax(board, curr_depth, alpha_val, beta_val, true);
-		//	//std::cout << "Window widened: [" << alpha_val << ", " << beta_val << "]" << std::endl;
-		//}
-
-
-		//printTopOneplyContHist();
-		//std::cout << "white";
-		//printTopHistory(0);
-		//std::cout << "black";
-		//printTopHistory(1);
-		//
-		//
-		//std::cout << "white";
-		//printTopCapthist(0);
-		//std::cout << "black";
-		//printTopCapthist(1);
-		//if (Print_Root)
-		//{
-		//	//public_movelist.clear();
-		//	//Generate_Legal_Moves(public_movelist, board, false);
-		//	//sort_moves_rootprint(movelist);
-		//	std::cout << public_movelist.size()<<"\n";
-		//	std::cout << move_scores.size() << "\n";
-		//	for (int i = 0; i < public_movelist.size(); i++)
-		//	{
-		//		printMove(public_movelist[i]);
-		//		std::cout << " : " << move_scores[i]<<"\n";
-		//	}
-		//}
-		//else//succeed
-		//{
-
-		//}
-		//board.history = histcopy;
-		//
-		//board.last_irreversible_ply = lastirr;
-
 		auto end = std::chrono::steady_clock::now();
 
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -2307,7 +2262,17 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 
 		double nps = negamax_nodecount / second;
 		//double nps_in_millions = nps / 1000000.0;
-
+		if (pv_table[0][0] == bestmove)
+		{
+			bestMoveStability = std::min(bestMoveStability + 1, 4);
+		}
+		else
+		{
+			bestMoveStability = 0;
+		}
+		if (curr_depth >= 6 && softbound != -1 && baseTime != -1) {
+			scaleTime(softbound, bestMoveStability, baseSoft, maxTime);
+		}
 		if (print_info)
 		{
 			if (!is_search_stopped)
@@ -2325,38 +2290,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 			}
 
 
-			/*if (!is_search_stopped)
-			{
-				bestmove = pv_table[0][0];
-				int hashfull = get_hashfull();
-				last_bestMove[curr_depth - 1] = bestmove;
-				std::cout << "info depth " << curr_depth;
-				std::cout << " seldepth " << seldepth;
-				if (std::abs(score) > 40000)
-				{
-					int mate_ply = 49000 - std::abs(score);
-					int mate_fullmove = std::ceil(static_cast<double>(mate_ply) / 2);
-
-					if (score < 0)
-					{
-						mate_fullmove *= -1;
-					}
-					std::cout << " score mate " << mate_fullmove;
-
-				}
-				else
-				{
-					std::cout << " score cp " << score;
-				}
-
-				std::cout << " time " << static_cast<int>(std::round(elapsedMS)) << " nodes " << negamax_nodecount << " nps " << static_cast<int>(std::round(nps)) << " hashfull " << hashfull << " pv " << std::flush;
-				for (int count = 0; count < pv_length[0]; count++)
-				{
-					printMove(pv_table[0][count]);
-					std::cout << " ";
-				}
-				std::cout << "\n";
-			}*/
+			
 		}
 
 
