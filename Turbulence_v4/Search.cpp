@@ -1507,6 +1507,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
+			if (isQuiet)
+			{
+				reduction++;
+			}
 			//asdf
 
 			//if (beta - alpha >= 1) //reduce less on pv nodes
