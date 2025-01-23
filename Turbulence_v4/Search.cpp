@@ -1503,7 +1503,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if (improving)
+			if (improving) 
 			{
 				reduction--;
 			}
