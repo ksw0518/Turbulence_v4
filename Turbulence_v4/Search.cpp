@@ -1360,22 +1360,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			continue;
 		}
-
-		if(depth <= Maximum_pvs_see_depth)
+		int seeThreshold = isQuiet ? quiet_SEE_margin : noisy_SEE_margin;
+		if (depth <= Maximum_pvs_see_depth)
 		{
-			if (isQuiet)
+			if (!SEE(board, move, seeThreshold))
 			{
-				if (!SEE(board, move, quiet_SEE_margin))
-				{
-					continue;
-				}
-			}
-			else
-			{
-				if (!SEE(board, move, noisy_SEE_margin))
-				{
-					continue;
-				}
+				continue;
 			}
 		}
 
