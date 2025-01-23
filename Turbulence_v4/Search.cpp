@@ -1507,9 +1507,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if (isQuiet)
+			if (!isQuiet)
 			{
-				reduction++;
+				reduction--;
 			}
 			//asdf
 
