@@ -1173,6 +1173,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_zobrist = board.Zobrist_key;
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
+	
 	// Only check TT for depths greater than zero (ply != 0)
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
@@ -1243,6 +1244,23 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int static_eval = adjustEvalWithCorrHist(board, raw_eval);
 
+	int ttCorrectedEval = static_eval;
+	if (is_ttmove_found)
+	{
+		if (ttEntry.node_type == ExactFlag)
+		{
+			ttCorrectedEval = ttEntry.score;
+		}
+		else if (ttEntry.node_type == AlphaFlag && static_eval < ttEntry.score)
+		{
+			ttCorrectedEval = ttEntry.score;
+			//alpha = ttEntry.score;
+		}
+		else if (ttEntry.node_type == BetaFlag && static_eval > ttEntry.score)
+		{
+			ttCorrectedEval = ttEntry.score;
+		}
+	}
 	Search_stack[ply].static_eval = static_eval;
 
 	bool improving = !isInCheck && ply > 1 && static_eval > Search_stack[ply - 2].static_eval;
@@ -1261,9 +1279,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		int rfpThreshold = rfpMargin;
 
-		if (static_eval - rfpThreshold >= beta)
+		if (ttCorrectedEval - rfpThreshold >= beta)
 		{
-			return static_eval - rfpThreshold;
+			return ttCorrectedEval - rfpThreshold;
 		}
 	}
 	if (!is_pv_node && doNMP)
