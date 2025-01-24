@@ -1371,6 +1371,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		bool isNotMated = alpha > -49000 + 99;
 
+		int main_history = history_moves[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
+		int conthist = getContinuationHistoryScore(move);
+		//int oneply_conthist = getContinuationHistoryScore(move);
+		//int oneply_conthist = 0;
+		int historyScore = main_history + conthist;
 		if (ply != 0 && isQuiet && isNotMated)
 		{
 			if (legal_moves >= lmp_threshold)
@@ -1383,6 +1388,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//{
 			//	skip_quiets = true;
 			//}
+			if (quiet_moves > 1 && depth <= 5 && historyScore < -50 * depth)
+			{
+				break;
+			}
 
 		}
 
