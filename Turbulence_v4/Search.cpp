@@ -120,8 +120,11 @@ int RFP_IMPROVING_MULTIPLIER = 60;
 int RFP_BASE = -49;
 int RFP_IMPROVING_BASE = -49;
 
-int LMP_BASE = 0;
+int LMP_BASE = 3;
 int LMP_MULTIPLIER = 1;
+int LMP_IMPROVING_BASE = 6;
+int LMP_IMPROVING_MULTIPLIER = 2;
+
 
 int PVS_QUIET_BASE = 0;
 int PVS_QUIET_MULTIPLIER = 63;
@@ -1351,7 +1354,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	//pv_table[ply][ply] = ttEntry.best_move;
-	int lmp_threshold = LMP_BASE + LMP_MULTIPLIER * depth * depth;
+	
+	int lmp_threshold = improving ? ((LMP_IMPROVING_BASE / 2) + (LMP_IMPROVING_MULTIPLIER / 2) * depth * depth) : ((LMP_BASE / 2) + (LMP_MULTIPLIER / 2) * depth * depth);
 
 	int quiet_SEE_margin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
 	int noisy_SEE_margin = PVS_NOISY_BASE + (-PVS_NOISY_MULTIPLIER * depth * depth);
@@ -1393,7 +1397,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int historyScore = main_history + conthist;
 		if (ply != 0 && isQuiet && isNotMated)
 		{
-			if (legal_moves >= lmp_threshold)
+			if (legal_moves >= lmp_threshold + 1)
 			{
 				skip_quiets = true;
 			}
