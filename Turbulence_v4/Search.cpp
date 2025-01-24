@@ -30,6 +30,20 @@
 
 #endif
 
+bool is_window;
+
+void initialize_platform() {
+#if defined(_WIN32) || defined(_WIN64)
+	// Windows platform
+	is_window = true;
+#elif defined(__linux__)
+	// Linux platform
+	is_window = false;
+#else
+	// Unknown platform
+	is_window = false;  // Default to false (assuming Linux if not Windows)
+#endif
+}
 enum class ConsoleColor {
 	Black = 0,
 	Blue = 1,
@@ -236,6 +250,7 @@ bool is_quiet(int type)
 }
 void initializeLMRTable()
 {
+	initialize_platform();
 	for (int depth = 1; depth < 99; depth++)
 	{
 		for (int move = 1; move < 256; move++)
@@ -2281,7 +2296,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 			if (!is_search_stopped)
 			{
 				bestmove = pv_table[0][0];
-				if (is_Pretty_Printing)
+				if (is_Pretty_Printing && is_window)
 				{
 					print_Pretty(pv_table, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val);
 				}

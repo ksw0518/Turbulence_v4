@@ -4,6 +4,7 @@
 #include "MoveGeneration.h"
 #include "BitManipulation.h"
 #include "const.h"
+#include <cstdint>
 #include <cctype>
 #include <iostream>
 Board::Board()
