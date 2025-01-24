@@ -2957,7 +2957,7 @@ void UnmakeMove(Board& board, Move move, int captured_piece)
 
         //update both occupancy
         board.occupancies[Both] &= ~(1ULL << move.To);
-        board.occupancies[Both] |= (1ULL << capture_square);
+        board.occupancies[Both] |= (1ULL << capture_square); 
         board.occupancies[Both] |= (1ULL << move.From);
 
         //update mailbox
