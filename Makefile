@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = clang++ # Fixed to clang++
-CXXFLAGS ?= -O3 -std=c++17 -Wall -Wextra # Default compiler flags
+CXXFLAGS ?= -O3 -std=c++20 -Wall -Wextra # Default compiler flags
 
 # Automatically find all source files in the correct folder
 SRC = $(wildcard Turbulence_v4/*.cpp)
