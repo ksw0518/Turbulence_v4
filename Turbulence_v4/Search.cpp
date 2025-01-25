@@ -1261,7 +1261,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	Search_stack[ply].static_eval = static_eval;
 
 	bool improving = !isInCheck && ply > 1 && static_eval > Search_stack[ply - 2].static_eval;
+	int eval = static_eval;
 
+	if (is_ttmove_found && (
+		ttEntry.node_type == ExactFlag ||
+		(ttEntry.node_type == AlphaFlag && ttEntry.score >= eval) ||
+		(ttEntry.node_type == BetaFlag && ttEntry.score <= eval)))
+	{
+		eval = ttEntry.score;
+	}
 	int canPrune = !isInCheck && !is_pv_node;
 	if (depth < 4 && canPrune)//rfp
 	{
@@ -1276,14 +1284,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		int rfpThreshold = rfpMargin;
 
-		if (static_eval - rfpThreshold >= beta)
+		if (eval - rfpThreshold >= beta)
 		{
-			return static_eval - rfpThreshold;
+			return eval - rfpThreshold;
 		}
 	}
 	if (!is_pv_node && doNMP)
 	{
-		if (!isInCheck && depth >= 2 && ply && static_eval >= beta)
+		if (!isInCheck && depth >= 2 && ply && eval >= beta)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
