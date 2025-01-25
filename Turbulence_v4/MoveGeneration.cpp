@@ -491,7 +491,7 @@ static uint64_t Calcbetween(int a, int b)
     int xStep = (int)testx;
     int yStep = (int)testy;
     int pos = a;
-    int howmuch = 0;
+    //int howmuch = 0;
     //Console.WriteLine(pos);
     //Set_bit(ref between, pos);
     while (pos != b)
@@ -502,7 +502,7 @@ static uint64_t Calcbetween(int a, int b)
         Set_bit(between, pos);
 
         //if (howmuch > 10) Console.WriteLine(CoordinatesToChessNotation(a) + "," + CoordinatesToChessNotation(b) + " " + xStep + "," + yStep + " " + totalSteps);
-        howmuch++;
+        //howmuch++;
         //Console.WriteLine(pos);
 
     }
@@ -1134,7 +1134,7 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
     }
 
 }
-static inline void Generate_Knight_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask)
+static inline void Generate_Knight_Moves(std::vector<Move>& MoveList, Board& board)
 {
     int side = board.side;
     uint64_t KnightBB;
@@ -1309,7 +1309,7 @@ static inline void Generate_Queen_Moves(std::vector<Move>& MoveList, Board& boar
         }
     }
 }
-static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask)
+static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board)
 {
     //PrintBitboard(WhiteKingCastleEmpty);
     //PrintBitboard(WhiteQueenCastleEmpty);
@@ -1510,11 +1510,11 @@ void Generate_Legal_Moves(std::vector<Move>& MoveList, Board& board, bool isCapt
     Generate_Pawn_Moves(MoveList, board, move_mask, capture_mask);
 
     ////if (prevCastle != board.castle) Console.WriteLine(0);
-    Generate_Knight_Moves(MoveList, board, move_mask, capture_mask);
+    Generate_Knight_Moves(MoveList, board);
     Generate_Bishop_Moves(MoveList, board, move_mask, capture_mask);
     Generate_Rook_Moves(MoveList, board, move_mask, capture_mask);
     Generate_Queen_Moves(MoveList, board, move_mask, capture_mask);
-    Generate_King_Moves(MoveList, board, move_mask, capture_mask);
+    Generate_King_Moves(MoveList, board);
 
 
 
@@ -1609,8 +1609,7 @@ void MakeMove(Board& board, Move move)
 {
     //Console.WriteLine(board.side);
 
-    uint64_t lastCastle = board.castle;
-    int lastEp = board.enpassent;
+    
 
     
     
