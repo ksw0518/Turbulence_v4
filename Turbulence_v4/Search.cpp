@@ -1283,7 +1283,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (!is_pv_node && doNMP)
 	{
-		if (!isInCheck && depth >= 2 && ply && static_eval >= beta)
+		if (!isInCheck && depth >= 2 && ply && static_eval >= beta) 
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
