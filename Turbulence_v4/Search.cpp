@@ -952,7 +952,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		// evaluate position
 		//std::cout << "fuck";
 	int score = 0;
-
+	 
 	int evaluation = Evaluate(board);
 	evaluation = adjustEvalWithCorrHist(board, evaluation);
 
