@@ -955,7 +955,11 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	int evaluation = Evaluate(board);
 	evaluation = adjustEvalWithCorrHist(board, evaluation);
-
+	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
+	{
+		evaluation = ttEntry.score;
+	}
 	if (evaluation >= beta)
 	{
 		return evaluation;
@@ -966,7 +970,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		alpha = evaluation;
 	}
 
-	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+	
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
 		if ((ttEntry.node_type == ExactFlag)
