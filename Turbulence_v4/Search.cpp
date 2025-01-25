@@ -238,7 +238,7 @@ double SOFT_LIMIT_MULTIPLIER = 0.76;
 //}
 bool is_quiet(int type)
 {
-	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //quiet move
+	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //noisy move = promotion or capture
 	{
 		return true;
 	}
@@ -895,8 +895,8 @@ int SEE(Board& pos, Move move, int threshold) {
 
 static inline void sort_moves_captures(std::vector<Move>& moves, Board& board) {
 	// Partition to segregate capture moves
-	auto capture_end = std::partition(moves.begin(), moves.end(), [](const Move& move) {
-		return move.Type & captureFlag;
+	auto capture_end = std::stable_partition(moves.begin(), moves.end(), [](const Move& move) {
+		return !is_quiet(move.Type);
 		});
 
 	// Sort only the capture moves
@@ -905,7 +905,7 @@ static inline void sort_moves_captures(std::vector<Move>& moves, Board& board) {
 		});
 
 	// Remove non-capture moves (optional, if you don't want them in the vector)
-	moves.erase(capture_end, moves.end());
+	//moves.erase(capture_end, moves.end());
 }
 
 
@@ -978,7 +978,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 
 	std::vector<Move> moveList;
-	Generate_Legal_Moves(moveList, board, false);
+	Generate_Legal_Moves(moveList, board, true);
 
 	sort_moves_captures(moveList, board);
 
