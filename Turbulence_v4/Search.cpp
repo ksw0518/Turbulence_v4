@@ -662,7 +662,7 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 
 	return 0;
 }
-static inline int get_move_score_capture(Move move, Board& board)
+static inline int get_move_score_capture(Move move, Board& board, Transposition_entry& ttEntry)
 {
 
 
@@ -678,6 +678,10 @@ static inline int get_move_score_capture(Move move, Board& board)
 
 	// Check if the entry is valid and matches the current Zobrist key
 
+	if (ttEntry.best_move == move)
+	{
+		return 1000000000;
+	}
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
 		if (move.Type == ep_capture)
@@ -893,15 +897,15 @@ int SEE(Board& pos, Move move, int threshold) {
 	return pos.side != colour;
 }
 
-static inline void sort_moves_captures(std::vector<Move>& moves, Board& board) {
+static inline void sort_moves_captures(std::vector<Move>& moves, Board& board, Transposition_entry ttEntry) {
 	// Partition to segregate capture moves
 	auto capture_end = std::stable_partition(moves.begin(), moves.end(), [](const Move& move) {
 		return !is_quiet(move.Type);
 		});
 
 	// Sort only the capture moves
-	std::stable_sort(moves.begin(), capture_end, [&board](const Move& move1, const Move& move2) {
-		return get_move_score_capture(move1, board) > get_move_score_capture(move2, board);
+	std::stable_sort(moves.begin(), capture_end, [&board, &ttEntry](const Move& move1, const Move& move2) {
+		return get_move_score_capture(move1, board, ttEntry) > get_move_score_capture(move2, board, ttEntry);
 		});
 
 	// Remove non-capture moves (optional, if you don't want them in the vector)
@@ -980,7 +984,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, true);
 
-	sort_moves_captures(moveList, board);
+	sort_moves_captures(moveList, board, ttEntry);
 
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
