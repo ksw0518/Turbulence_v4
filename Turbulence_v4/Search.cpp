@@ -1273,6 +1273,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int static_eval = adjustEvalWithCorrHist(board, raw_eval);
 
 	Search_stack[ply].static_eval = static_eval;
+	Search_stack[ply + 1].failHighCount = 0;
 
 	bool improving = !isInCheck && ply > 1 && static_eval > Search_stack[ply - 2].static_eval;
 
@@ -1446,7 +1447,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
 
-		Search_stack[ply].move = move;
+		Search_stack[ply + 1].move = move;
 
 		ply++;
 
@@ -1546,6 +1547,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				reduction--;
 			}
 			if (historyScore < -25 * depth)
+			{
+				reduction++;
+			}
+			if (Search_stack[ply].failHighCount >= 4)
 			{
 				reduction++;
 			}
@@ -1694,6 +1699,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				//		}
 				//	}
 				//}
+			Search_stack[ply + 1].failHighCount += 1;
 			ttFlag = BetaFlag;
 			if ((move.Type & capture) == 0)
 			{
