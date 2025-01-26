@@ -680,39 +680,21 @@ static inline int get_move_score_capture(Move move, Board& board)
 
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
+		int victim;
 		if (move.Type == ep_capture)
 		{
-			return mvv_lva[P][P] * 10000;
+			victim = P;
 		}
-		int victim = get_piece(board.mailbox[move.To], White);
+		else
+		{
+			victim = get_piece(board.mailbox[move.To], White);
+		}
 		int attacker = get_piece(move.Piece, White);
-		//score moves based on mvv-lva scheme
-		//return 0;
+		int score = mvv_lva[attacker][victim];
+		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+		score += SEE(board, move, 200) ? 200000 : 10000;
+		return score;
 
-		//std::cout << board.mailbox[move.To] << "\n";
-		//std::cout << attacker << "\n";
-		//return mvv_lva[victim][attacker];
-		return mvv_lva[attacker][victim] * 10000;
-		//if (SEE(board, move, -50))
-		//{
-
-		//}
-		//else
-		//{
-		   // if (move.Type == ep_capture)
-		   // {
-		   //	 return mvv_lva[P][P] * 10000 /6 -  40000;
-		   // }
-		   // int victim = get_piece(board.mailbox[move.To], White);
-		   // int attacker = get_piece(move.Piece, White);
-		   // //score moves based on mvv-lva scheme
-		   // //return 0;
-
-		   // //std::cout << board.mailbox[move.To] << "\n";
-		   // //std::cout << attacker << "\n";
-		   // //return mvv_lva[victim][attacker];
-		   // return mvv_lva[attacker][victim] * 10000 /6 - 40000;
-		//}
 
 	}
 	else
