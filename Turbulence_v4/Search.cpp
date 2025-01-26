@@ -1113,7 +1113,21 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		return evaluation;
 	}
-	return alpha;
+	if (ttEntry.node_type == 0)
+	{
+		int nodeType = bestValue >= beta ? AlphaFlag : BetaFlag;
+		ttEntry.score = bestValue;
+		ttEntry.node_type = nodeType;
+		ttEntry.depth = -1;
+		ttEntry.zobrist_key = board.Zobrist_key;
+		TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
+	}
+
+
+
+
+	
+	return bestValue;
 	//negamax_nodecount++;
 }
 
