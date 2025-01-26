@@ -1292,7 +1292,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				uint64_t lzob = board.Zobrist_key;
 				ply++;
 				Make_Nullmove(board);
-				int R = 3 + depth / 3;
+				int R = 3 + depth / 3 + std::min((static_eval - beta) / 245, 3);
 				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
 
 				Unmake_Nullmove(board);
