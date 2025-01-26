@@ -1549,12 +1549,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
-			if (is_ttmove_found && !is_quiet(ttEntry.best_move.Type) && ttEntry.depth >= 3)
-			{
-				reduction++;
-			}
-			if (isQuiet) {
 
+			if (isQuiet) {
+				if (is_ttmove_found && !is_quiet(ttEntry.best_move.Type) && ttEntry.depth >= 3)
+				{
+					reduction++;
+				}
 				// quiet reductions
 
 			}
