@@ -118,3 +118,4 @@ void init_random_keys();
 uint64_t generate_hash_key(Board& board);
 uint64_t generate_Pawn_Hash(Board& board);
 uint64_t generate_Minor_Hash(Board& board);
+uint64_t generate_Major_Hash(Board& board);
