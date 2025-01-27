@@ -6,7 +6,6 @@ developed since 08/20/2024
 
 # How to build
 Assuming you have clang++ compiler and Make, you can easily build the latest dev version using Make.    
-You have to have MSVC-tool installed as a clang tool(I'll get rid of it soon :p)
 1.```git clone https://github.com/ksw0518/Turbulence_v4``` to clone the repository to your computer    
 2.cd to the ```Turbulence_v4``` folder    
 3.```Make```
