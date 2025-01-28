@@ -167,6 +167,7 @@ static uint64_t Perft(Board& board, int depth)
 
         uint64_t last_zobrist = board.Zobrist_key;
 		uint64_t last_pawnKey = board.PawnKey;
+		uint64_t last_minorKey = board.MinorKey;
 		
         //std::vector<uint64_t> last_history(board.history);
 
@@ -176,13 +177,20 @@ static uint64_t Perft(Board& board, int depth)
         //ulong lastZobrist = Zobrist;
         MakeMove(board, move);
 
-		uint64_t pawnKey_from_scratch = generate_Pawn_Hash(board);
-		if (board.PawnKey != pawnKey_from_scratch)
+		uint64_t minorKey_from_scratch = generate_Minor_Hash(board);
+		if (board.MinorKey != minorKey_from_scratch)
 		{
-			std::cout << "CRITICAL ERROR: pawn key doesn't match\n";
+			std::cout << "CRITICAL ERROR: minor key doesn't match\n";
 			printMove(move);
 			std::cout << "\n\n";
 		}
+		//uint64_t pawnKey_from_scratch = generate_Pawn_Hash(board);
+		//if (board.PawnKey != pawnKey_from_scratch)
+		//{
+		//	std::cout << "CRITICAL ERROR: pawn key doesn't match\n";
+		//	printMove(move);
+		//	std::cout << "\n\n";
+		//}
         /*uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
 
         if (board.Zobrist_key != zobrist_generated_from_scratch)
@@ -221,6 +229,7 @@ static uint64_t Perft(Board& board, int depth)
         board.side = lastside;
         board.Zobrist_key = last_zobrist;
 		board.PawnKey = last_pawnKey;
+		board.MinorKey = last_minorKey;
         //Zobrist = lastZobrist;
 
     }

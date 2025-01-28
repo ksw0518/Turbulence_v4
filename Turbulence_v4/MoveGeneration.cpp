@@ -1640,13 +1640,24 @@ void Unmake_Nullmove(Board& board)
     board.side = 1 - board.side;
     board.Zobrist_key ^= side_key;
 }
+inline bool isMinor(int Piece)
+{
+	if (Piece == K || Piece == k || Piece == B || Piece == b || Piece == N || Piece == n)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 void MakeMove(Board& board, Move move)
 {
     //Console.WriteLine(board.side);
 
     
 
-    
+    //K k B b N n minor piece
     
     if (board.enpassent != no_sq)
     {
@@ -1793,6 +1804,11 @@ void MakeMove(Board& board, Move move)
 			board.PawnKey ^= piece_keys[move.Piece][move.From];
 			board.PawnKey ^= piece_keys[move.Piece][move.To];
 		}
+		if (isMinor(move.Piece))
+		{
+			board.MinorKey ^= piece_keys[move.Piece][move.From];
+			board.MinorKey ^= piece_keys[move.Piece][move.To];
+		}
 		board.mailbox[move.To] = move.Piece;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 		//update enpassent square
@@ -1916,6 +1932,15 @@ void MakeMove(Board& board, Move move)
 		{
 			board.PawnKey ^= piece_keys[captured_piece][move.To];
 		}
+		if (isMinor(move.Piece))
+		{
+			board.MinorKey ^= piece_keys[move.Piece][move.From];
+			board.MinorKey ^= piece_keys[move.Piece][move.To];
+		}
+		if (isMinor(captured_piece))
+		{
+			board.MinorKey ^= piece_keys[captured_piece][move.To];
+		}
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[move.Piece][move.To];
 		//Zobrist ^= PIECES[captured_piece][move.To];
@@ -1991,9 +2016,13 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+
+		board.MinorKey ^= piece_keys[move.Piece][move.From];
+
 		board.mailbox[move.To] = move.Piece;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 
+		board.MinorKey ^= piece_keys[move.Piece][move.To];
 		board.Zobrist_key ^= piece_keys[board.mailbox[rookSquare]][rookSquare];
 		board.mailbox[rookSquare] = NO_PIECE;
 
@@ -2056,9 +2085,11 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.From] = NO_PIECE;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
+		board.MinorKey ^= piece_keys[move.Piece][move.From];
 
 		board.mailbox[move.To] = move.Piece;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.To];
+		board.MinorKey ^= piece_keys[move.Piece][move.To];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[rookSquare]][rookSquare];
 		board.mailbox[rookSquare] = NO_PIECE;
@@ -2155,6 +2186,7 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 		board.mailbox[move.To] = get_piece(b, side);
 		board.Zobrist_key ^= piece_keys[get_piece(b, side)][move.To];
+		board.MinorKey ^= piece_keys[get_piece(b, side)][move.To];
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(b, side)][move.To];
 		board.side = 1 - board.side;
@@ -2186,6 +2218,7 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 		board.mailbox[move.To] = get_piece(n, side);
 		board.Zobrist_key ^= piece_keys[get_piece(n, side)][move.To];
+		board.MinorKey ^= piece_keys[get_piece(n, side)][move.To];
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.n, side)][move.To];
 		board.side = 1 - board.side;
@@ -2275,6 +2308,10 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (isMinor(captured_piece))
+		{
+			board.MinorKey ^= piece_keys[captured_piece][move.To];
+		}
 		board.mailbox[move.To] = get_piece(q, side);
 		board.Zobrist_key ^= piece_keys[get_piece(q, side)][move.To];
 
@@ -2367,6 +2404,10 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (isMinor(captured_piece))
+		{
+			board.MinorKey ^= piece_keys[captured_piece][move.To];
+		}
 		board.mailbox[move.To] = get_piece(r, side);
 		board.Zobrist_key ^= piece_keys[get_piece(r, side)][move.To];
 
@@ -2460,9 +2501,13 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (isMinor(captured_piece))
+		{
+			board.MinorKey ^= piece_keys[captured_piece][move.To];
+		}
 		board.mailbox[move.To] = get_piece(b, side);
 		board.Zobrist_key ^= piece_keys[get_piece(b, side)][move.To];
-
+		board.MinorKey ^= piece_keys[get_piece(b, side)][move.To];
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
 		//Zobrist ^= PIECES[captured_piece][move.To];
@@ -2553,9 +2598,14 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (isMinor(captured_piece))
+		{
+			board.MinorKey ^= piece_keys[captured_piece][move.To];
+		}
 
 		board.mailbox[move.To] = get_piece(n, side);
 		board.Zobrist_key ^= piece_keys[get_piece(n, side)][move.To];
+		board.MinorKey ^= piece_keys[get_piece(n, side)][move.To];
 
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];

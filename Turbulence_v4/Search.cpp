@@ -282,7 +282,7 @@ int scaledBonus(int score, int bonus)
 }
 void update_Minor_Corrhist(Board& board, const int depth, const int diff)
 {
-	uint64_t minorKey = generate_Minor_Hash(board);
+	uint64_t minorKey = board.MinorKey;
 	int& entry = minor_Corrhist[board.side][minorKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
@@ -291,7 +291,7 @@ void update_Minor_Corrhist(Board& board, const int depth, const int diff)
 }
 void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 {
-	uint64_t pawnKey = generate_Pawn_Hash(board);
+	uint64_t pawnKey = board.PawnKey;
 	int& entry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
@@ -300,11 +300,11 @@ void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 }
 int adjustEvalWithCorrHist(Board& board, const int rawEval)
 {
-	uint64_t pawnKey = generate_Pawn_Hash(board);
+	uint64_t pawnKey = board.PawnKey;
 	const int& pawnEntry = pawn_Corrhist[board.side][pawnKey % CORRHIST_SIZE];
 	
 
-	uint64_t minorKey = generate_Minor_Hash(board);
+	uint64_t minorKey = board.MinorKey;
 	const int& minorEntry = minor_Corrhist[board.side][minorKey % CORRHIST_SIZE];
 
 
@@ -1014,6 +1014,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
 		uint64_t lastZobrist = board.Zobrist_key;
+		uint64_t lastPawnKey = board.PawnKey;
+		uint64_t lastMinorKey = board.MinorKey;
 		ply++;
 		if (seldepth < ply)
 		{
@@ -1038,6 +1040,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.castle = lastCastle;
 			board.side = lastside;
 			board.Zobrist_key = lastZobrist;
+			board.PawnKey = lastPawnKey;
+			board.MinorKey = lastMinorKey;
 			continue;
 		}
 
@@ -1071,6 +1075,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.castle = lastCastle;
 			board.side = lastside;
 			board.Zobrist_key = lastZobrist;
+			board.PawnKey = lastPawnKey;
+			board.MinorKey = lastMinorKey;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -1082,6 +1088,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.castle = lastCastle;
 		board.side = lastside;
 		board.Zobrist_key = lastZobrist;
+		board.PawnKey = lastPawnKey;
+		board.MinorKey = lastMinorKey;
 		if (score > bestValue)
 		{
 			bestValue = score;
@@ -1199,7 +1207,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 	int score = 0;
 	int ttFlag = AlphaFlag;
-	uint64_t last_zobrist = board.Zobrist_key;
+
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	// Only check TT for depths greater than zero (ply != 0)
@@ -1379,7 +1387,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int quiet_moves = 0;
 
 	
-	
+	uint64_t last_zobrist = board.Zobrist_key;
+	uint64_t last_pawnKey = board.PawnKey;
+	uint64_t last_minorKey = board.MinorKey;
 	for (Move& move : moveList)
 	{
 
@@ -1490,6 +1500,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
+			board.PawnKey = last_pawnKey;
+			board.MinorKey = last_minorKey;
 			continue;
 		}
 
@@ -1608,6 +1620,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
+			board.PawnKey = last_pawnKey;
+			board.MinorKey = last_minorKey;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -1632,7 +1646,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
-
+		board.PawnKey = last_pawnKey;
+		board.MinorKey = last_minorKey;
 
 
 		//std::cout << "\n";
