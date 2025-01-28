@@ -973,12 +973,12 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			return evaluation;
 		}
 
-		if (evaluation > alpha)
-		{
-			alpha = evaluation;
-		}
-	}
 
+	}
+	if (evaluation > alpha)
+	{
+		alpha = evaluation;
+	}
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
