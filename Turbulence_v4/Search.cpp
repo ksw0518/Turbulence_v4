@@ -935,6 +935,15 @@ inline Transposition_entry ttLookUp(uint64_t zobrist)
 	int tt_index = zobrist % TT_size;
 	return TranspositionTable[tt_index];
 }
+inline bool is_in_check(Board& board)
+{
+	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
+	{
+		return true;
+	}
+	return false;
+}
+
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
 
@@ -978,9 +987,19 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 
 	std::vector<Move> moveList;
-	Generate_Legal_Moves(moveList, board, true);
-
-	sort_moves_captures(moveList, board);
+	bool isInCheck = is_in_check(board);
+	Generate_Legal_Moves(moveList, board, !isInCheck);
+	
+	if (isInCheck)
+	{
+		uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
+		sort_moves(moveList, board, ttEntry, oppThreats);
+	}
+	else
+	{
+		sort_moves_captures(moveList, board);
+	}
+	
 
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
@@ -990,7 +1009,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	//int futilityMargin = evaluation + 120;
 	for (Move& move : moveList)
 	{
-		if (is_quiet(move.Type)) continue; //skip non capture moves
+		if (is_quiet(move.Type) && !isInCheck) continue; //skip non capture moves
 		//if (!pvNode && futilityMargin <= alpha)
 		//{
 
@@ -1119,7 +1138,15 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	if (legal_moves == 0) // quiet position
 	{
-		return evaluation;
+		if (isInCheck)
+		{
+			return -49000 + ply;
+		}
+		else
+		{
+			return evaluation;
+		}
+		
 	}
 	if (ttEntry.node_type == 0)
 	{
@@ -1140,14 +1167,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 }
 
 
-inline bool is_in_check(Board &board)
-{
-	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
-	{
-		return true;
-	}
-	return false;
-}
 
 bool is_checking(Board& board)
 {
@@ -1777,7 +1796,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (legal_moves == 0)
 	{
-		if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
+		if (isInCheck)
 		{
 			return -49000 + ply;
 		}
