@@ -935,6 +935,14 @@ inline Transposition_entry ttLookUp(uint64_t zobrist)
 	int tt_index = zobrist % TT_size;
 	return TranspositionTable[tt_index];
 }
+inline bool is_in_check(Board& board)
+{
+	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
+	{
+		return true;
+	}
+	return false;
+}
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
 
@@ -956,15 +964,21 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int evaluation = Evaluate(board);
 	evaluation = adjustEvalWithCorrHist(board, evaluation);
 
-	if (evaluation >= beta)
+	bool isInCheck = is_in_check(board);
+
+	if (!isInCheck)
 	{
-		return evaluation;
+		if (evaluation >= beta)
+		{
+			return evaluation;
+		}
+
+		if (evaluation > alpha)
+		{
+			alpha = evaluation;
+		}
 	}
 
-	if (evaluation > alpha)
-	{
-		alpha = evaluation;
-	}
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
@@ -1140,14 +1154,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 }
 
 
-inline bool is_in_check(Board &board)
-{
-	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
-	{
-		return true;
-	}
-	return false;
-}
+
 
 bool is_checking(Board& board)
 {
