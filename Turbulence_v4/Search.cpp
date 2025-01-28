@@ -965,15 +965,20 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int evaluation = Evaluate(board);
 	evaluation = adjustEvalWithCorrHist(board, evaluation);
 
-	if (evaluation >= beta)
+	bool isInCheck = is_in_check(board);
+	if (!isInCheck)
 	{
-		return evaluation;
+		if (evaluation >= beta)
+		{
+			return evaluation;
+		}
+
+		if (evaluation > alpha)
+		{
+			alpha = evaluation;
+		}
 	}
 
-	if (evaluation > alpha)
-	{
-		alpha = evaluation;
-	}
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
@@ -987,7 +992,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 
 	std::vector<Move> moveList;
-	bool isInCheck = is_in_check(board);
+	
 	Generate_Legal_Moves(moveList, board, !isInCheck);
 	
 	if (isInCheck)
