@@ -8,7 +8,7 @@
 #include <cctype>
 #include <iostream>
 Board::Board()
-    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0){
+    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0), PawnKey(0), MinorKey(0){
     // Initialize arrays
     for (int i = 0; i < 12; ++i) {
         bitboards[i] = 0;
@@ -302,6 +302,9 @@ void parse_fen(std::string fen, Board& board)
     board.occupancies[Both] |= board.occupancies[Black];
     board.occupancies[Both] |= board.occupancies[White];
 
+	board.PawnKey = generate_Pawn_Hash(board);
+	board.Zobrist_key = generate_hash_key(board);
+	board.MinorKey = generate_Minor_Hash(board);
 
 }
 void PrintLegalMoves(std::vector<Move> moveList)

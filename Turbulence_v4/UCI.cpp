@@ -166,6 +166,8 @@ static uint64_t Perft(Board& board, int depth)
         int captured_piece = board.mailbox[move.To];
 
         uint64_t last_zobrist = board.Zobrist_key;
+		uint64_t last_pawnKey = board.PawnKey;
+		
         //std::vector<uint64_t> last_history(board.history);
 
 
@@ -173,6 +175,14 @@ static uint64_t Perft(Board& board, int depth)
 
         //ulong lastZobrist = Zobrist;
         MakeMove(board, move);
+
+		uint64_t pawnKey_from_scratch = generate_Pawn_Hash(board);
+		if (board.PawnKey != pawnKey_from_scratch)
+		{
+			std::cout << "CRITICAL ERROR: pawn key doesn't match\n";
+			printMove(move);
+			std::cout << "\n\n";
+		}
         /*uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
 
         if (board.Zobrist_key != zobrist_generated_from_scratch)
@@ -210,6 +220,7 @@ static uint64_t Perft(Board& board, int depth)
         board.castle = lastCastle;
         board.side = lastside;
         board.Zobrist_key = last_zobrist;
+		board.PawnKey = last_pawnKey;
         //Zobrist = lastZobrist;
 
     }
@@ -463,7 +474,9 @@ void ProcessUCI(std::string input)
             {
                 parse_fen(fen, main_board);
                 main_board.Zobrist_key = generate_hash_key(main_board);
+			
                 main_board.history.push_back(main_board.Zobrist_key);
+
             }
             else
             {
@@ -598,6 +611,7 @@ void ProcessUCI(std::string input)
 
             //std::cout << (perft_depth);
             auto start = std::chrono::high_resolution_clock::now();
+
             uint64_t nodes = Perft(main_board, perft_depth);
             auto end = std::chrono::high_resolution_clock::now();
 
@@ -607,7 +621,7 @@ void ProcessUCI(std::string input)
             float second = elapsedMS.count() / 1000;
 
             double nps = nodes / second;
-            double nps_in_millions = nps / 1000000.0;
+            //double nps_in_millions = nps / 1000000.0;
 
             //std::cout << "Nodes: ";
             std::cout << (nodes);
