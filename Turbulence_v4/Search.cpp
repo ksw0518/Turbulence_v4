@@ -1296,7 +1296,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool improving = !isInCheck && ply > 1 && static_eval > Search_stack[ply - 2].static_eval;
 
 	int canPrune = !isInCheck && !is_pv_node;
-	if (depth < 4 && canPrune)//rfp
+	if (!isSingularSearch && depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin;
 		if (improving)
@@ -1314,7 +1314,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return static_eval - rfpThreshold;
 		}
 	}
-	if (!is_pv_node && doNMP)
+	if (!isSingularSearch && !is_pv_node && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && ply && static_eval >= beta)
 		{
