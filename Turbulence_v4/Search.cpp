@@ -1126,7 +1126,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		int nodeType = bestValue >= beta ? AlphaFlag : BetaFlag;
 		ttEntry.score = bestValue;
 		ttEntry.node_type = nodeType;
-		ttEntry.depth = -1;
+		ttEntry.depth = 0;
 		ttEntry.zobrist_key = board.Zobrist_key;
 		TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
 	}
