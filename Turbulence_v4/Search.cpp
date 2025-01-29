@@ -1158,7 +1158,7 @@ bool is_checking(Board& board)
 	return false;
 }
 
-static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode)
+static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, Move excluded = Move(0, 0, 0, 0))
 {
 	bool is_pv_node = beta - alpha > 1;
 	//nodes_for_time_checking++;
@@ -1198,6 +1198,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	}
+	bool isSingularSearch = !(excluded == Move(0, 0, 0, 0));
+
+	//Transposition_entry query = TranspositionTable[]
+
 
 	//if (ply > 99 - 1) {
 	//	return Evaluate(board);
@@ -1205,13 +1209,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//Transposition_entry ttEntry;
 
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+
+
+
 	int score = 0;
 	int ttFlag = AlphaFlag;
 
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	// Only check TT for depths greater than zero (ply != 0)
-	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
+	if (!isSingularSearch && ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
 		is_ttmove_found = true;
 		// Valid TT entry found
@@ -1227,7 +1234,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				return ttEntry.score;
 				//alpha = ttEntry.score;
 			}
-			else if (ttEntry.node_type == BetaFlag && ttEntry.score >= beta )
+			else if (ttEntry.node_type == BetaFlag && ttEntry.score >= beta)
 			{
 				return ttEntry.score;
 			}
@@ -1241,6 +1248,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	}
+
+
+	bool expectedFailHigh = is_ttmove_found && (ttEntry.node_type == AlphaFlag || ttEntry.node_type == ExactFlag);
+
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
@@ -1387,13 +1398,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	Move bestmove = Move(0, 0, 0, 0);
 	int quiet_moves = 0;
 
-	
+
 	uint64_t last_zobrist = board.Zobrist_key;
 	uint64_t last_pawnKey = board.PawnKey;
 	uint64_t last_minorKey = board.MinorKey;
 	for (Move& move : moveList)
 	{
-
+		if (move == excluded)
+		{
+			continue;
+		}
 		bool isQuiet = is_quiet(move.Type);
 
 		if (skip_quiets && isQuiet) //quiet move
@@ -1434,8 +1448,21 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 
 		}
+		int singular = 0;
 
+		//std::cout << isSingularSearch;
+		if (ply > 0 && !isSingularSearch && depth > 5 && expectedFailHigh && move == ttEntry.best_move && ttEntry.depth + 4 >= depth)
+		{
+			//std::cout << "fuck";
+			int newBeta = ttEntry.score - (depth * 2);
+			int score = Negamax(board, (depth - 1) / 2, newBeta - 1, newBeta, false, cutnode, ttEntry.best_move);
+			if (score < newBeta)
+			{
+				singular += 1;
+			}
+		}
 		//
+		// 
 		//
 		//int futility_margin = 60+250*depth;
 		//if (canPrune && depth < 4 && abs(alpha) < 2000 && static_eval + futility_margin <= alpha)
@@ -1574,7 +1601,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (legal_moves <= 1)
 		{
-			score = -Negamax(board, depth_to_search, -beta, -alpha, true, false);
+			score = -Negamax(board, depth_to_search + singular, -beta, -alpha, true, false);
 		}
 		else
 		{
@@ -1600,9 +1627,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 			if (score > alpha)
 			{
-				score = -Negamax(board, depth_to_search, -alpha-1, -alpha, true, false);
+				score = -Negamax(board, depth_to_search, -alpha - 1, -alpha, true, false);
 			}
-			if (score > alpha && score < beta )
+			if (score > alpha && score < beta)
 			{
 				score = -Negamax(board, depth_to_search, -beta, -alpha, true, false);
 			}
@@ -1674,10 +1701,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//	std::cout << ply << "\n";
 			//}
 			bestmove = move;
-			if(is_pv_node)
+			if (is_pv_node)
 			{
 				pv_table[ply][ply] = move;
-				
+
 
 
 
@@ -1690,7 +1717,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 				pv_length[ply] = pv_length[ply + 1];
 			}
-			
+
 
 
 
@@ -1787,14 +1814,20 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return 0;
 		}
 	}
-	ttEntry.score = bestValue;
-	ttEntry.node_type = ttFlag;
-	ttEntry.depth = depth;
-	ttEntry.zobrist_key = board.Zobrist_key;
-	if (!(bestmove == Move(0, 0, 0, 0))) //bestmove isn't empty
+	if (!isSingularSearch)
 	{
-		ttEntry.best_move = bestmove;
+		ttEntry.score = bestValue;
+		ttEntry.node_type = ttFlag;
+		ttEntry.depth = depth;
+		ttEntry.zobrist_key = board.Zobrist_key;
+		if (!(bestmove == Move(0, 0, 0, 0))) //bestmove isn't empty
+		{
+			ttEntry.best_move = bestmove;
+		}
+
+		TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
 	}
+
 	//ttEntry.best_move = pv_table[ply][ply];
 	//if (!(bestmove == Move(0, 0, 0, 0)))
 	//{
@@ -1812,7 +1845,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		update_Minor_Corrhist(board, depth, bestValue - static_eval);
 	}
 
-	TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
 
 	return bestValue;
 }
