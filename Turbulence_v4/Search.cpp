@@ -1270,10 +1270,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//	//std::cout << 1 + (cutnode && !moreSafeCutNodeReduction);
 	//	--depth;
 	//}
-	//if ((is_pv_node) && depth >= 4 && !is_ttmove_found)
-	//{
-	//	depth--;
-	//}
+	if ((is_pv_node) && depth >= 4 && !is_ttmove_found)
+	{
+		depth--;
+	}
 
 
 	int raw_eval = Evaluate(board);
