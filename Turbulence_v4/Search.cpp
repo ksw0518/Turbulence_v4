@@ -1250,7 +1250,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 
-	bool expectedFailHigh = is_ttmove_found && (ttEntry.node_type == AlphaFlag || ttEntry.node_type == ExactFlag);
+	bool expectedFailHigh = is_ttmove_found && (ttEntry.node_type == BetaFlag || ttEntry.node_type == ExactFlag);
 
 	bool isInCheck = is_in_check(board);
 
