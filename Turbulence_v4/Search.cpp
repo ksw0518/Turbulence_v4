@@ -178,6 +178,7 @@ int CaptureHistory[12][64][12];
 
 int Oneply_ContHist[12][64][12][64];
 int Twoply_ContHist[12][64][12][64];
+int Fourply_ContHist[12][64][12][64];
 
 int pawn_Corrhist[2][CORRHIST_SIZE];
 int minor_Corrhist[2][CORRHIST_SIZE];
@@ -266,6 +267,8 @@ void initializeLMRTable()
 	memset(history_moves, 0, sizeof(history_moves));
 
 	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(Twoply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(Fourply_ContHist, 0, sizeof(Oneply_ContHist));
 
 
 
@@ -348,7 +351,10 @@ int getSingleContinuationHistoryScore(Move move, const int offSet) {
 		{
 			return Twoply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
-		
+		else if (offSet == 4)
+		{
+			return Fourply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
 	}
 	return 0;
 
@@ -360,9 +366,9 @@ int getContinuationHistoryScore(Move& move) {
 	{
 		int onePly = getSingleContinuationHistoryScore(move, 1);
 		int twoPly = getSingleContinuationHistoryScore(move, 2);
+		int fourPly = getSingleContinuationHistoryScore(move, 4);
 
-
-		int finalScore = onePly + twoPly;
+		int finalScore = onePly + twoPly + fourPly;
 		return finalScore;
 	}
 	return 0;
@@ -386,13 +392,17 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		{
 			Twoply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
-		
+		else if (offSet == 4)
+		{
+			Fourply_ContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
 	}
 }
 void updateContinuationHistoryScore(Move& move, const int bonus) {
 	//const int scaledBonus = bonus - getContinuationHistoryScore(move) * abs(bonus) / 8192;
 	updateSingleContinuationHistoryScore(move, bonus, 1);
 	updateSingleContinuationHistoryScore(move, bonus, 2);
+	updateSingleContinuationHistoryScore(move, bonus, 4);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 2);
 	//updateSingleContinuationHistoryScore(position, ss, move, scaledBonus, 4);
 }
@@ -640,10 +650,10 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 
 			//int targetSquare = move.To; // Get target square
 			int main_history = history_moves[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
-			int oneply_conthist = getContinuationHistoryScore(move);
+			int conthist = getContinuationHistoryScore(move);
 			//int oneply_conthist = getContinuationHistoryScore(move);
 			//int oneply_conthist = 0;
-			int history = main_history +oneply_conthist - 100000;
+			int history = main_history +conthist - 100000;
 
 			if (history >= 80000)
 			{
@@ -1850,6 +1860,7 @@ void bench()
 			TranspositionTable[i] = Transposition_entry();
 		}
 		memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+		memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 		memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
@@ -1888,6 +1899,7 @@ void bench()
 		TranspositionTable[i] = Transposition_entry();
 	}
 	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 	memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
@@ -2212,6 +2224,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//printTopHistory(1);
 	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
 	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
+	memset(Fourply_ContHist, 0, sizeof(Fourply_ContHist));
 	memset(pv_table, 0, sizeof(pv_table));
 	memset(pv_length, 0, sizeof(pv_length));
 
