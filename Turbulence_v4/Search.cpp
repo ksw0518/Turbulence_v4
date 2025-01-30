@@ -264,8 +264,8 @@ void initializeLMRTable()
 		killer_moves[1][ply] = Move();
 	}
 	memset(history_moves, 0, sizeof(history_moves));
-
 	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
 
 
 
@@ -1850,6 +1850,7 @@ void bench()
 			TranspositionTable[i] = Transposition_entry();
 		}
 		memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+		memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
 		memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
@@ -2210,8 +2211,8 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 	//printTopHistory(0);
 	//std::cout << "black";
 	//printTopHistory(1);
-	memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
-	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));
+	/*memset(Oneply_ContHist, 0, sizeof(Oneply_ContHist));
+	memset(Twoply_ContHist, 0, sizeof(Twoply_ContHist));*/
 	memset(pv_table, 0, sizeof(pv_table));
 	memset(pv_length, 0, sizeof(pv_length));
 
