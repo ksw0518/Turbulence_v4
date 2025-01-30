@@ -581,7 +581,7 @@ static inline int get_move_score(Move move, Board& board, Transposition_entry &e
 			 }
 			 int attacker = get_piece(move.Piece, White);
 			 int score = mvv_lva[attacker][victim];
-			 //score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+			 score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 3;
 			 score += SEE(board, move, -100) ? 200000 : -10000000;
 			 return score;
 
@@ -692,7 +692,7 @@ static inline int get_move_score_capture(Move move, Board& board)
 		//std::cout << board.mailbox[move.To] << "\n";
 		//std::cout << attacker << "\n";
 		//return mvv_lva[victim][attacker];
-		return mvv_lva[attacker][victim] * 10000;
+		return mvv_lva[attacker][victim] + 2000000;
 		//if (SEE(board, move, -50))
 		//{
 
@@ -1381,11 +1381,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	std::vector<Move> Quiet_moves_list;
 	Quiet_moves_list.reserve(50);
+	std::vector<Move> Noisy_moves_list;
+	Noisy_moves_list.reserve(50);
 	/*std::vector<Move> Noisy_moves_list;
 	Noisy_moves_list.reserve(50);*/
 
 	Move bestmove = Move(0, 0, 0, 0);
 	int quiet_moves = 0;
+	int noisy_moves = 0;
 
 	
 	uint64_t last_zobrist = board.Zobrist_key;
@@ -1510,6 +1513,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			Quiet_moves_list.push_back(move);
 			quiet_moves++;
+		}
+		else
+		{
+			Noisy_moves_list.push_back(move);
+			noisy_moves++;
 		}
 		//else
 		//{
@@ -1748,28 +1756,34 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 
 				}
+				int capt_bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				for (auto& move_noisy : Noisy_moves_list) {
+					if ((move_noisy.Type & captureFlag) == 0) continue;
+					update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, -capt_bonus);
 
+				}
 				//update_history(board.side, move.From, move.To, depth*depth);
 			}
 
-			//else
-			//{
-			//	int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
-			//	for (auto& move_noisy : Noisy_moves_list) {
-			//		if (move_noisy == move)
-			//		{
-			//			update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, bonus);
+			else
+			{
+				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				for (auto& move_noisy : Noisy_moves_list) {
+					if ((move_noisy.Type & captureFlag) == 0) continue;
+					if (move_noisy == move)
+					{
+						update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, bonus);
 
-			//		}
-			//		else
-			//		{
-			//			update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, -bonus);
+					}
+					else
+					{
+						update_capthist(move_noisy.Piece, move_noisy.To, captured_piece, -bonus);
 
-			//		}
+					}
 
-			//	}
-			//	//update_history(board.side, move.From, move.To, depth*depth);
-			//}
+				}
+				//update_history(board.side, move.From, move.To, depth*depth);
+			}
 
 			break;
 			//return score;
