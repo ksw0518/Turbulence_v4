@@ -305,6 +305,8 @@ void parse_fen(std::string fen, Board& board)
 	board.PawnKey = generate_Pawn_Hash(board);
 	board.Zobrist_key = generate_hash_key(board);
 	board.MinorKey = generate_Minor_Hash(board);
+	board.WhiteNonPawnKey = generate_WhiteNP_Hash(board);
+	board.BlackNonPawnKey = generate_BlackNP_Hash(board);
 
 }
 void PrintLegalMoves(std::vector<Move> moveList)

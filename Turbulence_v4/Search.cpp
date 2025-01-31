@@ -182,6 +182,11 @@ int Twoply_ContHist[12][64][12][64];
 int pawn_Corrhist[2][CORRHIST_SIZE];
 int minor_Corrhist[2][CORRHIST_SIZE];
 
+/// <summary>
+/// [keySide, how the key was made][currentBoardSide][hash]
+/// </summary>
+int NonPawnCorrhist[2][2][CORRHIST_SIZE];
+
 //struct Transposition_entry
 //{
 //	uint64_t zobrist_key;
@@ -271,6 +276,7 @@ void initializeLMRTable()
 
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawn_Corrhist, 0, sizeof(pawn_Corrhist));
+	memset(NonPawnCorrhist, 0, sizeof(NonPawnCorrhist));
 	memset(minor_Corrhist, 0, sizeof(minor_Corrhist));
 
 
@@ -298,6 +304,24 @@ void update_Pawn_Corrhist(Board& board, const int depth, const int diff)
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
+void update_NonPawn_Corrhist(Board& board, const int depth, const int diff)
+{
+	uint64_t whiteKey = board.WhiteNonPawnKey;
+	uint64_t blackKey = board.BlackNonPawnKey;
+
+	const int scaledDiff = diff * CORRHIST_GRAIN;
+	const int newWeight = std::min(depth + 1, 16);
+
+	int& whiteEntry = NonPawnCorrhist[White][board.side][whiteKey % CORRHIST_SIZE];
+
+	whiteEntry = (whiteEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	whiteEntry = std::clamp(whiteEntry, -CORRHIST_MAX, CORRHIST_MAX);
+
+	int& blackEntry = NonPawnCorrhist[Black][board.side][blackKey % CORRHIST_SIZE];
+
+	blackEntry = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	blackEntry = std::clamp(blackEntry, -CORRHIST_MAX, CORRHIST_MAX);
+}
 int adjustEvalWithCorrHist(Board& board, const int rawEval)
 {
 	uint64_t pawnKey = board.PawnKey;
@@ -307,10 +331,13 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	uint64_t minorKey = board.MinorKey;
 	const int& minorEntry = minor_Corrhist[board.side][minorKey % CORRHIST_SIZE];
 
-
+	uint64_t whiteNPKey = board.WhiteNonPawnKey;
+	const int& whiteNPEntry = NonPawnCorrhist[White][board.side][whiteNPKey % CORRHIST_SIZE];
+	uint64_t blackNPKey = board.WhiteNonPawnKey;
+	const int& blackNPEntry = NonPawnCorrhist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
-	int adjust = pawnEntry + minorEntry;
+	int adjust = pawnEntry + minorEntry + whiteNPEntry + blackNPEntry;
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void update_history(int stm, int from, int to, int bonus, uint64_t opp_threat)
@@ -988,6 +1015,12 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	//int pvNode = beta - alpha > 1;
 	//int futilityMargin = evaluation + 120;
+
+	uint64_t lastZobrist = board.Zobrist_key;
+	uint64_t lastPawnKey = board.PawnKey;
+	uint64_t lastMinorKey = board.MinorKey;
+	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
+	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	for (Move& move : moveList)
 	{
 		if (is_quiet(move.Type)) continue; //skip non capture moves
@@ -1013,9 +1046,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
-		uint64_t lastZobrist = board.Zobrist_key;
-		uint64_t lastPawnKey = board.PawnKey;
-		uint64_t lastMinorKey = board.MinorKey;
+
+
 		ply++;
 		if (seldepth < ply)
 		{
@@ -1042,6 +1074,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.Zobrist_key = lastZobrist;
 			board.PawnKey = lastPawnKey;
 			board.MinorKey = lastMinorKey;
+			board.WhiteNonPawnKey = lastWhiteNPKey;
+			board.BlackNonPawnKey = lastBlackNPKey;
 			continue;
 		}
 
@@ -1077,6 +1111,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			board.Zobrist_key = lastZobrist;
 			board.PawnKey = lastPawnKey;
 			board.MinorKey = lastMinorKey;
+			board.WhiteNonPawnKey = lastWhiteNPKey;
+			board.BlackNonPawnKey = lastBlackNPKey;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -1090,6 +1126,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.Zobrist_key = lastZobrist;
 		board.PawnKey = lastPawnKey;
 		board.MinorKey = lastMinorKey;
+		board.WhiteNonPawnKey = lastWhiteNPKey;
+		board.BlackNonPawnKey = lastBlackNPKey;
 		if (score > bestValue)
 		{
 			bestValue = score;
@@ -1391,6 +1429,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_zobrist = board.Zobrist_key;
 	uint64_t last_pawnKey = board.PawnKey;
 	uint64_t last_minorKey = board.MinorKey;
+	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
+	uint64_t last_blacknpKey = board.BlackNonPawnKey;
 	for (Move& move : moveList)
 	{
 
@@ -1456,6 +1496,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.last_irreversible_ply;
+		
 
 		Search_stack[ply].move = move;
 
@@ -1503,6 +1544,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.side = lastside;
 			board.PawnKey = last_pawnKey;
 			board.MinorKey = last_minorKey;
+			board.WhiteNonPawnKey = last_whitenpKey;
+			board.BlackNonPawnKey = last_blacknpKey;
 			continue;
 		}
 
@@ -1623,6 +1666,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.side = lastside;
 			board.PawnKey = last_pawnKey;
 			board.MinorKey = last_minorKey;
+			board.WhiteNonPawnKey = last_whitenpKey;
+			board.BlackNonPawnKey = last_blacknpKey;
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
@@ -1649,7 +1694,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.side = lastside;
 		board.PawnKey = last_pawnKey;
 		board.MinorKey = last_minorKey;
-
+		board.WhiteNonPawnKey = last_whitenpKey;
+		board.BlackNonPawnKey = last_blacknpKey;
 
 		//std::cout << "\n";
 		//printMove(move);
@@ -1810,6 +1856,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		update_Pawn_Corrhist(board, depth, bestValue - static_eval);
 		update_Minor_Corrhist(board, depth, bestValue - static_eval);
+		update_NonPawn_Corrhist(board, depth, bestValue - static_eval);
 	}
 
 	TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;

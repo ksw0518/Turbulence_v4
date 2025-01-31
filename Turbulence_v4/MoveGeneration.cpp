@@ -27,6 +27,8 @@ static uint64_t betweenTable[64][64] = {};
 uint32_t random_state = 1804289383;
 
 int MinorPieces[6] = { B, b, N, n, K, k };
+int WhiteNonPawn[5] = { R, N, B, Q, K };
+int BlackNonPawn[5] = {r, n, b, q, k };
 
 uint64_t all_attackers_to_square(Board &board, uint64_t occupied, int sq) {
 
@@ -213,6 +215,53 @@ uint64_t generate_Minor_Hash(Board& board)
 
 	return final_key;
 }
+uint64_t generate_WhiteNP_Hash(Board& board)
+{
+	uint64_t final_key = 0ULL;
+	uint64_t bitboard;
+
+
+	for (int i = 0; i < 5; i++)
+	{
+		int piece = WhiteNonPawn[i];
+		bitboard = board.bitboards[piece];
+
+		while (bitboard)
+		{
+			int square = get_ls1b(bitboard);
+
+			final_key ^= piece_keys[piece][square];
+			Pop_bit(bitboard, square);
+		}
+	}
+
+
+	return final_key;
+}
+uint64_t generate_BlackNP_Hash(Board& board)
+{
+	uint64_t final_key = 0ULL;
+	uint64_t bitboard;
+
+
+	for (int i = 0; i < 5; i++)
+	{
+		int piece = BlackNonPawn[i];
+		bitboard = board.bitboards[piece];
+
+		while (bitboard)
+		{
+			int square = get_ls1b(bitboard);
+
+			final_key ^= piece_keys[piece][square];
+			Pop_bit(bitboard, square);
+		}
+	}
+
+
+	return final_key;
+}
+
 static int bishop_relevant_bits[] =
 {
         6, 5, 5, 5, 5, 5, 5, 6,
@@ -1799,16 +1848,30 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.From] = NO_PIECE;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
-		if (move.Piece == P || move.Piece == p)
+		if (move.Piece == P || move.Piece == p)//pawn
 		{
 			board.PawnKey ^= piece_keys[move.Piece][move.From];
 			board.PawnKey ^= piece_keys[move.Piece][move.To];
+		}
+		else//nonpawn
+		{
+			if (getSide(move.Piece) == White)//white nonpawn key
+			{
+				board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.From];
+				board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.To];
+			}
+			else//black nonpawn key
+			{
+				board.BlackNonPawnKey ^= piece_keys[move.Piece][move.From];
+				board.BlackNonPawnKey ^= piece_keys[move.Piece][move.To];
+			}
 		}
 		if (isMinor(move.Piece))
 		{
 			board.MinorKey ^= piece_keys[move.Piece][move.From];
 			board.MinorKey ^= piece_keys[move.Piece][move.To];
 		}
+		
 		board.mailbox[move.To] = move.Piece;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 		//update enpassent square
@@ -1928,9 +1991,33 @@ void MakeMove(Board& board, Move move)
 			board.PawnKey ^= piece_keys[move.Piece][move.To];
 
 		}
+		else//nonpawn
+		{
+			if (getSide(move.Piece) == White)//white nonpawn key
+			{
+				board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.From];
+				board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.To];
+			}
+			else//black nonpawn key
+			{
+				board.BlackNonPawnKey ^= piece_keys[move.Piece][move.From];
+				board.BlackNonPawnKey ^= piece_keys[move.Piece][move.To];
+			}
+		}
 		if (captured_piece == P || captured_piece == p)
 		{
 			board.PawnKey ^= piece_keys[captured_piece][move.To];
+		}
+		else//nonpawn
+		{
+			if (getSide(captured_piece) == White)//white nonpawn key
+			{
+				board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
+			}
+			else//black nonpawn key
+			{
+				board.BlackNonPawnKey ^= piece_keys[captured_piece][move.To];
+			}
 		}
 		if (isMinor(move.Piece))
 		{
@@ -2018,12 +2105,40 @@ void MakeMove(Board& board, Move move)
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
 
 		board.MinorKey ^= piece_keys[move.Piece][move.From];
+		if (getSide(move.Piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.From];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[move.Piece][move.From];
+
+		}
 
 		board.mailbox[move.To] = move.Piece;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 
 		board.MinorKey ^= piece_keys[move.Piece][move.To];
-		board.Zobrist_key ^= piece_keys[board.mailbox[rookSquare]][rookSquare];
+		if (getSide(move.Piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[move.Piece][move.To];
+		}
+		int rook = board.mailbox[rookSquare];
+		board.Zobrist_key ^= piece_keys[rook][rookSquare];
+		if (getSide(rook) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[rook][rookSquare];
+			board.WhiteNonPawnKey ^= piece_keys[rook][rookSquare - 2];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[rook][rookSquare];
+			board.BlackNonPawnKey ^= piece_keys[rook][rookSquare - 2];
+		}
 		board.mailbox[rookSquare] = NO_PIECE;
 
 		board.mailbox[rookSquare - 2] = get_piece(r, side);
@@ -2086,12 +2201,41 @@ void MakeMove(Board& board, Move move)
 		board.mailbox[move.From] = NO_PIECE;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
 		board.MinorKey ^= piece_keys[move.Piece][move.From];
+		if (getSide(move.Piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.From];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[move.Piece][move.From];
+
+		}
+
 
 		board.mailbox[move.To] = move.Piece;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.To];
 		board.MinorKey ^= piece_keys[move.Piece][move.To];
+		if (getSide(move.Piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[move.Piece][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[move.Piece][move.To];
+		}
+		int rook = board.mailbox[rookSquare];
+		board.Zobrist_key ^= piece_keys[rook][rookSquare];
+		if (getSide(rook) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[rook][rookSquare];
+			board.WhiteNonPawnKey ^= piece_keys[rook][rookSquare + 3];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[rook][rookSquare];
+			board.BlackNonPawnKey ^= piece_keys[rook][rookSquare + 3];
+		}
 
-		board.Zobrist_key ^= piece_keys[board.mailbox[rookSquare]][rookSquare];
 		board.mailbox[rookSquare] = NO_PIECE;
 
 		board.mailbox[rookSquare + 3] = get_piece(r, side);
@@ -2126,6 +2270,16 @@ void MakeMove(Board& board, Move move)
 		board.mailbox[move.From] = NO_PIECE;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
+
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(q, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(q, side)][move.To];
+		}
+		
 		board.mailbox[move.To] = get_piece(q, side);
 		board.Zobrist_key ^= piece_keys[get_piece(q, side)][move.To];
 		//Zobrist ^= PIECES[move.Piece][move.From];
@@ -2155,6 +2309,15 @@ void MakeMove(Board& board, Move move)
 		board.mailbox[move.From] = NO_PIECE;
 		board.Zobrist_key ^= piece_keys[move.Piece][move.From];
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
+
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(r, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(r, side)][move.To];
+		}
 		board.mailbox[move.To] = get_piece(r, side);
 		board.Zobrist_key ^= piece_keys[get_piece(r, side)][move.To];
 		//Zobrist ^= PIECES[move.Piece][move.From];
@@ -2187,6 +2350,14 @@ void MakeMove(Board& board, Move move)
 		board.mailbox[move.To] = get_piece(b, side);
 		board.Zobrist_key ^= piece_keys[get_piece(b, side)][move.To];
 		board.MinorKey ^= piece_keys[get_piece(b, side)][move.To];
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(b, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(b, side)][move.To];
+		}
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(b, side)][move.To];
 		board.side = 1 - board.side;
@@ -2219,6 +2390,14 @@ void MakeMove(Board& board, Move move)
 		board.mailbox[move.To] = get_piece(n, side);
 		board.Zobrist_key ^= piece_keys[get_piece(n, side)][move.To];
 		board.MinorKey ^= piece_keys[get_piece(n, side)][move.To];
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(n, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(n, side)][move.To];
+		}
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.n, side)][move.To];
 		board.side = 1 - board.side;
@@ -2308,12 +2487,28 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (getSide(captured_piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
 		if (isMinor(captured_piece))
 		{
 			board.MinorKey ^= piece_keys[captured_piece][move.To];
 		}
 		board.mailbox[move.To] = get_piece(q, side);
 		board.Zobrist_key ^= piece_keys[get_piece(q, side)][move.To];
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(q, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(q, side)][move.To];
+		}
 
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
@@ -2404,13 +2599,28 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (getSide(captured_piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
 		if (isMinor(captured_piece))
 		{
 			board.MinorKey ^= piece_keys[captured_piece][move.To];
 		}
 		board.mailbox[move.To] = get_piece(r, side);
 		board.Zobrist_key ^= piece_keys[get_piece(r, side)][move.To];
-
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(r, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(r, side)][move.To];
+		}
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
 		//Zobrist ^= PIECES[captured_piece][move.To];
@@ -2505,9 +2715,25 @@ void MakeMove(Board& board, Move move)
 		{
 			board.MinorKey ^= piece_keys[captured_piece][move.To];
 		}
+		if (getSide(captured_piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
 		board.mailbox[move.To] = get_piece(b, side);
 		board.Zobrist_key ^= piece_keys[get_piece(b, side)][move.To];
 		board.MinorKey ^= piece_keys[get_piece(b, side)][move.To];
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(b, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(b, side)][move.To];
+		}
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
 		//Zobrist ^= PIECES[captured_piece][move.To];
@@ -2598,6 +2824,15 @@ void MakeMove(Board& board, Move move)
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.Zobrist_key ^= piece_keys[board.mailbox[move.To]][move.To];
+		if (getSide(captured_piece) == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[captured_piece][move.To];
+
+		}
 		if (isMinor(captured_piece))
 		{
 			board.MinorKey ^= piece_keys[captured_piece][move.To];
@@ -2606,7 +2841,14 @@ void MakeMove(Board& board, Move move)
 		board.mailbox[move.To] = get_piece(n, side);
 		board.Zobrist_key ^= piece_keys[get_piece(n, side)][move.To];
 		board.MinorKey ^= piece_keys[get_piece(n, side)][move.To];
-
+		if (board.side == White)
+		{
+			board.WhiteNonPawnKey ^= piece_keys[get_piece(n, side)][move.To];
+		}
+		else
+		{
+			board.BlackNonPawnKey ^= piece_keys[get_piece(n, side)][move.To];
+		}
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.q, side)][move.To];
 		//Zobrist ^= PIECES[captured_piece][move.To];

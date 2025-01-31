@@ -140,7 +140,12 @@ std::vector<std::string> splitStringBySpace(const std::string& str)
 
 static uint64_t Perft(Board& board, int depth)
 {
-
+	//if (board.WhiteNonPawnKey != generate_WhiteNP_Hash(board))
+	//{
+	//	std::cout << "fucking most CRITICAL ERROR: white np key doesn't match\n";
+	//	//printMove(move);
+	//	std::cout << "\n\n";
+	//}
     if (depth == 0)
     {
         return 1ULL;
@@ -168,6 +173,8 @@ static uint64_t Perft(Board& board, int depth)
         uint64_t last_zobrist = board.Zobrist_key;
 		uint64_t last_pawnKey = board.PawnKey;
 		uint64_t last_minorKey = board.MinorKey;
+		uint64_t last_whiteNPKey = board.WhiteNonPawnKey;
+		uint64_t last_blackNPKey = board.BlackNonPawnKey;
 		
         //std::vector<uint64_t> last_history(board.history);
 
@@ -177,13 +184,21 @@ static uint64_t Perft(Board& board, int depth)
         //ulong lastZobrist = Zobrist;
         MakeMove(board, move);
 
-		uint64_t minorKey_from_scratch = generate_Minor_Hash(board);
-		if (board.MinorKey != minorKey_from_scratch)
+
+		uint64_t blackNPKey_from_scratch = generate_BlackNP_Hash(board);
+		if (board.BlackNonPawnKey != blackNPKey_from_scratch)
 		{
-			std::cout << "CRITICAL ERROR: minor key doesn't match\n";
+			std::cout << "CRITICAL ERROR: black np key doesn't match\n";
 			printMove(move);
 			std::cout << "\n\n";
 		}
+		/*uint64_t whiteNPKey_from_scratch = generate_WhiteNP_Hash(board);
+		if (board.WhiteNonPawnKey != whiteNPKey_from_scratch)
+		{
+			std::cout << "CRITICAL ERROR: white np key doesn't match\n";
+			printMove(move);
+			std::cout << "\n\n";
+		}*/
 		//uint64_t pawnKey_from_scratch = generate_Pawn_Hash(board);
 		//if (board.PawnKey != pawnKey_from_scratch)
 		//{
@@ -230,6 +245,8 @@ static uint64_t Perft(Board& board, int depth)
         board.Zobrist_key = last_zobrist;
 		board.PawnKey = last_pawnKey;
 		board.MinorKey = last_minorKey;
+		board.WhiteNonPawnKey = last_whiteNPKey;
+		board.BlackNonPawnKey = last_blackNPKey;
         //Zobrist = lastZobrist;
 
     }
