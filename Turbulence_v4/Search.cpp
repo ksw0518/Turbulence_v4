@@ -1331,7 +1331,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int ttAdjustedEval = static_eval;
 	uint8_t Bound = ttEntry.node_type;
-	if (!isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
+	if (is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
