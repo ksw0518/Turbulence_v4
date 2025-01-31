@@ -1300,7 +1300,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (static_eval - rfpThreshold >= beta)
 		{
-			return static_eval - rfpThreshold;
+			return (static_eval + beta) / 2;
 		}
 	}
 	if (!is_pv_node && doNMP)
