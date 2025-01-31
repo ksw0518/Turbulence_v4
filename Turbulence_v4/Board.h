@@ -16,6 +16,8 @@ public:
     uint64_t Zobrist_key;
     uint64_t PawnKey;
     uint64_t MinorKey;
+    uint64_t WhiteNonPawnKey;
+    uint64_t BlackNonPawnKey;
 
 
     std::vector<uint64_t> history;
