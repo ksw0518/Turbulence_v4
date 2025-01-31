@@ -333,7 +333,7 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 
 	uint64_t whiteNPKey = board.WhiteNonPawnKey;
 	const int& whiteNPEntry = NonPawnCorrhist[White][board.side][whiteNPKey % CORRHIST_SIZE];
-	uint64_t blackNPKey = board.WhiteNonPawnKey;
+	uint64_t blackNPKey = board.BlackNonPawnKey;
 	const int& blackNPEntry = NonPawnCorrhist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
@@ -1508,7 +1508,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		MakeMove(board, move);
 
-
+		//uint64_t blackNPKey_from_scratch = generate_BlackNP_Hash(board);
+		//if (board.BlackNonPawnKey != blackNPKey_from_scratch)
+		//{
+		//	std::cout << "CRITICAL ERROR: black np key doesn't match\n";
+		//	printMove(move);
+		//	std::cout << "\n\n";
+		//}
 		//uint64_t zobrist_generated_from_scratch = generate_hash_key(board);
 
 		//if (board.Zobrist_key != zobrist_generated_from_scratch)
