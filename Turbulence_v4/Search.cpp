@@ -962,6 +962,14 @@ inline Transposition_entry ttLookUp(uint64_t zobrist)
 	int tt_index = zobrist % TT_size;
 	return TranspositionTable[tt_index];
 }
+inline bool is_in_check(Board& board)
+{
+	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
+	{
+		return true;
+	}
+	return false;
+}
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
 
@@ -980,20 +988,27 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		//std::cout << "fuck";
 	int score = 0;
 	 
-	int evaluation = Evaluate(board);
-	evaluation = adjustEvalWithCorrHist(board, evaluation);
-
-	if (evaluation >= beta)
-	{
-		return evaluation;
-	}
-
-	if (evaluation > alpha)
-	{
-		alpha = evaluation;
-	}
-
+	int static_eval = Evaluate(board);
+	static_eval = adjustEvalWithCorrHist(board, static_eval);
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+	uint8_t Bound = ttEntry.node_type;
+	bool isInCheck = is_in_check(board);
+	int ttAdjustedEval = static_eval;
+	if (!isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
+	{
+		ttAdjustedEval = ttEntry.score;
+	}
+	if (ttAdjustedEval >= beta)
+	{
+		return ttAdjustedEval;
+	}
+
+	if (ttAdjustedEval > alpha)
+	{
+		alpha = ttAdjustedEval;
+	}
+
+	
 	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
 	{
 		if ((ttEntry.node_type == ExactFlag)
@@ -1157,7 +1172,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	if (legal_moves == 0) // quiet position
 	{
-		return evaluation;
+		return ttAdjustedEval;
 	}
 	if (ttEntry.node_type == 0)
 	{
@@ -1178,14 +1193,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 }
 
 
-inline bool is_in_check(Board &board)
-{
-	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
-	{
-		return true;
-	}
-	return false;
-}
+
 
 bool is_checking(Board& board)
 {
@@ -1279,6 +1287,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 	}
+
+	
+
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
@@ -1318,6 +1329,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int static_eval = adjustEvalWithCorrHist(board, raw_eval);
 
+	int ttAdjustedEval = static_eval;
+	uint8_t Bound = ttEntry.node_type;
+	if (!isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
+	{
+		ttAdjustedEval = ttEntry.score;
+	}
 	Search_stack[ply].static_eval = static_eval;
 
 	bool improving = !isInCheck && ply > 1 && static_eval > Search_stack[ply - 2].static_eval;
@@ -1336,14 +1353,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		int rfpThreshold = rfpMargin;
 
-		if (static_eval - rfpThreshold >= beta)
+		if (ttAdjustedEval - rfpThreshold >= beta)
 		{
-			return (static_eval + beta) / 2;
+			return (ttAdjustedEval + beta) / 2;
 		}
 	}
 	if (!is_pv_node && doNMP)
 	{
-		if (!isInCheck && depth >= 2 && ply && static_eval >= beta)
+		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
@@ -1353,7 +1370,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				ply++;
 				Make_Nullmove(board);
 				int R = 3 + depth / 3;
-				R += std::min((static_eval - beta) / 400, 3);
+				R += std::min((ttAdjustedEval - beta) / 400, 3);
 				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
 
 				Unmake_Nullmove(board);
