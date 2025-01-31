@@ -1835,7 +1835,7 @@ void bench()
 	auto search_start = std::chrono::steady_clock::now();
 	auto search_end = std::chrono::steady_clock::now();
 	Board board;
-	uint64_t nodecount = 0;
+	uint64_t nodecount = 0; 
 	int totalsearchtime = 0;
 	for (int i = 0; i < 50; i++)
 	{
