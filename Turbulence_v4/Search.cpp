@@ -994,10 +994,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint8_t Bound = ttEntry.node_type;
 	bool isInCheck = is_in_check(board);
 	int ttAdjustedEval = static_eval;
-	if (!isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
+	/*if (!isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
 	{
 		ttAdjustedEval = ttEntry.score;
-	}
+	}*/
 	if (ttAdjustedEval >= beta)
 	{
 		return ttAdjustedEval;
