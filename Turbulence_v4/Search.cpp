@@ -1433,7 +1433,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int quiet_SEE_margin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
 	int noisy_SEE_margin = PVS_NOISY_BASE + (-PVS_NOISY_MULTIPLIER * depth * depth);
-
+	 
 	std::vector<Move> Quiet_moves_list;
 	Quiet_moves_list.reserve(50);
 	/*std::vector<Move> Noisy_moves_list;
