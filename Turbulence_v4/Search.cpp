@@ -1204,7 +1204,7 @@ bool is_checking(Board& board)
 	return false;
 }
 
-static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode)
+static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, Move excluded = Move(0,0,0,0))
 {
 	bool is_pv_node = beta - alpha > 1;
 	//nodes_for_time_checking++;
@@ -1448,9 +1448,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_minorKey = board.MinorKey;
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
+
+
+	bool expectFailHigh = is_ttmove_found && (ttEntry.node_type == BetaFlag || ttEntry.node_type == ExactFlag);
 	for (Move& move : moveList)
 	{
-
+		if (move == excluded)
+		{
+			continue;
+		}
 		bool isQuiet = is_quiet(move.Type);
 
 		if (skip_quiets && isQuiet) //quiet move
@@ -1605,7 +1611,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool is_reduced = false;
 
 
-
+		int singular = 0;
+		if (is_ttmove_found && ply > 0 && excluded == Move(0, 0, 0, 0) && depth > 5 && expectFailHigh && move == ttEntry.best_move)
+		{
+			int newBeta = ttEntry.score - (2 * depth);
+			int newScore = Negamax(board, (depth - 1) / 2, newBeta - 1, newBeta, false, false, ttEntry.best_move);
+			if (newScore < newBeta)
+			{
+				singular += 1;
+			}
+		
+		}
 		if (depth > Minimum_lmr_depth && legal_moves > 1)
 		{
 			//reduction = 0.77 + log(legal_moves) * log(depth) / 2.36;
@@ -1640,7 +1656,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (legal_moves <= 1)
 		{
-			score = -Negamax(board, depth_to_search, -beta, -alpha, true, false);
+			score = -Negamax(board, depth_to_search + singular, -beta, -alpha, true, false);
 		}
 		else
 		{
@@ -1882,7 +1898,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		update_NonPawn_Corrhist(board, depth, bestValue - static_eval);
 	}
 
-	TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
+	if (excluded == Move(0, 0, 0, 0))
+	{
+		TranspositionTable[board.Zobrist_key % TT_size] = ttEntry;
+	}
+	
 
 	return bestValue;
 }
