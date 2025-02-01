@@ -1450,7 +1450,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
 
 
-	bool expectFailHigh = is_ttmove_found && (ttEntry.node_type == BetaFlag || ttEntry.node_type == ExactFlag);
+	bool expectFailHigh = is_ttmove_found && (ttEntry.node_type == AlphaFlag || ttEntry.node_type == ExactFlag);
 	for (Move& move : moveList)
 	{
 		if (move == excluded)
