@@ -991,13 +991,25 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int static_eval = Evaluate(board);
 	static_eval = adjustEvalWithCorrHist(board, static_eval);
 	Transposition_entry ttEntry = ttLookUp(board.Zobrist_key);
+	bool is_ttmove_found = false;
+	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
+	{
+		is_ttmove_found = true;
+		if ((ttEntry.node_type == ExactFlag)
+			|| (ttEntry.node_type == AlphaFlag && ttEntry.score <= alpha)
+			|| (ttEntry.node_type == BetaFlag && ttEntry.score >= beta))
+		{
+			return ttEntry.score;
+		}
+	}
+	
 	uint8_t Bound = ttEntry.node_type;
 	bool isInCheck = is_in_check(board);
 	int ttAdjustedEval = static_eval;
-	/*if (!isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
+	if (is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == BetaFlag && ttEntry.score >= static_eval) || (Bound == AlphaFlag && ttEntry.score <= static_eval)))
 	{
 		ttAdjustedEval = ttEntry.score;
-	}*/
+	}
 	if (ttAdjustedEval >= beta)
 	{
 		return ttAdjustedEval;
@@ -1009,15 +1021,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 
 	
-	if (ttEntry.zobrist_key == board.Zobrist_key && ttEntry.node_type != 0)
-	{
-		if ((ttEntry.node_type == ExactFlag)
-			|| (ttEntry.node_type == AlphaFlag && ttEntry.score <= alpha)
-			|| (ttEntry.node_type == BetaFlag && ttEntry.score >= beta))
-		{
-			return ttEntry.score;
-		}
-	}
+
 
 	std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, true);
