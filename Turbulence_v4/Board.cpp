@@ -8,7 +8,7 @@
 #include <cctype>
 #include <iostream>
 Board::Board()
-    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , Zobrist_key(0), PawnKey(0), MinorKey(0){
+    : side(0), enpassent((no_sq)), castle(0), halfmove(0) , zobristKey(0), PawnKey(0), MinorKey(0){
     // Initialize arrays
     for (int i = 0; i < 12; ++i) {
         bitboards[i] = 0;
@@ -138,7 +138,7 @@ void PrintBoards(Board board)
     std::cout << "\n\n";
 
     std::cout << std::hex << "    Zobrist key:     " << generate_hash_key(board) << std::hex << "\n";
-    std::cout << std::hex << "    Zobrist key_incremental:     " << board.Zobrist_key << std::dec  << "\n";
+    std::cout << std::hex << "    Zobrist key_incremental:     " << board.zobristKey << std::dec  << "\n";
 
 
     std::cout <<"    Castle_key:     " << get_castle(board.castle) << "\n";
@@ -152,7 +152,7 @@ void PrintBoards(Board board)
     {
         std::cout << std::hex << board.history[i] << std::dec << "\n";
     }
-    std::cout << "isThreeFold:" << (is_threefold(board.history, board.last_irreversible_ply) ? "True" : "False");
+    std::cout << "isThreeFold:" << (is_threefold(board.history, board.lastIrreversiblePly) ? "True" : "False");
     //std::cout << ("\n    Number :     ") << ;
     std::cout << ("\n");
 
@@ -303,7 +303,7 @@ void parse_fen(std::string fen, Board& board)
     board.occupancies[Both] |= board.occupancies[White];
 
 	board.PawnKey = generate_Pawn_Hash(board);
-	board.Zobrist_key = generate_hash_key(board);
+	board.zobristKey = generate_hash_key(board);
 	board.MinorKey = generate_Minor_Hash(board);
 	board.WhiteNonPawnKey = generate_WhiteNP_Hash(board);
 	board.BlackNonPawnKey = generate_BlackNP_Hash(board);

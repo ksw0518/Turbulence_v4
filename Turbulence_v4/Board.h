@@ -13,7 +13,7 @@ public:
     int enpassent;
     uint64_t castle;
     int halfmove;
-    uint64_t Zobrist_key;
+    uint64_t zobristKey;
     uint64_t PawnKey;
     uint64_t MinorKey;
     uint64_t WhiteNonPawnKey;
@@ -22,7 +22,7 @@ public:
 
     std::vector<uint64_t> history;
 
-    int last_irreversible_ply = 0;
+    int lastIrreversiblePly = 0;
     //u64 Zobrist;
 
     // Constructor to initialize members

@@ -2,8 +2,8 @@
 
 #include "Board.h"
 
-extern int pv_length[99];
-extern Move pv_table[99][99];
+extern int pvLengths[99];
+extern Move pvTable[99][99];
 
 
 extern int RFP_MULTIPLIER;
@@ -21,44 +21,40 @@ extern int PVS_NOISY_MULTIPLIER;
 extern int HISTORY_BASE;
 extern int HISTORY_MULTIPLIER;
 
-extern uint64_t TT_size;
+extern uint64_t TTSize;
 
-extern bool is_Pretty_Printing;
+extern bool isPrettyPrinting;
 
 extern double DEF_TIME_MULTIPLIER;
 extern double DEF_INC_MULTIPLIER;
 extern double MAX_TIME_MULTIPLIER;
 extern double HARD_LIMIT_MULTIPLIER;
 extern double SOFT_LIMIT_MULTIPLIER;
-struct Transposition_entry
+struct TranspositionEntry
 {
-	uint64_t zobrist_key;
+	uint64_t zobristKey;
 	int32_t score;
-	Move best_move;
+	Move bestMove;
 	uint8_t depth;
 	
-	uint8_t node_type;
+	uint8_t bound;
 };
 
 struct Search_data
 {
 	Move move;
-	int static_eval;
+	int staticEval;
 };
 void initializeLMRTable();
-extern Transposition_entry* TranspositionTable;
+extern TranspositionEntry* TranspositionTable;
 void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1);
 int SEE(Board& pos, Move move, int threshold);
 
 void bench();
 inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversible)
 {
-	//has to be called after allocating new position move
-
 	uint64_t lastmove = history_table[history_table.size() - 1];
 
-	//std::cout << lastmove; 
-	//printMove(lastmove);
 	int repetition_count = 1;
 	for (int i = history_table.size() - 2; i > last_irreversible; i--)
 	{
