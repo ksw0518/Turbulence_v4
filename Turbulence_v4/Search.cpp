@@ -120,9 +120,9 @@ int RFP_IMPROVING_MULTIPLIER = 60;
 int RFP_BASE = -49;
 int RFP_IMPROVING_BASE = -49;
 
-int LMP_BASE = 3;
+int LMP_BASE = 0;
 int LMP_MULTIPLIER = 1;
-int LMP_IMPROVING_MULTIPLIER = 2;
+int LMP_IMPROVING_MULTIPLIER = 3; // do /2
 
 int PVS_QUIET_BASE = 0;
 int PVS_QUIET_MULTIPLIER = 63;
@@ -1433,7 +1433,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int lmp_threshold;
 	if (improving)
 	{
-		lmp_threshold = LMP_BASE + LMP_IMPROVING_MULTIPLIER * depth * depth;
+		lmp_threshold = LMP_BASE + (static_cast<float>(LMP_IMPROVING_MULTIPLIER) / 2) * depth * depth;
 	}
 	else
 	{
