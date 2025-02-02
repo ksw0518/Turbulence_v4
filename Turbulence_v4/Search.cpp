@@ -756,7 +756,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	 
 	int staticEval = Evaluate(board);
 	staticEval = adjustEvalWithCorrHist(board, staticEval);
-	
+	bool isInCheck = is_in_check(board);
 
 	if (staticEval >= beta)
 	{
@@ -800,6 +800,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		if (is_quiet(move.Type)) continue; //skip non capture moves
 
+		if (!isInCheck && staticEval + 250 <= alpha && !SEE(board, move, 1))
+		{
+			continue;
+		}
 		if (!SEE(board, move, 0))
 		{
 			continue;
