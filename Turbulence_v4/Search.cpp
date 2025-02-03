@@ -135,6 +135,19 @@ int HISTORY_MULTIPLIER = 2;
 int ASP_WINDOW_INITIAL = 40;
 int ASP_WINDOW_MAX = 300;
 
+int PAWN_CORRHIST_MULTIPLIER = 5;// divide by 5 later
+int MINOR_CORRHIST_MULTIPLIER = 5;// divide by 5 later
+int NONPAWN_CORRHIST_MULTIPLIER = 5;// divide by 5 later
+
+int QS_SEE_PRUNING_MARGIN = 0;
+int HISTORY_PRUNING_MULTIPLIER = 50;
+int HISTORY_PRUNING_BASE = 0;
+int HISTORY_LMR_MULTIPLIER = 25;
+int HISTORY_LMR_BASE = 0;
+int NMP_EVAL_DIVISER = 400;
+int NMP_DEPTH_DIVISER = 3;
+int MAX_NMP_EVAL_R = 3;
+
 auto clockStart = std::chrono::steady_clock::now();
 
 int pvLengths[99];
@@ -303,7 +316,7 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
-	int adjust = pawnEntry + minorEntry + whiteNPEntry + blackNPEntry;
+	int adjust = (pawnEntry * (static_cast<float>(PAWN_CORRHIST_MULTIPLIER)/5)) + (minorEntry * (static_cast<float>(MINOR_CORRHIST_MULTIPLIER) / 5)) + ((whiteNPEntry + blackNPEntry) * (static_cast<float>(NONPAWN_CORRHIST_MULTIPLIER) / 5));
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
@@ -1029,8 +1042,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				uint64_t lzob = board.zobristKey;
 				ply++;
 				Make_Nullmove(board);
-				int R = 3 + depth / 3;
-				R += std::min((ttAdjustedEval - beta) / 400, 3);
+				int R = 3 + depth / NMP_DEPTH_DIVISER;
+				R += std::min((ttAdjustedEval - beta) / NMP_EVAL_DIVISER, MAX_NMP_EVAL_R);
 				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
 
 				Unmake_Nullmove(board);
@@ -1111,7 +1124,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skipQuiets = true;
 			}
-			if (quietMoves > 1 && depth <= 5 && historyScore < -50 * depth)
+			if (quietMoves > 1 && depth <= 5 && historyScore < (-HISTORY_PRUNING_MULTIPLIER * depth) + HISTORY_PRUNING_BASE)
 			{
 				break;
 			}
@@ -1193,7 +1206,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if (historyScore < -25 * depth)
+			if (historyScore < (- HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
 			{
 				reduction++;
 			}
