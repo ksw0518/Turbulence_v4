@@ -492,8 +492,8 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry &entr
 		else
 		{
 			// Return history score for non-capture and non-killer moves
-			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
-			int contHistScore = getContinuationHistoryScore(move) * 32;
+			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)]/32;
+			int contHistScore = getContinuationHistoryScore(move);
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
