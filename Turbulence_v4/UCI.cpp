@@ -15,12 +15,146 @@
 #include <cstdlib>
 #include <random>
 
-std::vector<std::string> option_name = {"RFP_MULTIPLIER", "RFP_BASE", "PVS_QUIET_BASE", "PVS_QUIET_MULTIPLIER", "PVS_NOISY_BASE", "PVS_NOISY_MULTIPLIER", "LMP_BASE", "LMP_MULTIPLIER", "HISTORY_BASE", "HISTORY_MULTIPLIER"};
-std::vector<int> option_base = { 75, 0, 0, 70, 0, 20, 1, 3, 0, 1 };
-std::vector<int> option_min = { 10,  -50, -10, 30, -10, 5, 0, 1 , -10, 1 };
-std::vector<int> option_max = { 150, 100, 50, 200, 50, 20, 50, 5, 50, 5  };
+std::vector<std::string> option_name = {
+	"RFP_MULTIPLIER",
+	"RFP_IMPROVING_MULTIPLIER",
+	"RFP_BASE",
+	"RFP_IMPROVING_BASE",
+	"LMP_BASE",
+	"LMP_MULTIPLIER",
+	"PVS_QUIET_BASE",
+	"PVS_QUIET_MULTIPLIER",
+	"PVS_NOISY_BASE",
+	"PVS_NOISY_MULTIPLIER",
+	"HISTORY_BASE",
+	"HISTORY_MULTIPLIER",
+	"ASP_WINDOW_INITIAL",
+	"ASP_WINDOW_MAX",
+	"PAWN_CORRHIST_MULTIPLIER",
+	"MINOR_CORRHIST_MULTIPLIER",
+	"NONPAWN_CORRHIST_MULTIPLIER",
+	"QS_SEE_PRUNING_MARGIN",
+	"HISTORY_PRUNING_MULTIPLIER",
+	"HISTORY_PRUNING_BASE",
+	"HISTORY_LMR_MULTIPLIER",
+	"HISTORY_LMR_BASE",
+	"NMP_EVAL_DIVISER",
+	"NMP_DEPTH_DIVISER",
+	"MAX_NMP_EVAL_R"
+};
 
-std::vector<int*> option_var{ &RFP_MULTIPLIER, &RFP_BASE,& PVS_QUIET_BASE, &PVS_QUIET_MULTIPLIER,&PVS_NOISY_BASE, &PVS_NOISY_MULTIPLIER,&LMP_BASE ,&LMP_MULTIPLIER ,&HISTORY_BASE,&HISTORY_MULTIPLIER };
+std::vector<int> option_base = {
+	85,
+	60,
+	-49,
+	-49,
+	0,
+	1,
+	0,
+	63,
+	-1,
+	18,
+	4,
+	2,
+	40,
+	300,
+	5,
+	5,
+	5,
+	0,
+	50,
+	0,
+	25,
+	0,
+	400,
+	3,
+	3
+};
+
+
+std::vector<int> option_min = { 
+	50,
+	30, 
+	-100, 
+	-100, 
+	-1, 
+	1,
+	-70,
+	20,
+	-70, 
+	5,
+	0, 
+	1,
+	20, 
+	100,
+	1,
+	1,
+	1,
+	-150,
+	10,
+    -200,
+	10, 
+	-100,
+	200,
+	2,
+	2
+};
+std::vector<int> option_max = {
+	160,
+	150,
+	100,
+	100,
+	6,
+	3,
+	100,
+	150,
+	50,
+	80,
+	20,
+	10,
+	100,
+	1000,
+	10,
+	10,
+	10,
+	100,
+	200,
+	100,
+	80,
+	100,
+	800,
+	7,
+	4
+};
+
+std::vector<int*> option_var = {
+	&RFP_MULTIPLIER,
+	&RFP_IMPROVING_MULTIPLIER,
+	&RFP_BASE,
+	&RFP_IMPROVING_BASE,
+	&LMP_BASE,
+	&LMP_MULTIPLIER,
+	&PVS_QUIET_BASE,
+	&PVS_QUIET_MULTIPLIER,
+	&PVS_NOISY_BASE,
+	&PVS_NOISY_MULTIPLIER,
+	&HISTORY_BASE,
+	&HISTORY_MULTIPLIER,
+	&ASP_WINDOW_INITIAL,
+	&ASP_WINDOW_MAX,
+	&PAWN_CORRHIST_MULTIPLIER,
+	&MINOR_CORRHIST_MULTIPLIER,
+	&NONPAWN_CORRHIST_MULTIPLIER,
+	&QS_SEE_PRUNING_MARGIN,
+	&HISTORY_PRUNING_MULTIPLIER,
+	&HISTORY_PRUNING_BASE,
+	&HISTORY_LMR_MULTIPLIER,
+	&HISTORY_LMR_BASE,
+	&NMP_EVAL_DIVISER,
+	&NMP_DEPTH_DIVISER,
+	&MAX_NMP_EVAL_R
+};
+
 
 
 /*int RFP_MULTIPLIER = 75;
@@ -240,6 +374,15 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
+		for (int i = 0; i < option_name.size(); i++)//for spsa
+		{
+			std::cout << "option name " << option_name[i];
+			std::cout << " type spin ";
+			std::cout << " default " << option_base[i];
+			std::cout << " min " << option_min[i];
+			std::cout << " max " << option_max[i];
+			std::cout << "\n";
+		}
         isPrettyPrinting = false;
         
         std::cout << "uciok" << "\n";

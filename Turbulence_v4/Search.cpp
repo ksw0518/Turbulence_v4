@@ -115,25 +115,38 @@ std::string benchFens[] = { // fens from alexandria, ultimately from bitgenie
 	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
-int RFP_MULTIPLIER = 85;
-int RFP_IMPROVING_MULTIPLIER = 60;
-int RFP_BASE = -49;
-int RFP_IMPROVING_BASE = -49;
+int RFP_MULTIPLIER = 89;
+int RFP_IMPROVING_MULTIPLIER = 65;
+int RFP_BASE = -36;
+int RFP_IMPROVING_BASE = -39;
 
 int LMP_BASE = 0;
 int LMP_MULTIPLIER = 1;
 
-int PVS_QUIET_BASE = 0;
-int PVS_QUIET_MULTIPLIER = 63;
+int PVS_QUIET_BASE = 4;
+int PVS_QUIET_MULTIPLIER = 57;
 
-int PVS_NOISY_BASE = -1;
-int PVS_NOISY_MULTIPLIER = 18;
+int PVS_NOISY_BASE = -3;
+int PVS_NOISY_MULTIPLIER = 14;
 
 int HISTORY_BASE = 4;
-int HISTORY_MULTIPLIER = 2;
+int HISTORY_MULTIPLIER = 3;
 
-int ASP_WINDOW_INITIAL = 40;
-int ASP_WINDOW_MAX = 300;
+int ASP_WINDOW_INITIAL = 38;
+int ASP_WINDOW_MAX = 311;
+
+int PAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
+int MINOR_CORRHIST_MULTIPLIER = 6;// divide by 5 later
+int NONPAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
+
+int QS_SEE_PRUNING_MARGIN = -2;
+int HISTORY_PRUNING_MULTIPLIER = 41;
+int HISTORY_PRUNING_BASE = 2;
+int HISTORY_LMR_MULTIPLIER = 24;
+int HISTORY_LMR_BASE = 3;
+int NMP_EVAL_DIVISER = 418;
+int NMP_DEPTH_DIVISER = 4;
+int MAX_NMP_EVAL_R = 3;
 
 auto clockStart = std::chrono::steady_clock::now();
 
@@ -303,7 +316,7 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
-	int adjust = pawnEntry + minorEntry + whiteNPEntry + blackNPEntry;
+	int adjust = (pawnEntry * (static_cast<float>(PAWN_CORRHIST_MULTIPLIER)/5)) + (minorEntry * (static_cast<float>(MINOR_CORRHIST_MULTIPLIER) / 5)) + ((whiteNPEntry + blackNPEntry) * (static_cast<float>(NONPAWN_CORRHIST_MULTIPLIER) / 5));
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
@@ -1029,8 +1042,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				uint64_t lzob = board.zobristKey;
 				ply++;
 				Make_Nullmove(board);
-				int R = 3 + depth / 3;
-				R += std::min((ttAdjustedEval - beta) / 400, 3);
+				int R = 3 + depth / NMP_DEPTH_DIVISER;
+				R += std::min((ttAdjustedEval - beta) / NMP_EVAL_DIVISER, MAX_NMP_EVAL_R);
 				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
 
 				Unmake_Nullmove(board);
@@ -1111,7 +1124,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skipQuiets = true;
 			}
-			if (quietMoves > 1 && depth <= 5 && historyScore < -50 * depth)
+			if (quietMoves > 1 && depth <= 5 && historyScore < (-HISTORY_PRUNING_MULTIPLIER * depth) + HISTORY_PRUNING_BASE)
 			{
 				break;
 			}
@@ -1193,7 +1206,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if (historyScore < -25 * depth)
+			if (historyScore < (- HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
 			{
 				reduction++;
 			}
