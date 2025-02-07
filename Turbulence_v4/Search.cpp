@@ -140,10 +140,10 @@ int MINOR_CORRHIST_MULTIPLIER = 6;// divide by 5 later
 int NONPAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
-int HISTORY_PRUNING_MULTIPLIER = 41;
-int HISTORY_PRUNING_BASE = 2;
-int HISTORY_LMR_MULTIPLIER = 24;
-int HISTORY_LMR_BASE = 3;
+int HISTORY_PRUNING_MULTIPLIER = 41 * 32;
+int HISTORY_PRUNING_BASE = 2 * 32;
+int HISTORY_LMR_MULTIPLIER = 24 * 32;
+int HISTORY_LMR_BASE = 3 * 32;
 int NMP_EVAL_DIVISER = 418;
 int NMP_DEPTH_DIVISER = 4;
 int MAX_NMP_EVAL_R = 3;
@@ -195,7 +195,7 @@ TranspositionEntry* TranspositionTable = nullptr;
 
 Search_data searchStack[99];
 
-constexpr int MAX_HISTORY = 512;
+constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 1024;
 constexpr int MAX_CAPTHIST = 1024;
 
@@ -493,7 +493,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry &entr
 		{
 			// Return history score for non-capture and non-killer moves
 			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
-			int contHistScore = getContinuationHistoryScore(move);
+			int contHistScore = getContinuationHistoryScore(move) * 32;
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
