@@ -131,6 +131,8 @@ int PVS_NOISY_MULTIPLIER = 14;
 
 int HISTORY_BASE = 4 * 32;
 int HISTORY_MULTIPLIER = 3 * 32;
+int CONTHIST_BASE = 3;
+int CONTHIST_MULTIPLIER = 32;
 
 int ASP_WINDOW_INITIAL = 38;
 int ASP_WINDOW_MAX = 311;
@@ -1319,23 +1321,24 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					killerMoves[1][ply] = killerMoves[0][ply];
 					killerMoves[0][ply] = move;
 				}
-				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				int mainHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				int contHistBonus = CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth;
 				for (auto& move_quiet : quietsList) {
 					if (move_quiet == move)
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, bonus, oppThreats);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, mainHistBonus, oppThreats);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, bonus);
+							updateContinuationHistoryScore(move_quiet, contHistBonus);
 						}
 
 					}
 					else
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, -bonus, oppThreats);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, -mainHistBonus, oppThreats);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, -bonus);
+							updateContinuationHistoryScore(move_quiet, -contHistBonus);
 						}
 					}
 
