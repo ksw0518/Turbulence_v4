@@ -374,15 +374,15 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
-		for (int i = 0; i < option_name.size(); i++)//for spsa
-		{
-			std::cout << "option name " << option_name[i];
-			std::cout << " type spin ";
-			std::cout << " default " << option_base[i];
-			std::cout << " min " << option_min[i];
-			std::cout << " max " << option_max[i];
-			std::cout << "\n";
-		}
+		//for (int i = 0; i < option_name.size(); i++)//for spsa
+		//{
+		//	std::cout << "option name " << option_name[i];
+		//	std::cout << " type spin ";
+		//	std::cout << " default " << option_base[i];
+		//	std::cout << " min " << option_min[i];
+		//	std::cout << " max " << option_max[i];
+		//	std::cout << "\n";
+		//}
         isPrettyPrinting = false;
         
         std::cout << "uciok" << "\n";
