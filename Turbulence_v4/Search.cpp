@@ -129,8 +129,10 @@ int PVS_QUIET_MULTIPLIER = 57;
 int PVS_NOISY_BASE = -3;
 int PVS_NOISY_MULTIPLIER = 14;
 
-int HISTORY_BASE = 4;
-int HISTORY_MULTIPLIER = 3;
+int HISTORY_BASE = 4 * 32;
+int HISTORY_MULTIPLIER = 3 * 32;
+int CONTHIST_BASE = 4;
+int CONTHIST_MULTIPLIER = 3;
 
 int ASP_WINDOW_INITIAL = 38;
 int ASP_WINDOW_MAX = 311;
@@ -140,10 +142,10 @@ int MINOR_CORRHIST_MULTIPLIER = 6;// divide by 5 later
 int NONPAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
-int HISTORY_PRUNING_MULTIPLIER = 41;
-int HISTORY_PRUNING_BASE = 2;
-int HISTORY_LMR_MULTIPLIER = 24;
-int HISTORY_LMR_BASE = 3;
+int HISTORY_PRUNING_MULTIPLIER = 41 * 32;
+int HISTORY_PRUNING_BASE = 2 * 32;
+int HISTORY_LMR_MULTIPLIER = 24 * 32;
+int HISTORY_LMR_BASE = 3 * 32;
 int NMP_EVAL_DIVISER = 418;
 int NMP_DEPTH_DIVISER = 4;
 int MAX_NMP_EVAL_R = 3;
@@ -195,7 +197,7 @@ TranspositionEntry* TranspositionTable = nullptr;
 
 Search_data searchStack[99];
 
-constexpr int MAX_HISTORY = 512;
+constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 1024;
 constexpr int MAX_CAPTHIST = 1024;
 
@@ -492,7 +494,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry &entr
 		else
 		{
 			// Return history score for non-capture and non-killer moves
-			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
+			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)]/32;
 			int contHistScore = getContinuationHistoryScore(move);
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
@@ -1116,7 +1118,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool isNotMated = alpha > -49000 + 99;
 
 		int main_history = mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move);
+		int conthist = getContinuationHistoryScore(move) * 32;
 		int historyScore = main_history + conthist;
 		if (ply != 0 && isQuiet && isNotMated)
 		{
@@ -1319,23 +1321,24 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					killerMoves[1][ply] = killerMoves[0][ply];
 					killerMoves[0][ply] = move;
 				}
-				int bonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				int mainHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				int contHistBonus = CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth;
 				for (auto& move_quiet : quietsList) {
 					if (move_quiet == move)
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, bonus, oppThreats);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, mainHistBonus, oppThreats);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, bonus);
+							updateContinuationHistoryScore(move_quiet, contHistBonus);
 						}
 
 					}
 					else
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, -bonus, oppThreats);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, -mainHistBonus, oppThreats);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, -bonus);
+							updateContinuationHistoryScore(move_quiet, -contHistBonus);
 						}
 					}
 
