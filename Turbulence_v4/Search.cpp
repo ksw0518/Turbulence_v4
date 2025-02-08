@@ -1363,11 +1363,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return 0;
 		}
 	}
+	bool zobristMatches = board.zobristKey == ttEntry.zobristKey;
 	ttEntry.score = bestValue;
 	ttEntry.bound = ttFlag;
 	ttEntry.depth = depth;
 	ttEntry.zobristKey = board.zobristKey;
-	if (bestMove != Move(0, 0, 0, 0))
+	if (!(zobristMatches &&  bestMove == Move(0, 0, 0, 0)))
 	{
 		ttEntry.bestMove = bestMove;
 	}
