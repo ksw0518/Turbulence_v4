@@ -1216,7 +1216,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if(move == killerMoves[0][ply] || move == killerMoves[1][ply])
+			if((move == killerMoves[0][ply - 1]) || (move == killerMoves[1][ply - 1]))
 			{
 				reduction--;
 			}
