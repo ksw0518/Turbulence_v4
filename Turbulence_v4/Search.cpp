@@ -982,7 +982,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
-
+	if (depth > 5 && (isPvNode || cutnode) && !is_ttmove_found)
+	{
+		depth--;
+	}
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
