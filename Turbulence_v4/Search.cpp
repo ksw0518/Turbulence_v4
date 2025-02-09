@@ -1218,7 +1218,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.BlackNonPawnKey = last_blacknpKey;
 
 
-			int s_beta = ttEntry.score - depth;
+			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
 			if(s_score < s_beta)
