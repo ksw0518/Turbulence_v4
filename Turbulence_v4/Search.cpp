@@ -973,7 +973,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	// Only check TT for depths greater than zero (ply != 0)
-	if (!isPvNode && ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
+	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
 		is_ttmove_found = true;
 		// Valid TT entry found
