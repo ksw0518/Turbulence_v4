@@ -738,17 +738,18 @@ inline TranspositionEntry ttLookUp(uint64_t zobrist)
 	int tt_index = zobrist % TTSize;
 	return TranspositionTable[tt_index];
 }
-inline bool is_in_check(Board& board)
+
+bool is_checking(Board& board)
 {
-	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
+	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[k] : board.bitboards[K]), board.side, board, board.occupancies[Both]))
 	{
 		return true;
 	}
 	return false;
 }
-bool is_checking(Board& board)
+inline bool is_in_check(Board& board)
 {
-	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[k] : board.bitboards[K]), board.side, board, board.occupancies[Both]))
+	if (is_square_attacked(get_ls1b(board.side == White ? board.bitboards[K] : board.bitboards[k]), 1 - board.side, board, board.occupancies[Both]))
 	{
 		return true;
 	}
@@ -768,30 +769,37 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		return Evaluate(board);
 	}
 	int score = 0;
-	 
+
 	int staticEval = Evaluate(board);
 	staticEval = adjustEvalWithCorrHist(board, staticEval);
-	
-
-	if (staticEval >= beta)
-	{
-		return staticEval;
-	}
-
-	if (staticEval > alpha)
-	{
-		alpha = staticEval;
-	}
-
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
+	bool is_ttmove_found = false;
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
+		is_ttmove_found = true;
 		if ((ttEntry.bound == ExactFlag)
 			|| (ttEntry.bound == UpperBound && ttEntry.score <= alpha)
 			|| (ttEntry.bound == LowerBound && ttEntry.score >= beta))
 		{
 			return ttEntry.score;
 		}
+	}
+
+	uint8_t Bound = ttEntry.bound;
+	bool isInCheck = is_in_check(board);
+	int ttAdjustedEval = staticEval;
+	if (is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
+	{
+		ttAdjustedEval = ttEntry.score;
+	}
+	if (ttAdjustedEval >= beta)
+	{
+		return ttAdjustedEval;
+	}
+
+	if (ttAdjustedEval > alpha)
+	{
+		alpha = ttAdjustedEval;
 	}
 
 	std::vector<Move> moveList;
@@ -811,10 +819,15 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastMinorKey = board.MinorKey;
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
+
+	//bool isInCheck = is_in_check(board);
 	for (Move& move : moveList)
 	{
 		if (is_quiet(move.Type)) continue; //skip non capture moves
-
+		if (!isInCheck && staticEval + 250 <= alpha && !SEE(board, move, 1))
+		{
+			continue;
+		}
 		if (!SEE(board, move, 0))
 		{
 			continue;
@@ -960,7 +973,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	// Only check TT for depths greater than zero (ply != 0)
-	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
+	if (!isPvNode && ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
 		is_ttmove_found = true;
 		// Valid TT entry found
