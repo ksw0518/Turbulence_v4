@@ -1018,7 +1018,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
-	if (!isSingularSearch && depth < 4 && canPrune)//rfp
+	if (depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin;
 		if (improving)
@@ -1036,7 +1036,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-	if (!isSingularSearch && !isPvNode && doNMP)
+	if (!isPvNode && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
 		{
@@ -1398,7 +1398,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		else
 		{
-			return 0;
+			return isSingularSearch ? alpha : 0;
 		}
 	}
 	ttEntry.score = bestValue;
