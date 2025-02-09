@@ -961,12 +961,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
+	bool isSingularSearch = excludedMove != NULLMOVE;
 	// Only check TT for depths greater than zero (ply != 0)
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
 		is_ttmove_found = true;
 		// Valid TT entry found
-		if (ply != 0 && ttEntry.depth >= depth)
+		if (!isSingularSearch && ply != 0 && ttEntry.depth >= depth)
 		{
 			// Return immediately if exact score is found
 			if (ttEntry.bound == ExactFlag)
@@ -1008,7 +1009,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
-	if ((excludedMove != NULLMOVE) && is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
+	if (!isSingularSearch && is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
@@ -1017,7 +1018,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
-	if ((excludedMove != NULLMOVE) && depth < 4 && canPrune)//rfp
+	if (!isSingularSearch && depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin;
 		if (improving)
@@ -1035,7 +1036,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-	if ((excludedMove != NULLMOVE) && !isPvNode && doNMP)
+	if (!isSingularSearch && !isPvNode && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
 		{
@@ -1099,6 +1100,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_minorKey = board.MinorKey;
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
+	
 	for (Move& move : moveList)
 	{
 
@@ -1197,8 +1199,25 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 		int extensions = 0;
-		if(ply != 0 && depth >= 7 && move == ttEntry.bestMove && excludedMove != NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
+
+		if(ply != 0 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
 		{
+			ply--;
+			UnmakeMove(board, move, captured_piece);
+
+			board.history.pop_back();
+			board.lastIrreversiblePly = last_irreversible;
+
+			board.zobristKey = last_zobrist;
+			board.enpassent = lastEp;
+			board.castle = lastCastle;
+			board.side = lastside;
+			board.PawnKey = last_pawnKey;
+			board.MinorKey = last_minorKey;
+			board.WhiteNonPawnKey = last_whitenpKey;
+			board.BlackNonPawnKey = last_blacknpKey;
+
+
 			int s_beta = ttEntry.score - depth;
 			int s_depth = (depth - 1) / 2;
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
@@ -1207,7 +1226,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				extensions++;
 			}
 
-		
+
+			MakeMove(board, move);
+			ply++;
 		}
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
@@ -1390,14 +1411,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 	int bound = bestValue >= beta ? HFLOWER : alpha != orgAlpha ? HFEXACT : HFUPPER;
-	if (!is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || is_quiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
+	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || is_quiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
 	{
 		updatePawnCorrHist(board, depth, bestValue - staticEval);
 		updateMinorCorrHist(board, depth, bestValue - staticEval);
 		updateNonPawnCorrHist(board, depth, bestValue - staticEval);
 	}
-
-	TranspositionTable[board.zobristKey % TTSize] = ttEntry;
+	if (!isSingularSearch)
+	{
+		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
+	}
+	
 
 	return bestValue;
 }
