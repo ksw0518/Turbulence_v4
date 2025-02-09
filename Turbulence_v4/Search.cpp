@@ -1117,7 +1117,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (depth <= MAX_PVS_SEE_DEPTH)
 		{
 			if (!SEE(board, move, seeThreshold))
-			{
+			{ 
 				continue;
 			}
 		}
