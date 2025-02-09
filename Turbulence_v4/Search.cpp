@@ -32,6 +32,8 @@
 
 bool isOnWindow;
 
+#define NULLMOVE Move(0,0,0,0)
+
 void initialize_platform() {
 #if defined(_WIN32) || defined(_WIN64)
 	// Windows platform
@@ -930,7 +932,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 }
 
 
-static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode)
+static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, Move excludedMove = NULLMOVE)
 {
 	bool isPvNode = beta - alpha > 1;
 
@@ -1006,7 +1008,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
-	if (is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
+	if ((excludedMove != NULLMOVE) && is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
@@ -1015,7 +1017,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
-	if (depth < 4 && canPrune)//rfp
+	if ((excludedMove != NULLMOVE) && depth < 4 && canPrune)//rfp
 	{
 		int rfpMargin;
 		if (improving)
@@ -1033,7 +1035,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-	if (!isPvNode && doNMP)
+	if ((excludedMove != NULLMOVE) && !isPvNode && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
 		{
@@ -1101,7 +1103,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 
 		bool isQuiet = is_quiet(move.Type);
-
+		if(move == excludedMove)
+		{
+			continue;
+		}
 		if (skipQuiets && isQuiet) //quiet move
 		{
 			continue;
@@ -1191,7 +1196,19 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool is_reduced = false;
 
 
+		int extensions = 0;
+		if(ply != 0 && depth >= 7 && move == ttEntry.bestMove && excludedMove != NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
+		{
+			int s_beta = ttEntry.score - depth;
+			int s_depth = (depth - 1) / 2;
+			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
+			if(s_score < s_beta)
+			{
+				extensions++;
+			}
 
+		
+		}
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
 			reduction = lmrTable[depth][searchedMoves];
@@ -1227,7 +1244,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (searchedMoves <= 1)
 		{
-			score = -Negamax(board, depthToSearch, -beta, -alpha, true, false);
+			score = -Negamax(board, depthToSearch + extensions, -beta, -alpha, true, false);
 		}
 		else
 		{
