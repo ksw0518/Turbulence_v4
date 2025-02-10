@@ -62,6 +62,7 @@ struct Search_data
 {
 	Move move;
 	int staticEval;
+	int doubleExtensions = 0;
 };
 void initializeLMRTable();
 extern TranspositionEntry* TranspositionTable;
