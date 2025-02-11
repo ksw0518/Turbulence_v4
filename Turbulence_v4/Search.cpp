@@ -1239,7 +1239,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			MakeMove(board, move);
 			ply++;
 		}
-		//searchStack[ply-1].move = move;
+		searchStack[ply-1].move = move;
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
 			reduction = lmrTable[depth][searchedMoves];
