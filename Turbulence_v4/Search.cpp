@@ -1101,7 +1101,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_minorKey = board.MinorKey;
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
-	
+	/*if (ply > 0)
+	{
+		searchStack[ply].doubleExtensions = searchStack[ply - 1].doubleExtensions;
+	}*/
 	for (Move& move : moveList)
 	{
 
@@ -1200,10 +1203,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 		int extensions = 0;
-		if (ply > 1)
-		{
-			searchStack[ply - 1].doubleExtensions = searchStack[ply - 2].doubleExtensions;
-		}
+
 		if(ply > 1 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
 		{
 			ply--;
@@ -1227,12 +1227,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
 			if(s_score < s_beta)
 			{
-				/*if (!isPvNode && score <= s_beta - 18 && searchStack[ply].doubleExtensions <= 8)
+				if (!isPvNode && score <= s_beta - 20)
 				{
 					extensions = 2;
-					searchStack[ply].doubleExtensions++;
-				}*/
-				extensions++;
+					//searchStack[ply].doubleExtensions++;
+				}
+    else
+    {
+     extensions = 1;
+    }
+			
 			}
 
 
