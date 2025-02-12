@@ -1232,12 +1232,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					extensions = 2;
 					//searchStack[ply].doubleExtensions++;
 				}
-    else
-    {
-     extensions = 1;
-    }
-			
+				else
+				{
+					extensions = 1;
+				}
+
 			}
+			else if(s_beta >= beta)
+			{
+				return s_beta;
+			}
+
 
 
 			MakeMove(board, move);
