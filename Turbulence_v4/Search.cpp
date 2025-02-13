@@ -1131,10 +1131,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int main_history = mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
 		int conthist = getContinuationHistoryScore(move) * 32;
 		int historyScore = main_history + conthist;
-		if (ply != 0 && isQuiet && isNotMated)
+		if (ply != 0 && isQuiet && isNotMated && !isInCheck)
 		{
 			if (searchedMoves >= lmpThreshold)
 			{
+				//skip quiets
 				skipQuiets = true;
 			}
 			if (quietMoves > 1 && depth <= 5 && historyScore < (-HISTORY_PRUNING_MULTIPLIER * depth) + HISTORY_PRUNING_BASE)
@@ -1232,10 +1233,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					extensions = 2;
 					//searchStack[ply].doubleExtensions++;
 				}
-    else
-    {
-     extensions = 1;
-    }
+				else
+				{
+					extensions = 1;
+				}
 			
 			}
 
