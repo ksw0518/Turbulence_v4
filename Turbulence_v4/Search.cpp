@@ -184,6 +184,7 @@ int CaptureHistory[12][64][12];
 
 int onePlyContHist[12][64][12][64];
 int twoPlyContHist[12][64][12][64];
+int fourPlyContHist[12][64][12][64];
 
 int pawnCorrHist[2][CORRHIST_SIZE];
 int minorCorrHist[2][CORRHIST_SIZE];
@@ -262,6 +263,7 @@ void initializeLMRTable()
 	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 	memset(nonPawnCorrHist, 0, sizeof(nonPawnCorrHist));
 	memset(minorCorrHist, 0, sizeof(minorCorrHist));
+	memset(fourPlyContHist, 0, sizeof(minorCorrHist));
 
 	isPrettyPrinting = true;
 }
@@ -347,7 +349,11 @@ int getSingleContinuationHistoryScore(Move move, const int offSet)
 		{
 			return twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
-		
+		else if (offSet == 4)
+		{
+			return fourPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
+
 	}
 	return 0;
 }
@@ -357,10 +363,11 @@ int getContinuationHistoryScore(Move& move)
 	{
 		int onePly = getSingleContinuationHistoryScore(move, 1);
 		int twoPly = getSingleContinuationHistoryScore(move, 2);
+		int fourPly = getSingleContinuationHistoryScore(move, 4);
 
 
-		int finalScore = onePly + twoPly;
-		return finalScore;
+		int finalScore = onePly + twoPly + fourPly;
+		return (finalScore * 2) / 3;
 	}
 	return 0;
 }
@@ -381,6 +388,10 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		{
 			twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
+		else if (offSet == 4)
+		{
+			fourPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
 		
 	}
 }
@@ -388,6 +399,7 @@ void updateContinuationHistoryScore(Move& move, const int bonus)
 {
 	updateSingleContinuationHistoryScore(move, bonus, 1);
 	updateSingleContinuationHistoryScore(move, bonus, 2);
+	updateSingleContinuationHistoryScore(move, bonus, 4);
 }
 
 void printTopCapthist(int side) {
@@ -497,7 +509,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry &entr
 		{
 			// Return history score for non-capture and non-killer moves
 			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)]/32;
-			int contHistScore = getContinuationHistoryScore(move);
+			int contHistScore = (getContinuationHistoryScore(move) * 2)/3;
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
@@ -1477,6 +1489,7 @@ void bench()
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 		memset(minorCorrHist, 0, sizeof(minorCorrHist));
+		memset(fourPlyContHist, 0, sizeof(minorCorrHist));
 
 		parse_fen(benchFens[i], board);
 		board.zobristKey = generate_hash_key(board);
