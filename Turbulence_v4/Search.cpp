@@ -888,7 +888,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		score = -Quiescence(board, -beta, -alpha);
 		if (score  <= -49000)
 		{
-			skipQuiets = false;
+			skipQuiets = true;
 		}
 		if (isSearchStop) {
 			UnmakeMove(board, move, captured_piece);
