@@ -825,14 +825,20 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastMinorKey = board.MinorKey;
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
+	bool skipQuiets = generateOnlyCapture;
 	for (Move& move : moveList)
 	{
-		if (is_quiet(move.Type) && generateOnlyCapture) continue; //skip non capture moves
+		if (is_quiet(move.Type) && skipQuiets) continue; //skip non capture moves
 
-		if (!SEE(board, move, 0))
+		
+		if (bestValue > -40000) 
 		{
-			continue;
+			if (!SEE(board, move, 0))
+			{
+				continue;
+			}
 		}
+
 
 
 		int lastEp = board.enpassent;
@@ -880,7 +886,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 		legal_moves++;
 		score = -Quiescence(board, -beta, -alpha);
-
+		if (score  <= -49000)
+		{
+			skipQuiets = false;
+		}
 		if (isSearchStop) {
 			UnmakeMove(board, move, captured_piece);
 			board.history.pop_back();
