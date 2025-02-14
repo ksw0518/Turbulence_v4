@@ -1011,7 +1011,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	if (isInCheck)
 	{
-		depth = std::max(depth, 1);
+		depth = std::max(depth + 1, 1);
 	}
 	if (depth <= 0)
 	{
