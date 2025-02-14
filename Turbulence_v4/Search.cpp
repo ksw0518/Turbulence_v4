@@ -774,16 +774,20 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int staticEval = Evaluate(board);
 	staticEval = adjustEvalWithCorrHist(board, staticEval);
 	
-
-	if (staticEval >= beta)
+        bool isInCheck = is_in_check(board);
+	if (!isInCheck)
 	{
+	   if (staticEval >= beta)
+	   {
 		return staticEval;
-	}
+	   }
 
-	if (staticEval > alpha)
-	{
+	   if (staticEval > alpha)
+	   {
 		alpha = staticEval;
+	   }
 	}
+	
 
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
@@ -797,10 +801,18 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 
 	std::vector<Move> moveList;
-	Generate_Legal_Moves(moveList, board, true);
+	bool generateOnlyCapture = !isInCheck;
+	Generate_Legal_Moves(moveList, board, generateOnlyCapture);
 
-	sort_moves_captures(moveList, board);
-
+        if(generateOnlyCapture)
+	{
+	   sort_moves_captures(moveList, board);
+	}
+	else
+	{
+	   uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
+	   sort_moves(moveList, board, ttEntry, oppThreats);
+	}
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
 	//PrintBoards(board);
@@ -815,7 +827,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	for (Move& move : moveList)
 	{
-		if (is_quiet(move.Type)) continue; //skip non capture moves
+		if (is_quiet(move.Type) && generateOnlyCapture) continue; //skip non capture moves
 
 		if (!SEE(board, move, 0))
 		{
