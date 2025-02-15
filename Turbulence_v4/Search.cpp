@@ -1050,7 +1050,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				Make_Nullmove(board);
 				int R = 3 + depth / NMP_DEPTH_DIVISER;
 				R += std::min((ttAdjustedEval - beta) / NMP_EVAL_DIVISER, MAX_NMP_EVAL_R);
-				R += improving;
+				R -= !improving;
 				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
 
 				Unmake_Nullmove(board);
