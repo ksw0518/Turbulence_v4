@@ -1801,12 +1801,12 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 			if (score <= alpha_val)
 			{
 				alpha_val = std::max(MINUS_INFINITY, score - delta);
-				aspDepth = depth;
+				aspDepth = currDepth;
 			}
 			else if (score >= beta_val)
 			{
 				beta_val = std::min(PLUS_INFINITY, score + delta);
-				aspDepth = std::max(aspDepth - 1, depth - 5);
+				aspDepth = std::max(aspDepth - 1, currDepth - 5);
 			}
 			else
 			{
