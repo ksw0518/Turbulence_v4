@@ -1260,10 +1260,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if (historyScore < (- HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
-			{
-				reduction++;
-			}
+			reduction -= historyScore / (HISTORY_LMR_MULTIPLIER * depth + HISTORY_LMR_BASE);
+			//std::cout<< historyScore / (HISTORY_LMR_MULTIPLIER * depth + HISTORY_LMR_BASE)<< std::endl;
+			//if (historyScore < (- HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
+			//{
+			//	reduction++;
+			//}
 			if (!isQuiet)
 			{
 				reduction--;
