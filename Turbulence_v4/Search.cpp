@@ -1004,8 +1004,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 	int rawEval = Evaluate(board);
-
-	int staticEval = adjustEvalWithCorrHist(board, rawEval);
+	bool doesTTmoveExist = ttEntry.bestMove != NULLMOVE;
+	int staticEval = doesTTmoveExist ? rawEval : adjustEvalWithCorrHist(board, rawEval);
 
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
