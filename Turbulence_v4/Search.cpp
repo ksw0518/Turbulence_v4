@@ -985,7 +985,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
-
+	if(!is_ttmove_found && depth >= 6 && ply > 0)
+	{
+		depth--;
+	}
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
