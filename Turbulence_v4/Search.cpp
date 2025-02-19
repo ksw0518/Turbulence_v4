@@ -1204,7 +1204,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		int extensions = 0;
 
-		if (ply > 1 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
+		if (ply > 1 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 49000)
 		{
 			ply--;
 			UnmakeMove(board, move, captured_piece);
@@ -1227,14 +1227,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
 			if (s_score < s_beta)
 			{
+				extensions = 1;
 				if (!isPvNode && score <= s_beta - 20)
 				{
-					extensions = 2;
+					extensions++;
 					//searchStack[ply].doubleExtensions++;
 				}
-				else
+				if (isQuiet && s_score + 70 < s_beta)
 				{
-					extensions = 1;
+					extensions++;
 				}
 
 			}
