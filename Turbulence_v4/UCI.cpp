@@ -357,7 +357,7 @@ void Initialize_TT(int size)
 		delete [] TranspositionTable;
 
     TranspositionTable = new TranspositionEntry[TTSize]();
-
+	
 }
 void ProcessUCI(std::string input)
 {
@@ -387,6 +387,11 @@ void ProcessUCI(std::string input)
         
         std::cout << "uciok" << "\n";
     }
+	else if (main_command == "ucinewgame")
+	{
+		Initialize_TT(16);
+		initializeLMRTable();
+	}
     else if (main_command == "setoption")
     {
         std::string option = TryGetLabelledValue(input, "name", option_commands);

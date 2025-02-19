@@ -193,7 +193,7 @@ int minorCorrHist[2][CORRHIST_SIZE];
 /// </summary>
 int nonPawnCorrHist[2][2][CORRHIST_SIZE];
 
-size_t TTSize = 16;
+size_t TTSize = 699050;
 TranspositionEntry* TranspositionTable = nullptr;
 
 
@@ -264,6 +264,18 @@ void initializeLMRTable()
 	memset(minorCorrHist, 0, sizeof(minorCorrHist));
 
 	isPrettyPrinting = true;
+	for (int ply = 0; ply < 99; ply++)
+	{
+		killerMoves[0][ply] = Move();
+		killerMoves[1][ply] = Move();
+	}
+	memset(mainHistory, 0, sizeof(mainHistory));
+
+	
+	//for (size_t i = 0; i < TTSize; i++)
+	//{
+	//	TranspositionTable[i] = TranspositionEntry();
+	//}
 }
 int scaledBonus(int score, int bonus)
 {
