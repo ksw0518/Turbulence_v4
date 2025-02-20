@@ -180,6 +180,10 @@ Move killerMoves[2][99];
 
 int mainHistory[2][64][64][2][2];
 
+
+/// <summary>
+/// [attacker][to square][victim]
+/// </summary>
 int CaptureHistory[12][64][12];
 
 int onePlyContHist[12][64][12][64];
@@ -335,16 +339,17 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	int adjust = (pawnEntry * (static_cast<float>(PAWN_CORRHIST_MULTIPLIER) / 5)) + (minorEntry * (static_cast<float>(MINOR_CORRHIST_MULTIPLIER) / 5)) + ((whiteNPEntry + blackNPEntry) * (static_cast<float>(NONPAWN_CORRHIST_MULTIPLIER) / 5));
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
+void updateCaptureHistory(int attacker, int to, int victim, int bonus)
+{
+	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	CaptureHistory[attacker][to][victim] += clampedBonus - CaptureHistory[attacker][to][victim] * abs(clampedBonus) / MAX_HISTORY;
+}
 void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 	mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
 }
-void update_capthist(int attacker, int to, int victim, int bonus)
-{
-	int clampedBonus = std::clamp(bonus, -MAX_CAPTHIST, MAX_CAPTHIST);
-	CaptureHistory[attacker][to][victim] += clampedBonus - CaptureHistory[attacker][to][victim] * abs(clampedBonus) / MAX_CAPTHIST;
-}
+
 int getSingleContinuationHistoryScore(Move move, const int offSet)
 {
 	if (ply >= offSet)
@@ -402,33 +407,7 @@ void updateContinuationHistoryScore(Move& move, const int bonus)
 	updateSingleContinuationHistoryScore(move, bonus, 2);
 }
 
-void printTopCapthist(int side) {
-	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
 
-	// Populate the vector with scores and moves
-	for (int from = 0; from < 64; ++from) {
-		for (int to = 0; to < 64; ++to) {
-			int score = CaptureHistory[side][from][to];
-			moves.emplace_back(score, from, to);
-		}
-	}
-
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
-	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
-		auto [score, from, to] = moves[i];
-		std::cout << "from: " << CoordinatesToChessNotation(from)
-			<< " to: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< " side_to_move = " << side
-			<< std::endl;
-	}
-}
 void printTopOneplyContHist() {
 	std::vector<std::tuple<int, int, int, int, int>> moves; // Stores <score, piece_from, from, piece_to, to>
 
@@ -491,6 +470,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		}
 		int attacker = get_piece(move.Piece, White);
 		int score = MVVLVA[attacker][victim];
+		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		score += SEE(board, move, -100) ? 200000 : -10000000;
 		return score;
@@ -531,13 +511,21 @@ static inline int get_move_score_capture(Move move, Board& board)
 {
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
+		int victim;
 		if (move.Type == ep_capture)
 		{
-			return MVVLVA[P][P] * 10000;
+			victim = P;
 		}
-		int victim = get_piece(board.mailbox[move.To], White);
+		else
+		{
+			victim = get_piece(board.mailbox[move.To], White);
+		}
 		int attacker = get_piece(move.Piece, White);
-		return MVVLVA[attacker][victim] * 10000;
+		int score = MVVLVA[attacker][victim];
+		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+		
+		return score;
 	}
 	else
 	{
@@ -1103,6 +1091,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	std::vector<Move> quietsList;
 	quietsList.reserve(50);
+	std::vector<Move> noisyList;
+	noisyList.reserve(50);
+	std::vector<int> noisyVictim;
+	noisyVictim.reserve(50);
 
 	Move bestMove = Move(0, 0, 0, 0);
 	int quietMoves = 0;
@@ -1204,7 +1196,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			quietsList.push_back(move);
 			quietMoves++;
 		}
-
+		else
+		{
+			if ((move.Type & captureFlag) != 0)//only if when move is a capture, we add it to noisy list
+			{
+				noisyList.push_back(move);
+				noisyVictim.push_back(captured_piece);
+			}
+		}
 
 
 		searchedMoves++;
@@ -1408,6 +1407,35 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 						{
 							updateContinuationHistoryScore(move_quiet, -contHistBonus);
 						}
+					}
+
+				}
+				int captHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				for (size_t i = 0; i < noisyList.size(); ++i) 
+				{
+					auto& move_capture = noisyList[i];
+					auto& victim = noisyVictim[i];
+
+					updateCaptureHistory(move_capture.Piece, move_capture.To, victim, -captHistBonus);
+				}
+			}
+			else
+			{
+				int captHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+				for (size_t i = 0; i < noisyList.size(); ++i) 
+				{
+					auto& move_capture = noisyList[i];
+					auto& victim = noisyVictim[i];
+					if (move_capture == move)
+					{
+						updateCaptureHistory(move_capture.Piece, move_capture.To, victim, captHistBonus);
+						//update capture history
+
+					}
+					else
+					{
+						updateCaptureHistory(move_capture.Piece, move_capture.To, victim, -captHistBonus);
+						//update capture history malus
 					}
 
 				}
