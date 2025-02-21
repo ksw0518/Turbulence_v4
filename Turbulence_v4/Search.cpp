@@ -455,7 +455,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		if (entry.bestMove == move)
 		{
 			//make sure TT move isn't included in search, because it is already searched before generating move
-			return 99999999;
+			return 999999999;
 		}
 	}
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
@@ -470,8 +470,8 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = mvv[attacker];
-		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+		int score = mvv[attacker] * 16;
+		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		score += SEE(board, move, -100) ? 200000 : -10000000;
 		return score;
@@ -522,8 +522,8 @@ static inline int get_move_score_capture(Move move, Board& board)
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = mvv[attacker];
-		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+		int score = mvv[attacker] * 16;
+		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		
 		return score;
