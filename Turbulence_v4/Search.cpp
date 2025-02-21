@@ -232,6 +232,7 @@ static int MVVLVA[6][6] = {
 	{101, 201, 301, 401, 501, 601},
 	{100, 200, 300, 400, 500, 600}
 };
+int mvv[] = { 122, 387, 314, 569, 1464, 0 };
 bool is_quiet(int type)
 {
 	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //noisy move = promotion or capture
@@ -469,7 +470,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = MVVLVA[attacker][victim];
+		int score = mvv[attacker];
 		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		score += SEE(board, move, -100) ? 200000 : -10000000;
@@ -521,7 +522,7 @@ static inline int get_move_score_capture(Move move, Board& board)
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = MVVLVA[attacker][victim];
+		int score = mvv[attacker];
 		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		
