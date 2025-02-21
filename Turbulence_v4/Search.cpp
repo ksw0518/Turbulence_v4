@@ -1239,18 +1239,18 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
 			if (s_score < s_beta)
 			{
+				extensions++;
 				if (!isPvNode && score <= s_beta - 20) 
 				{
-					extensions = 2;
+					extensions++;
 					//searchStack[ply].doubleExtensions++;
-				}
-				else
-				{
-					extensions = 1;
 				}
 
 			}
-
+			else if (ttEntry.score >= beta)
+			{
+				extensions--;
+			}
 
 			MakeMove(board, move);
 			ply++;
