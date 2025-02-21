@@ -470,7 +470,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = mvv[attacker] * 16;
+		int score = mvv[victim] * 16;
 		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		score += SEE(board, move, -100) ? 200000 : -10000000;
@@ -522,7 +522,7 @@ static inline int get_move_score_capture(Move move, Board& board)
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = mvv[attacker] * 16;
+		int score = mvv[victim] * 16;
 		score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		
