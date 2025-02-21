@@ -1264,7 +1264,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
-			if (is_in_check(board))
+			if (is_in_check(board) || isInCheck)
 			{
 				reduction--;
 			}
