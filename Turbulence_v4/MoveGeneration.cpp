@@ -984,7 +984,7 @@ void init_sliders_attacks(int bishop)
 
 
 
-static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
+static inline void Generate_Pawn_Moves(MoveList& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
 {
     //MoveList.reserve(256);
     int side = board.side;
@@ -1056,10 +1056,10 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
                     {
                         //Console.WriteLine(pawnPromo);
                         int To = get_ls1b(pawnPromo);
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), knight_promo, static_cast<uint8_t>(get_piece(p, side))));
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), bishop_promo, static_cast<uint8_t>(get_piece(p, side))));
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), rook_promo, static_cast<uint8_t>(get_piece(p, side))));
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), queen_promo, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), knight_promo, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), bishop_promo, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), rook_promo, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), queen_promo, static_cast<uint8_t>(get_piece(p, side))));
                         Pop_bit(pawnPromo, To);
 
                         //Console.WriteLine(pawnPromo);
@@ -1083,10 +1083,10 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
 
 
 
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), knight_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), bishop_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), rook_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), queen_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), knight_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), bishop_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), rook_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), queen_promo_capture, static_cast<uint8_t>(get_piece(p, side))));
                         Pop_bit(pawn_capture, To);
                         if (pawn_capture == 0ULL) break;
                     }
@@ -1108,7 +1108,7 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
                     while (true)
                     {
                         int To = get_ls1b(pawnOnePush);
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(p, side))));
                         Pop_bit(pawnOnePush, To);
                         if (pawnOnePush == 0ULL) break;
                     }
@@ -1132,7 +1132,7 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
                     while (true)
                     {
                         int To = get_ls1b(pawnTwoPush);
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), double_pawn_push, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), double_pawn_push, static_cast<uint8_t>(get_piece(p, side))));
                         //MoveList.Add(new Move(From, To, double_pawn_push, get_piece(Piece.p, side)));
                         //PrintBitboard(pawnTwoPush);
                         Pop_bit(pawnTwoPush, To);
@@ -1148,7 +1148,7 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
                     while (true)
                     {
                         int To = get_ls1b(pawn_capture);
-                        MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(p, side))));
+                        MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(p, side))));
 
                         Pop_bit(pawn_capture, To);
 
@@ -1171,7 +1171,7 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
                         while (true)
                         {
                             int To = get_ls1b(enpassent);
-                            MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), ep_capture, static_cast<uint8_t>(get_piece(p, side))));
+                            MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), ep_capture, static_cast<uint8_t>(get_piece(p, side))));
                             Pop_bit(enpassent, To);
                             if (enpassent == 0ULL) break;
                         }
@@ -1188,7 +1188,7 @@ static inline void Generate_Pawn_Moves(std::vector<Move>& MoveList, Board& board
     }
 
 }
-static inline void Generate_Knight_Moves(std::vector<Move>& MoveList, Board& board, bool isCapture)
+static inline void Generate_Knight_Moves(MoveList& MoveList, Board& board, bool isCapture)
 {
     int side = board.side;
     uint64_t KnightBB;
@@ -1214,7 +1214,7 @@ static inline void Generate_Knight_Moves(std::vector<Move>& MoveList, Board& boa
                     if ((board.occupancies[1 - side] & (1ULL << To)) != 0)
                     {
 
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(n, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(n, side))));
 						
                         
                     }
@@ -1222,7 +1222,7 @@ static inline void Generate_Knight_Moves(std::vector<Move>& MoveList, Board& boa
                     {
 						if (!isCapture)
 						{
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(n, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(n, side))));
 						}
                     }
                     Pop_bit(KnightMove, To);
@@ -1236,7 +1236,7 @@ static inline void Generate_Knight_Moves(std::vector<Move>& MoveList, Board& boa
     }
 
 }
-static inline void Generate_Bishop_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
+static inline void Generate_Bishop_Moves(MoveList& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
 {
     int side = board.side;
     uint64_t BishopBB;
@@ -1262,14 +1262,14 @@ static inline void Generate_Bishop_Moves(std::vector<Move>& MoveList, Board& boa
                     if ((board.occupancies[1 - side] & (1ULL << To)) != 0)
                     {
 
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(b, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(b, side))));
 						
                     }
                     else
                     {
 						if (!isCapture)
 						{
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(b, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(b, side))));
 						}
                     }
                     Pop_bit(BishopMove, To);
@@ -1282,7 +1282,7 @@ static inline void Generate_Bishop_Moves(std::vector<Move>& MoveList, Board& boa
     }
 
 }
-static inline void Generate_Rook_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
+static inline void Generate_Rook_Moves(MoveList& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
 {
     int side = board.side;
     uint64_t RookBB;
@@ -1312,7 +1312,7 @@ static inline void Generate_Rook_Moves(std::vector<Move>& MoveList, Board& board
                     if ((board.occupancies[1 - side] & (1ULL << To)) != 0)
                     {
 
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(r, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(r, side))));
 						
                         //std::cout << ("push");
                     }
@@ -1320,7 +1320,7 @@ static inline void Generate_Rook_Moves(std::vector<Move>& MoveList, Board& board
 					{
 						if (!isCapture)
 						{
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(r, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(r, side))));
 						}
                         //std::cout << ("push");
                     }
@@ -1335,7 +1335,7 @@ static inline void Generate_Rook_Moves(std::vector<Move>& MoveList, Board& board
     }
 
 }
-static inline void Generate_Queen_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
+static inline void Generate_Queen_Moves(MoveList& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask, bool isCapture)
 {
     int side = board.side;
     uint64_t QueenBB;
@@ -1364,14 +1364,14 @@ static inline void Generate_Queen_Moves(std::vector<Move>& MoveList, Board& boar
                     if ((board.occupancies[1 - side] & (1ULL << To)) != 0)
                     {
 
-						MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(q, side))));
+						MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(q, side))));
 						
                     }
                     else
                     {
 						if (!isCapture)
 						{
-							MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(q, side))));
+							MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(q, side))));
 						}
                     }
                     Pop_bit(QueenMove, To);
@@ -1383,7 +1383,7 @@ static inline void Generate_Queen_Moves(std::vector<Move>& MoveList, Board& boar
         }
     }
 }
-static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board, bool isCapture)
+static inline void Generate_King_Moves(MoveList& MoveList, Board& board, bool isCapture)
 {
     //PrintBitboard(WhiteKingCastleEmpty);
     //PrintBitboard(WhiteQueenCastleEmpty);
@@ -1409,7 +1409,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
                 int To = get_ls1b(KingMove);
                 if ((board.occupancies[1 - side] & (1ULL << To)) != 0)
                 {
-					MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(k, side))));
+					MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), capture, static_cast<uint8_t>(get_piece(k, side))));
 
                    
                 }
@@ -1417,7 +1417,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
                 {
 					if (!isCapture)
 					{
-						MoveList.push_back(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(k, side))));
+						MoveList.add(Move(static_cast<uint8_t>(From), static_cast<uint8_t>(To), quiet_move, static_cast<uint8_t>(get_piece(k, side))));
 					}
                    
                 }
@@ -1441,7 +1441,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
 
 				if ((board.occupancies[Both] & WhiteKingCastleEmpty) == 0)
 				{
-					MoveList.push_back(Move(static_cast<uint8_t>(e1), static_cast<uint8_t>(g1), king_castle, static_cast<uint8_t>(get_piece(k, side))));
+					MoveList.add(Move(static_cast<uint8_t>(e1), static_cast<uint8_t>(g1), king_castle, static_cast<uint8_t>(get_piece(k, side))));
 				}
 
 			}
@@ -1449,7 +1449,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
 			{
 				if ((board.occupancies[Both] & WhiteQueenCastleEmpty) == 0)
 				{
-					MoveList.push_back(Move(static_cast<uint8_t>(e1), static_cast<uint8_t>(c1), queen_castle, static_cast<uint8_t>(get_piece(k, side))));
+					MoveList.add(Move(static_cast<uint8_t>(e1), static_cast<uint8_t>(c1), queen_castle, static_cast<uint8_t>(get_piece(k, side))));
 				}
 			}
 		}
@@ -1463,7 +1463,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
 				if ((board.occupancies[Both] & BlackKingCastleEmpty) == 0)
 				{
 					//std::cout<<("asdf");
-					MoveList.push_back(Move(static_cast<uint8_t>(e8), static_cast<uint8_t>(g8), king_castle, static_cast<uint8_t>(get_piece(k, side))));
+					MoveList.add(Move(static_cast<uint8_t>(e8), static_cast<uint8_t>(g8), king_castle, static_cast<uint8_t>(get_piece(k, side))));
 
 					//printMove(MoveList.back());
 				}
@@ -1476,7 +1476,7 @@ static inline void Generate_King_Moves(std::vector<Move>& MoveList, Board& board
 
 				if ((board.occupancies[Both] & BlackQueenCastleEmpty) == 0)
 				{
-					MoveList.push_back(Move(static_cast<uint8_t>(e8), static_cast<uint8_t>(c8), queen_castle, static_cast<uint8_t>(get_piece(k, side))));
+					MoveList.add(Move(static_cast<uint8_t>(e8), static_cast<uint8_t>(c8), queen_castle, static_cast<uint8_t>(get_piece(k, side))));
 				}
 
 
@@ -1505,92 +1505,18 @@ bool is_square_attacked(int square, int side, Board &board, uint64_t occupancy)
 
     return false;
 }
-void Generate_Legal_Moves(std::vector<Move>& MoveList, Board& board, bool isCapture)
+void Generate_Legal_Moves(MoveList& MoveList, Board& board, bool isCapture)
 {
-    //int WK_Square = get_ls1b(board.bitboards[Piece.K]);
-    //int BK_Square = get_ls1b(board.bitboards[Piece.k]);
-
-    //int my_king = (board.side == Side.White) ? WK_Square : BK_Square;
-
-    ////Console.WriteLine(my_king);
-    ////ulong Attacked_square = get_attacked_squares(oppSide, board, (board.occupancies[Side.Both] & ~KingBB));
-    ////Console.WriteLine((board.side == Side.White));
-    //List<ulong> pin_ray = new();
-    //List<ulong> pinned_piece = new();
-
-
-    //ulong check_attackers = 0;
-    ////ulong attacked_square = is_square_attacked
-
-
-
-    //Detect_pinned_pieces(my_king, ref pinned_piece, ref pin_ray, board);
-
-
-    //Console.WriteLine(pinned_piece.Count);
-    //PrintBitboard(pin_ray[0]);
-
-
-    //Detect_Check_Attackers(my_king, ref check_attackers, board);
-
-
-    //Console.WriteLine(count_bits(check_attackers));
-
-    //printBitboard(check_attackers); 
     uint64_t move_mask = 0xFFFFFFFFFFFFFFFF;
 
 
 
-    //PrintBitboard(move_mask);
     uint64_t capture_mask = 0xFFFFFFFFFFFFFFFF;
-    //print_bitboard(move_mask);
-    //if (count_bits(check_attackers) == 1) // single check
-    //{
-    //    move_mask = between(my_king, get_ls1b(check_attackers));
-
-    //    capture_mask = check_attackers;
-
-    //    if (board.enpassent != (int)Square.no_sq)
-    //    {
-    //        int pawnToCapture;
-    //        if (board.side == Side.White)
-    //        {
-    //            pawnToCapture = board.enpassent + 8;
-    //        }
-    //        else
-    //        {
-    //            pawnToCapture = board.enpassent - 8;
-    //        }
-
-    //        if ((check_attackers & (1UL << pawnToCapture)) != 0)
-    //        {
-    //            capture_mask |= (1UL << board.enpassent);
-    //        }
-
-
-
-
-    //    }
-
-    //}
-
-    //PrintBitboard(move_mask | capture_mask);
-
-    //Console.WriteLine(count_bits(check_attackers));
-    //print_bitboard(pinned_ray);
-    //for (int i = 0; i < pinned_piece.Count; i++)
-    //{
-    //    PrintBitboard(pinned_piece[i]); 
-    //    PrintBitboard(pin_ray[i]); 
-    //}
-
-    //ulong prevCastle = board.castle;
-    //PrintBitboard(board.castle);
+    
 
 
 
     MoveList.clear();
-    MoveList.reserve(256);
     Generate_Pawn_Moves(MoveList, board, move_mask, capture_mask, isCapture);
 
     ////if (prevCastle != board.castle) Console.WriteLine(0);
@@ -1600,65 +1526,8 @@ void Generate_Legal_Moves(std::vector<Move>& MoveList, Board& board, bool isCapt
     Generate_Queen_Moves(MoveList, board, move_mask, capture_mask, false);
     Generate_King_Moves(MoveList, board, false);
 
-
-
-
-    ////PrintBitboard(board.castle);
-    ////if (prevCastle != board.castle) Console.WriteLine(1);
-    //Generate_Bishop_Moves(ref MoveList, board, check_attackers, move_mask, capture_mask, pin_ray, pinned_piece, isCapture);
-    ////PrintBitboard(board.castle);
-    ////if (prevCastle != board.castle) Console.WriteLine(2);
-    //Generate_Rook_Moves(ref MoveList, board, check_attackers, move_mask, capture_mask, pin_ray, pinned_piece, isCapture);
-    ////PrintBitboard(board.castle);
-    ////if (prevCastle != board.castle) Console.WriteLine(3);
-    //Generate_Queen_Moves(ref MoveList, board, check_attackers, move_mask, capture_mask, pin_ray, pinned_piece, isCapture);
-    ////PrintBitboard(board.castle);
-    ////if (prevCastle != board.castle) Console.WriteLine(4);
-    //Generate_King_Moves(ref MoveList, board, check_attackers, isCapture);
-
 }
-//inline int get_castle(uint64_t castle, int side)
-//{
-//    if (side == White)
-//    {
-//        if ((castle & (WhiteKingCastle | WhiteQueenCastle)) != 0)
-//        {
-//            return 0;
-//        }
-//        else if ((castle & WhiteKingCastle) != 0)
-//        {
-//            return 1;
-//        }
-//        else if ((castle & WhiteQueenCastle) != 0)
-//        {
-//            return 2;
-//        }
-//        else
-//        {
-//            return 3;
-//        }
-//    }
-//    else
-//    {
-//        if ((castle & (BlackKingCastle | BlackQueenCastle)) != 0)
-//        {
-//            return 0;
-//        }
-//        else if ((castle & BlackKingCastle) != 0)
-//        {
-//            return 1;
-//        }
-//        else if ((castle & BlackQueenCastle) != 0)
-//        {
-//            return 2;
-//        }
-//        else
-//        {
-//            return 3;
-//        }
-//    }
-//
-//}
+
 bool is_move_irreversible(Move& move)
 {
     if (((move.Type & captureFlag) != 0) || move.Piece == p || move.Piece == P)

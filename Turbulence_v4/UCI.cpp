@@ -280,15 +280,16 @@ static uint64_t Perft(Board& board, int depth)
         return 1ULL;
     }
 
-    std::vector<Move> move_list;
+    MoveList move_list;
 
 
     uint64_t nodes = 0;
 
     Generate_Legal_Moves(move_list, board, false);
 
-    for (Move& move : move_list)
-    {
+	for (int i = 0; i < move_list.count; ++i)
+	{
+		Move& move = move_list.moves[i];
         int lastEp = board.enpassent;
         uint64_t lastCastle = board.castle;
         int lastside = board.side;
@@ -446,7 +447,7 @@ void ProcessUCI(std::string input)
                 if (moves_in_string != "") // move is not empty
                 {
                     std::vector<std::string> moves_seperated = splitStringBySpace(moves_in_string);
-                    std::vector<Move> moveList;
+                    MoveList moveList;
 
                     for (size_t i = 0; i < moves_seperated.size(); i++)
                     {
@@ -466,25 +467,25 @@ void ProcessUCI(std::string input)
                         moveList.clear();
                         Generate_Legal_Moves(moveList, main_board, false);
 
-                        for (size_t j = 0; j < moveList.size(); j++)
+                        for (size_t j = 0; j < moveList.count; j++)
                         {
    
 
-                            if ((move_to_play.From == moveList[j].From) && (move_to_play.To == moveList[j].To)) //found same move
+                            if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
                             {
 
 
 
-                                if ((moveList[j].Type & knight_promo) != 0) // promo
+                                if ((moveList.moves[j].Type & knight_promo) != 0) // promo
                                 {
                                     //std::cout << "promo" << "\n";
                                     //std::cout << promo << "\n";
                                     if (promo == "q")
                                     {
                                         //std::cout << "qpromo";
-                                        if ((moveList[j].Type == queen_promo) || (moveList[j].Type == queen_promo_capture))
+                                        if ((moveList.moves[j].Type == queen_promo) || (moveList.moves[j].Type == queen_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
 
                                             //Move_to_do.Add(moveList[j]);
@@ -492,27 +493,27 @@ void ProcessUCI(std::string input)
                                     }
                                     else if (promo == "r")
                                     {
-                                        if ((moveList[j].Type == rook_promo) || (moveList[j].Type == rook_promo_capture))
+                                        if ((moveList.moves[j].Type == rook_promo) || (moveList.moves[j].Type == rook_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
                                             //Move_to_do.Add(moveList[j]);
                                         }
                                     }
                                     else if (promo == "b")
                                     {
-                                        if ((moveList[j].Type == bishop_promo) || (moveList[j].Type == bishop_promo_capture))
+                                        if ((moveList.moves[j].Type == bishop_promo) || (moveList.moves[j].Type == bishop_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
                                             //Move_to_do.Add(moveList[j]);
                                         }
                                     }
                                     else if (promo == "n")
                                     {
-                                        if ((moveList[j].Type == knight_promo) || (moveList[j].Type == knight_promo_capture))
+                                        if ((moveList.moves[j].Type == knight_promo) || (moveList.moves[j].Type == knight_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
                                             //Move_to_do.Add(moveList[j]);
                                         }
@@ -521,7 +522,7 @@ void ProcessUCI(std::string input)
                                 else
                                 {
 
-                                    MakeMove(main_board, moveList[j]);
+                                    MakeMove(main_board, moveList.moves[j]);
 
                                     main_board.halfmove++;
 
@@ -562,7 +563,7 @@ void ProcessUCI(std::string input)
                 if (moves_in_string != "") // move is not empty
                 {
                     std::vector<std::string> moves_seperated = splitStringBySpace(moves_in_string);
-                    std::vector<Move> moveList;
+                    MoveList moveList;
 
 
                     for (size_t i = 0; i < moves_seperated.size(); i++)
@@ -584,23 +585,23 @@ void ProcessUCI(std::string input)
                         moveList.clear();
                         Generate_Legal_Moves(moveList, main_board, false);
 
-                        for (size_t j = 0; j < moveList.size(); j++)
+                        for (size_t j = 0; j < moveList.count; j++)
                         {
                             //Console.WriteLine("12");
                             //nodes = 0;
 
-                            if ((move_to_play.From == moveList[j].From) && (move_to_play.To == moveList[j].To)) //found same move
+                            if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
                             {
 
 
 
-                                if ((moveList[j].Type & knight_promo) != 0) // promo
+                                if ((moveList.moves[j].Type & knight_promo) != 0) // promo
                                 {
                                     if (promo == "q")
                                     {
-                                        if ((moveList[j].Type == queen_promo) || (moveList[j].Type == queen_promo_capture))
+                                        if ((moveList.moves[j].Type == queen_promo) || (moveList.moves[j].Type == queen_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
 
                                             //Move_to_do.Add(moveList[j]);
@@ -608,27 +609,27 @@ void ProcessUCI(std::string input)
                                     }
                                     else if (promo == "r")
                                     {
-                                        if ((moveList[j].Type == rook_promo) || (moveList[j].Type == rook_promo_capture))
+                                        if ((moveList.moves[j].Type == rook_promo) || (moveList.moves[j].Type == rook_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
                                             //Move_to_do.Add(moveList[j]);
                                         }
                                     }
                                     else if (promo == "b")
                                     {
-                                        if ((moveList[j].Type == bishop_promo) || (moveList[j].Type == bishop_promo_capture))
+                                        if ((moveList.moves[j].Type == bishop_promo) || (moveList.moves[j].Type == bishop_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
                                             //Move_to_do.Add(moveList[j]);
                                         }
                                     }
                                     else if (promo == "n")
                                     {
-                                        if ((moveList[j].Type == knight_promo) || (moveList[j].Type == knight_promo_capture))
+                                        if ((moveList.moves[j].Type == knight_promo) || (moveList.moves[j].Type == knight_promo_capture))
                                         {
-                                            MakeMove(main_board, moveList[j]);
+                                            MakeMove(main_board, moveList.moves[j]);
                                             break;
                                             //Move_to_do.Add(moveList[j]);
                                         }
@@ -637,7 +638,7 @@ void ProcessUCI(std::string input)
                                 else
                                 {
 
-                                    MakeMove(main_board, moveList[j]);
+                                    MakeMove(main_board, moveList.moves[j]);
 
 
                                     break;
@@ -807,27 +808,27 @@ void ProcessUCI(std::string input)
         //std::cout << CoordinatesToChessNotation(move_to_play.To);
         //std::cout << promo;
 
-        std::vector<Move> moveList;
+        MoveList moveList;
         moveList.clear();
         Generate_Legal_Moves(moveList, main_board, false);
 
-        for (size_t j = 0; j < moveList.size(); j++)
+        for (size_t j = 0; j < moveList.count; j++)
         {
             //Console.WriteLine("12");
             //nodes = 0;
 
-            if ((move_to_play.From == moveList[j].From) && (move_to_play.To == moveList[j].To)) //found same move
+            if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
             {
 
 
 
-                if ((moveList[j].Type & knight_promo) != 0) // promo
+                if ((moveList.moves[j].Type & knight_promo) != 0) // promo
                 {
                     if (promo == "q")
                     {
-                        if ((moveList[j].Type == queen_promo) || (moveList[j].Type == queen_promo_capture))
+                        if ((moveList.moves[j].Type == queen_promo) || (moveList.moves[j].Type == queen_promo_capture))
                         {
-                            MakeMove(main_board, moveList[j]);
+                            MakeMove(main_board, moveList.moves[j]);
                             break;
 
                             //Move_to_do.Add(moveList[j]);
@@ -835,27 +836,27 @@ void ProcessUCI(std::string input)
                     }
                     else if (promo == "r")
                     {
-                        if ((moveList[j].Type == rook_promo) || (moveList[j].Type == rook_promo_capture))
+                        if ((moveList.moves[j].Type == rook_promo) || (moveList.moves[j].Type == rook_promo_capture))
                         {
-                            MakeMove(main_board, moveList[j]);
+                            MakeMove(main_board, moveList.moves[j]);
                             break;
                             //Move_to_do.Add(moveList[j]);
                         }
                     }
                     else if (promo == "b")
                     {
-                        if ((moveList[j].Type == bishop_promo) || (moveList[j].Type == bishop_promo_capture))
+                        if ((moveList.moves[j].Type == bishop_promo) || (moveList.moves[j].Type == bishop_promo_capture))
                         {
-                            MakeMove(main_board, moveList[j]);
+                            MakeMove(main_board, moveList.moves[j]);
                             break;
                             //Move_to_do.Add(moveList[j]);
                         }
                     }
                     else if (promo == "n")
                     {
-                        if ((moveList[j].Type == knight_promo) || (moveList[j].Type == knight_promo_capture))
+                        if ((moveList.moves[j].Type == knight_promo) || (moveList.moves[j].Type == knight_promo_capture))
                         {
-                            MakeMove(main_board, moveList[j]);
+                            MakeMove(main_board, moveList.moves[j]);
                             break;
                             //Move_to_do.Add(moveList[j]);
                         }
@@ -868,7 +869,7 @@ void ProcessUCI(std::string input)
                    // printMove(moveList[j]);
                     //Console.Write(" ");
                     //Move_to_do.Add(moveList[j]); 
-                    MakeMove(main_board, moveList[j]);
+                    MakeMove(main_board, moveList.moves[j]);
                     //if (isMoveIrreversible(moveList[j]))
                     //{
                     //    //Console.WriteLine("aaa");
@@ -925,8 +926,7 @@ int main(int argc, char* argv[])
     parse_fen(start_pos, main_board);
     main_board.zobristKey = generate_hash_key(main_board);
     main_board.history.push_back(main_board.zobristKey);
-    std::vector<Move> move_list;
-    Generate_Legal_Moves(move_list, main_board, false);
+
     Initialize_TT(16);
 
     uint64_t hash_key = 0ULL;

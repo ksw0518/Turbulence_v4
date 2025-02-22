@@ -139,9 +139,9 @@ int CONTHIST_MULTIPLIER = 3;
 int ASP_WINDOW_INITIAL = 38;
 int ASP_WINDOW_MAX = 311;
 
-int PAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
-int MINOR_CORRHIST_MULTIPLIER = 6;// divide by 5 later
-int NONPAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
+int PAWN_CORRHIST_MULTIPLIER = 179;// divide by 5 later
+int MINOR_CORRHIST_MULTIPLIER = 154;// divide by 5 later
+int NONPAWN_CORRHIST_MULTIPLIER = 179;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
 int HISTORY_PRUNING_MULTIPLIER = 41 * 32;
@@ -332,7 +332,14 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
-	int adjust = (pawnEntry * (static_cast<float>(PAWN_CORRHIST_MULTIPLIER) / 5)) + (minorEntry * (static_cast<float>(MINOR_CORRHIST_MULTIPLIER) / 5)) + ((whiteNPEntry + blackNPEntry) * (static_cast<float>(NONPAWN_CORRHIST_MULTIPLIER) / 5));
+	int adjust = 0;
+
+	adjust += pawnEntry * PAWN_CORRHIST_MULTIPLIER;
+	adjust += minorEntry * MINOR_CORRHIST_MULTIPLIER;
+	adjust += (whiteNPEntry + blackNPEntry) * NONPAWN_CORRHIST_MULTIPLIER;
+
+	adjust /= 128;
+
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
@@ -707,45 +714,70 @@ int SEE(Board& pos, Move move, int threshold)
 	return pos.side != colour;
 }
 
-static inline void sort_moves_captures(std::vector<Move>& moves, Board& board)
+static inline void sort_moves_captures(MoveList& moveList, Board& board)
 {
-	// Partition to segregate capture moves
-	auto capture_end = std::stable_partition(moves.begin(), moves.end(), [](const Move& move) {
-		return !is_quiet(move.Type);
-		});
+	// Temporary array for captures
+	Move captures[256];
+	int captureCount = 0;
+
+	// Separate capture moves
+	for (int i = 0; i < moveList.count; ++i)
+	{
+		if (!is_quiet(moveList.moves[i].Type))
+		{
+			captures[captureCount++] = moveList.moves[i];
+		}
+	}
 
 	// Sort only the capture moves
-	std::stable_sort(moves.begin(), capture_end, [&board](const Move& move1, const Move& move2) {
+	std::stable_sort(captures, captures + captureCount, [&board](const Move& move1, const Move& move2) {
 		return get_move_score_capture(move1, board) > get_move_score_capture(move2, board);
 		});
 
+	// Copy sorted captures back
+	int index = 0;
+	for (int i = 0; i < captureCount; ++i)
+	{
+		moveList.moves[index++] = captures[i];
+	}
+
+	// Append non-captures in original order
+	for (int i = 0; i < moveList.count; ++i)
+	{
+		if (is_quiet(moveList.moves[i].Type))
+		{
+			moveList.moves[index++] = moveList.moves[i];
+		}
+	}
+
+	moveList.count = index;  // Update move count
 }
 
 
 
-static inline void sort_moves(std::vector<Move>& moves, Board& board, TranspositionEntry& tt_entry, uint64_t opp_threat)
+
+static inline void sort_moves(MoveList& moveList, Board& board, TranspositionEntry& tt_entry, uint64_t opp_threat)
 {
 	// Precompute scores for all moves
-	std::vector<std::pair<int, Move>> scored_moves;
-	scored_moves.reserve(moves.size());
-	for (const Move& move : moves)
+	std::pair<int, Move> scored_moves[256];  // Use fixed-size array
+	for (int i = 0; i < moveList.count; ++i)
 	{
-		int score = getMoveScore(move, board, tt_entry, opp_threat);
-		scored_moves.emplace_back(score, move);
+		scored_moves[i] = { getMoveScore(moveList.moves[i], board, tt_entry, opp_threat), moveList.moves[i] };
 	}
 
 	// Sort the scored moves based on the scores
-	std::stable_sort(scored_moves.begin(), scored_moves.end(), [](const auto& a, const auto& b)
+	std::stable_sort(scored_moves, scored_moves + moveList.count, [](const auto& a, const auto& b)
 		{
 			return a.first > b.first; // Sort by score (descending)
 		});
 
-	// Rebuild the original moves vector in sorted order
-	for (size_t i = 0; i < moves.size(); ++i)
+	// Copy back sorted moves
+	for (int i = 0; i < moveList.count; ++i)
 	{
-		moves[i] = scored_moves[i].second;
+		moveList.moves[i] = scored_moves[i].second;
 	}
 }
+
 
 inline TranspositionEntry ttLookUp(uint64_t zobrist)
 {
@@ -808,7 +840,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		}
 	}
 
-	std::vector<Move> moveList;
+	MoveList moveList;
 	Generate_Legal_Moves(moveList, board, true);
 
 	sort_moves_captures(moveList, board);
@@ -825,8 +857,9 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastMinorKey = board.MinorKey;
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
-	for (Move& move : moveList)
+	for (int i = 0; i < moveList.count; ++i)
 	{
+		Move& move = moveList.moves[i];
 		if (is_quiet(move.Type)) continue; //skip non capture moves
 
 		if (!SEE(board, move, 0))
@@ -1080,8 +1113,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 
-
-	std::vector<Move> moveList;
+	MoveList moveList;
+	//std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, false);
 
 
@@ -1101,8 +1134,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int quietSEEMargin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
 	int noisySEEMargin = PVS_NOISY_BASE + (-PVS_NOISY_MULTIPLIER * depth * depth);
 
-	std::vector<Move> quietsList;
-	quietsList.reserve(50);
+	MoveList quietsList;
 
 	Move bestMove = Move(0, 0, 0, 0);
 	int quietMoves = 0;
@@ -1117,8 +1149,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		searchStack[ply].doubleExtensions = searchStack[ply - 1].doubleExtensions;
 	}*/
-	for (Move& move : moveList)
+	for (int i = 0; i < moveList.count; ++i)
 	{
+		Move& move = moveList.moves[i];
 
 		bool isQuiet = is_quiet(move.Type);
 		if (move == excludedMove)
@@ -1201,7 +1234,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (isQuiet)
 		{
-			quietsList.push_back(move);
+			quietsList.add(move);
 			quietMoves++;
 		}
 
@@ -1388,7 +1421,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 				int mainHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
 				int contHistBonus = CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth;
-				for (auto& move_quiet : quietsList) {
+				for (int i = 0; i < quietsList.count; ++i)
+				{
+					Move& move_quiet = quietsList.moves[i];
 					if (move_quiet == move)
 					{
 						updateHistory(board.side, move_quiet.From, move_quiet.To, mainHistBonus, oppThreats);
