@@ -1048,7 +1048,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-
+	if (!isSingularSearch && depth <= 4 && ttAdjustedEval <= alpha - 450 * depth && alpha < 2000)
+	{
+		int score  = Quiescence(board, alpha, beta);
+		if (score <= alpha)
+		{
+			return score;
+		}
+	}
 	if (!isSingularSearch && !isPvNode && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
