@@ -168,3 +168,11 @@ inline int get_piece(int piece, int col)
     //return (col == Side.White) ? (isBlack ? piece - 6 : piece) : (isBlack ? piece : piece + 6);
 
 }
+struct MoveList
+{
+	Move moves[256];  // Fixed-size array
+	int count = 0;  // Number of moves currently stored
+
+	void clear() { count = 0; }  // Reset move list
+	void add(Move move) { if (count < 256) moves[count++] = move; } // Add move
+};

@@ -15,6 +15,7 @@ inline int getRank(int square)
 
 class Board;
 struct Move;
+struct MoveList;
 
 int GetSquare(std::string squareName);
 
@@ -103,7 +104,7 @@ void InitializeLeaper();
 //static void Generate_King_Moves(std::vector<Move>& MoveList, Board& board, uint64_t move_mask, uint64_t capture_mask);
 
 bool is_square_attacked(int square, int side, Board &board, uint64_t occupancy);
-void Generate_Legal_Moves(std::vector<Move>& MoveList, Board& board, bool isCapture);
+void Generate_Legal_Moves(MoveList& MoveList, Board& board, bool isCapture);
 int get_castle(uint64_t castle, int side);
 
 void Unmake_Nullmove(Board& board);
