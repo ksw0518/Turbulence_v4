@@ -389,8 +389,10 @@ void ProcessUCI(std::string input)
     }
 	else if (main_command == "ucinewgame")
 	{
+		
 		Initialize_TT(16);
 		initializeLMRTable();
+		isPrettyPrinting = false;
 	}
     else if (main_command == "setoption")
     {
