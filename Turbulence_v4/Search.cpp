@@ -1284,7 +1284,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if (std::abs(staticEval - rawEval) > 80)
+			if (std::abs(staticEval - rawEval) > 60)
 			{
 				//std::cout << "corrplexity lmr"<<std::endl;
 				reduction--;
