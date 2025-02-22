@@ -139,9 +139,9 @@ int CONTHIST_MULTIPLIER = 3;
 int ASP_WINDOW_INITIAL = 38;
 int ASP_WINDOW_MAX = 311;
 
-int PAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
-int MINOR_CORRHIST_MULTIPLIER = 6;// divide by 5 later
-int NONPAWN_CORRHIST_MULTIPLIER = 7;// divide by 5 later
+int PAWN_CORRHIST_MULTIPLIER = 179;// divide by 5 later
+int MINOR_CORRHIST_MULTIPLIER = 154;// divide by 5 later
+int NONPAWN_CORRHIST_MULTIPLIER = 179;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
 int HISTORY_PRUNING_MULTIPLIER = 41 * 32;
@@ -332,7 +332,14 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
-	int adjust = (pawnEntry * (static_cast<float>(PAWN_CORRHIST_MULTIPLIER) / 5)) + (minorEntry * (static_cast<float>(MINOR_CORRHIST_MULTIPLIER) / 5)) + ((whiteNPEntry + blackNPEntry) * (static_cast<float>(NONPAWN_CORRHIST_MULTIPLIER) / 5));
+	int adjust = 0;
+
+	adjust += pawnEntry * PAWN_CORRHIST_MULTIPLIER;
+	adjust += minorEntry * MINOR_CORRHIST_MULTIPLIER;
+	adjust += (whiteNPEntry + blackNPEntry) * NONPAWN_CORRHIST_MULTIPLIER;
+
+	adjust /= 128;
+
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
 void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
