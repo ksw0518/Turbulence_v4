@@ -184,6 +184,7 @@ int CaptureHistory[12][64][12];
 
 int onePlyContHist[12][64][12][64];
 int twoPlyContHist[12][64][12][64];
+int fourPlyContHist[12][64][12][64];
 
 int pawnCorrHist[2][CORRHIST_SIZE];
 int minorCorrHist[2][CORRHIST_SIZE];
@@ -258,6 +259,7 @@ void initializeLMRTable()
 	memset(mainHistory, 0, sizeof(mainHistory));
 	memset(onePlyContHist, 0, sizeof(onePlyContHist));
 	memset(twoPlyContHist, 0, sizeof(twoPlyContHist));
+	memset(fourPlyContHist, 0, sizeof(fourPlyContHist));
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 	memset(nonPawnCorrHist, 0, sizeof(nonPawnCorrHist));
@@ -366,6 +368,10 @@ int getSingleContinuationHistoryScore(Move move, const int offSet)
 		{
 			return twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
+		else if (offSet == 4)
+		{
+			return fourPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
 
 	}
 	return 0;
@@ -376,9 +382,10 @@ int getContinuationHistoryScore(Move& move)
 	{
 		int onePly = getSingleContinuationHistoryScore(move, 1);
 		int twoPly = getSingleContinuationHistoryScore(move, 2);
+		int fourPly = getSingleContinuationHistoryScore(move, 4);
 
 
-		int finalScore = onePly + twoPly;
+		int finalScore = ((onePly + twoPly + fourPly));
 		return finalScore;
 	}
 	return 0;
@@ -400,6 +407,10 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		{
 			twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
+		else if (offSet == 4)
+		{
+			fourPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
 
 	}
 }
@@ -407,6 +418,7 @@ void updateContinuationHistoryScore(Move& move, const int bonus)
 {
 	updateSingleContinuationHistoryScore(move, bonus, 1);
 	updateSingleContinuationHistoryScore(move, bonus, 2);
+	updateSingleContinuationHistoryScore(move, bonus, 4);
 }
 
 void printTopCapthist(int side) {
@@ -1518,6 +1530,7 @@ void bench()
 		}
 		memset(onePlyContHist, 0, sizeof(onePlyContHist));
 		memset(twoPlyContHist, 0, sizeof(twoPlyContHist));
+		memset(fourPlyContHist, 0, sizeof(fourPlyContHist));
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 		memset(minorCorrHist, 0, sizeof(minorCorrHist));
@@ -1550,6 +1563,8 @@ void bench()
 		TranspositionTable[i] = TranspositionEntry();
 	}
 	memset(onePlyContHist, 0, sizeof(onePlyContHist));
+	memset(twoPlyContHist, 0, sizeof(twoPlyContHist));
+	memset(fourPlyContHist, 0, sizeof(fourPlyContHist));
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 	memset(minorCorrHist, 0, sizeof(minorCorrHist));
