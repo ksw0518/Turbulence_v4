@@ -1062,8 +1062,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
 
+	bool ttCapture = (ttEntry.bestMove.Type & captureFlag) != 0;
+
 	int canPrune = !isInCheck && !isPvNode;
-	if (!isSingularSearch && depth < 5 && canPrune)//rfp
+	if (!isSingularSearch && depth < 5 && canPrune && (!is_ttmove_found || ttCapture))//rfp
 	{
 		int rfpMargin;
 		if (improving)
