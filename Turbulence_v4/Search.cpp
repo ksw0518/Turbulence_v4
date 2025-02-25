@@ -809,7 +809,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
-	if (ply > 99)
+	if (ply >= 99)
 	{
 		return Evaluate(board);
 	}
