@@ -1290,7 +1290,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			reduction = lmrTable[depth][searchedMoves];
 
-			if (!isPvNode && quietMoves >= 4)
+			if (!isPvNode && quietMoves >= 1)
 			{
 				reduction++;
 			}
