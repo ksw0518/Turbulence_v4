@@ -1327,16 +1327,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			if (is_reduced)
 			{
-				if (isPvNode)
-				{
-					score = -Negamax(board, depthToSearch - reduction, -alpha - 1, -alpha, true, false);
-				}
-				else
-				{
-					score = -Negamax(board, depthToSearch - reduction, -alpha - 1, -alpha, true, !cutnode);
-				}
-
-
+				score = -Negamax(board, depthToSearch - reduction, -alpha - 1, -alpha, true, true);
 
 			}
 			else
