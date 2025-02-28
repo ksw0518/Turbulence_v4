@@ -1318,10 +1318,19 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (reduction < 0) reduction = 0;
 		is_reduced = reduction > 0;
-
+		bool isChildCutNode;
 		if (searchedMoves <= 1)
 		{
-			score = -Negamax(board, depthToSearch + extensions, -beta, -alpha, true, false);
+			
+			if (isPvNode)
+			{
+				isChildCutNode = false;
+			}
+			else
+			{
+				isChildCutNode = !cutnode;
+			}
+			score = -Negamax(board, depthToSearch + extensions, -beta, -alpha, true, isChildCutNode);
 		}
 		else
 		{
@@ -1336,7 +1345,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			if (score > alpha)
 			{
-				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, false);
+				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode);
 			}
 			if (score > alpha && score < beta)
 			{
