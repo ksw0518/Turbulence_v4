@@ -203,7 +203,7 @@ constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 1024;
 constexpr int MAX_CAPTHIST = 1024;
 
-constexpr int MIN_LMR_DEPTH = 3;
+constexpr int MIN_LMR_DEPTH = 2;
 
 constexpr int MAX_PVS_SEE_DEPTH = 8;
 int lmrTable[99][256];
