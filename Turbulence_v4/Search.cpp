@@ -499,7 +499,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		int attacker = get_piece(move.Piece, White);
 		int score = MVVLVA[attacker][victim];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
-		score += SEE(board, move, -100) ? 200000 : -10000000;
+		score += SEE(board, move, -50) ? 200000 : -10000000;
 		return score;
 	}
 	else
