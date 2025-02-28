@@ -1314,6 +1314,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
+			if (cutnode)
+			{
+				reduction++;
+			}
 		}
 
 		if (reduction < 0) reduction = 0;
