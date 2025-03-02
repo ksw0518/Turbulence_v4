@@ -370,7 +370,7 @@ void ProcessUCI(std::string input)
     if (main_command == "uci")
     {
         
-        std::cout << "id name Turbulence_v4 v0.0.4" << "\n";;
+        std::cout << "id name Turbulence v0.0.5" << "\n";;
         std::cout << "id author ksw0518" << "\n";;
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
