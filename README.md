@@ -15,6 +15,7 @@ rating with * means not tested on CCRL blitz list
 v0.0.2 : 1700*    
 v0.0.3 : 2266    
 v0.0.4 : 2734
+v0.0.5 : 2980*
 (next releasing coming soon)    
 >>>>>>>>>>>>>>>>>>>>>>>>>>>
 dev    : 2900~3000*    
