@@ -1314,6 +1314,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
+
 		}
 
 		if (reduction < 0) reduction = 0;
@@ -1344,7 +1345,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				score = alpha + 1;
 			}
 			if (score > alpha)
-			{
+			{	
+				const bool doDeeperSearch = score > (bestValue + 43 + 2 * depthToSearch);
+				const bool doShallowerSearch = score < bestValue + 9;
+
+				depthToSearch += doDeeperSearch - doShallowerSearch;
 				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode);
 			}
 			if (score > alpha && score < beta)
