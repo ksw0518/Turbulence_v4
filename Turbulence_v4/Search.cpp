@@ -1030,7 +1030,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
-
+	
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
