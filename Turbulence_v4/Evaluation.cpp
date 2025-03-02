@@ -326,10 +326,8 @@ uint64_t getFileBitboard(uint64_t pieces, int file) {
 }
 inline int flipSquare(int square)//flip square so a1 = 0
 {
-	int file = getFile(square);
-	int rank = getRank(square); //this already flips it, dw about it, I know it's terrible
 
-	return (file + 8 * rank);
+	return square ^ 0b111000;
 }
 int calculateIndex(int perspective, int square, int pieceType, int side)
 {
@@ -337,7 +335,7 @@ int calculateIndex(int perspective, int square, int pieceType, int side)
 	if (perspective == Black)
 	{
 		side = 1-side;             // Flip side
-		flippedSquare = flippedSquare ^ 0b111000; // Mirror square
+		flippedSquare = flipSquare(square); // Mirror square
 	}
 
 
@@ -358,7 +356,7 @@ int16_t SCReLU(int16_t value, int16_t min, int16_t max)
 	return clamped * clamped;
 }
 
-// Example: CReLU activation
+//SCReLU activation function
 int32_t activation(int16_t value)
 {
 	return SCReLU(value, 0, QA);
@@ -441,7 +439,10 @@ int Evaluate(Board& board)
 {
 	AccumulatorPair eval_accumulator;
 	resetAccumulators(board, eval_accumulator);
-	return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	if (board.side == White)
+		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	else
+		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
 
 
     //int mg[2];
