@@ -154,6 +154,8 @@ constexpr int LowerBound = 3;
 static int Side_value[] = { 0, 6 };
 static int Get_Whitepiece[] = { 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5 };
 
+static inline const uint16_t  Le = 1;
+static inline const bool IS_LITTLE_ENDIAN = *reinterpret_cast<const char*>(&Le) == 1;
 
 inline int get_piece(int piece, int col)
 {
@@ -176,3 +178,22 @@ struct MoveList
 	void clear() { count = 0; }  // Reset move list
 	void add(Move move) { if (count < 256) moves[count++] = move; } // Add move
 };
+template<typename IntType>
+inline IntType readLittleEndian(std::istream& stream) {
+	IntType result;
+
+	if (IS_LITTLE_ENDIAN)
+		stream.read(reinterpret_cast<char*>(&result), sizeof(IntType));
+	else {
+		std::uint8_t                  u[sizeof(IntType)];
+		std::make_unsigned_t<IntType> v = 0;
+
+		stream.read(reinterpret_cast<char*>(u), sizeof(IntType));
+		for (size_t i = 0; i < sizeof(IntType); ++i)
+			v = (v << 8) | u[sizeof(IntType) - i - 1];
+
+		std::memcpy(&result, &v, sizeof(IntType));
+	}
+
+	return result;
+}

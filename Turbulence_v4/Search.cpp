@@ -30,6 +30,10 @@
 
 #endif
 
+#ifndef EVALFILE
+#define EVALFILE "./nnue.bin"
+#endif
+
 bool isOnWindow;
 
 #define NULLMOVE Move(0,0,0,0)
@@ -271,7 +275,7 @@ void initializeLMRTable()
 	}
 	memset(mainHistory, 0, sizeof(mainHistory));
 
-	
+	LoadNetwork(EVALFILE);
 	//for (size_t i = 0; i < TTSize; i++)
 	//{
 	//	TranspositionTable[i] = TranspositionEntry();
