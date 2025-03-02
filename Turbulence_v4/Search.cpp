@@ -1084,7 +1084,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	if (!isSingularSearch && !isPvNode && doNMP)
 	{
-		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
+		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta - 19 * depth + 418)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
