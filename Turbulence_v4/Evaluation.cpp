@@ -348,22 +348,13 @@ inline int flipSquare(int square)//flip square so a1 = 0
 }
 int calculateIndex(int perspective, int square, int pieceType, int side)
 {
-	int flippedSquare = flipSquare(square);
-	int flippedSide = side;
-	if (perspective == Black)
-	{
-		flippedSide = 1- flippedSide;// Flip side
-		flippedSquare = flipSquare(square); // Mirror square
+	square ^= 56;
+	if (perspective == Black) {
+		square = flipSquare(square);
 	}
-	
-	const char* names[] = { "pawn", "knight", "bishop", "rook", "queen", "king" };
-	//if (flippedSide == Black && perspective == Black)
-	//{
-	//	
-	//	std::cout << "(" << names[pieceType] << " " << flippedSide * 64 * 6 + pieceType * 64 + flippedSquare << ")\n";
-	//}
+	return 6*64 * (side != perspective) + 64 * pieceType + square;
 
-	return flippedSide * 64 * 6 + get_piece(pieceType, White) * 64 + flippedSquare;
+	//return flippedSide * 64 * 6 + get_piece(pieceType, White) * 64 + flippedSquare;
 }
 int16_t clamp(int16_t value, int16_t min, int16_t max) {
 	if (value < min) {
