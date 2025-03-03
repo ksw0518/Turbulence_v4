@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <cassert>
 //#include "Movegen.h"
 //inline int getFile(int square)
 //{
@@ -241,25 +242,41 @@ void LoadNetwork(const std::string& filepath)
 	if (!stream.is_open()) {
 		std::cerr << "Failed to open file: " << filepath << std::endl;
 	}
+	uint64_t sum = 0;
+	//std::cout << sum << std::endl;
 	// Load weightsToHL
 	for (size_t row = 0; row < INPUT_SIZE; ++row) {
 		for (size_t col = 0; col < HL_SIZE; ++col) {
 			Eval_Network.accumulator_weights[row][col] = readLittleEndian<int16_t>(stream);
+			sum *= 7;
+			sum += (uint16_t)Eval_Network.accumulator_weights[row][col];
 		}
 	}
-
+	//std::cout << sum << std::endl;
 	// Load hiddenLayerBias
 	for (size_t i = 0; i < HL_SIZE; ++i) {
 		Eval_Network.accumulator_biases[i] = readLittleEndian<int16_t>(stream);
+		sum *= 7;
+		sum += (uint16_t)Eval_Network.accumulator_biases[i];
 	}
-
+	//std::cout << sum << std::endl;
 	// Load weightsToOut
 	for (size_t i = 0; i < 2 * HL_SIZE; ++i) {
 		Eval_Network.output_weights[i] = readLittleEndian<int16_t>(stream);
+		//std::cout << Eval_Network.output_weights[i] <<std::endl;
+		sum *= 7;
+		sum += (uint16_t)Eval_Network.output_weights[i];
 	}
-
+	//std::cout << sum << std::endl;
 	// Load outputBias
+	sum *= 7;
+
+	
 	Eval_Network.output_bias = readLittleEndian<int16_t>(stream);
+	sum += (uint16_t)Eval_Network.output_bias;
+
+	//std::cout << sum << std::endl;
+	//std::cout << (uint16_t)Eval_Network.output_bias;
 }
 //int gamephaseInc[12] = { 0,0,1,1,1,1,2,2,4,4,0,0 };
 int gamephaseInc[12] = { 0,1,1,2,4,0,0,1,1,2,4,0 };
@@ -327,19 +344,26 @@ uint64_t getFileBitboard(uint64_t pieces, int file) {
 inline int flipSquare(int square)//flip square so a1 = 0
 {
 
-	return square ^ 0b111000;
+	return square ^ 56;
 }
 int calculateIndex(int perspective, int square, int pieceType, int side)
 {
 	int flippedSquare = flipSquare(square);
+	int flippedSide = side;
 	if (perspective == Black)
 	{
-		side = 1-side;             // Flip side
+		flippedSide = 1- flippedSide;// Flip side
 		flippedSquare = flipSquare(square); // Mirror square
 	}
+	
+	const char* names[] = { "pawn", "knight", "bishop", "rook", "queen", "king" };
+	//if (flippedSide == Black && perspective == Black)
+	//{
+	//	
+	//	std::cout << "(" << names[pieceType] << " " << flippedSide * 64 * 6 + pieceType * 64 + flippedSquare << ")\n";
+	//}
 
-
-	return side * 64 * 6 + pieceType * 64 + flippedSquare;
+	return flippedSide * 64 * 6 + get_piece(pieceType, White) * 64 + flippedSquare;
 }
 int16_t clamp(int16_t value, int16_t min, int16_t max) {
 	if (value < min) {
@@ -387,8 +411,9 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 		int sq = get_ls1b(whitePieces);
 
 		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), White);
+		//std::cout << whiteInputFeature<<std::endl;
 		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), White);
-
+	    //std::cout << blackInputFeature << " ";
 		for (size_t i = 0; i < HL_SIZE; i++) {
 			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
 			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
@@ -399,8 +424,9 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 		int sq = get_ls1b(blackPieces);
 
 		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), Black);
+		//std::cout << whiteInputFeature << std::endl;
 		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), Black);
-
+		//std::cout << blackInputFeature << " ";
 		for (size_t i = 0; i < HL_SIZE; i++) {
 			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
 			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
