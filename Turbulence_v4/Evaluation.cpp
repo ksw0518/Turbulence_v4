@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <cassert>
 //#include "Movegen.h"
 //inline int getFile(int square)
 //{
@@ -211,6 +213,71 @@ int side_multiply[2]
 {
     1, -1
 };
+
+
+
+const int INPUT_SIZE = 768;
+const int HL_SIZE = 64;
+
+// These parameters are part of the training configuration
+// These are the commonly used values as of 2024
+const int SCALE = 400;
+const int QA = 255;
+const int QB = 64;
+
+struct Network {
+	int16_t accumulator_weights[INPUT_SIZE][HL_SIZE];
+	int16_t accumulator_biases[HL_SIZE];
+	int16_t output_weights[2 * HL_SIZE];
+	int16_t output_bias;
+};
+Network Eval_Network;
+struct Accumulator {
+	int16_t values[HL_SIZE];
+};
+
+void LoadNetwork(const std::string& filepath)
+{
+	std::ifstream stream(filepath, std::ios::binary);
+	if (!stream.is_open()) {
+		std::cerr << "Failed to open file: " << filepath << std::endl;
+	}
+	uint64_t sum = 0;
+	//std::cout << sum << std::endl;
+	// Load weightsToHL
+	for (size_t row = 0; row < INPUT_SIZE; ++row) {
+		for (size_t col = 0; col < HL_SIZE; ++col) {
+			Eval_Network.accumulator_weights[row][col] = readLittleEndian<int16_t>(stream);
+			sum *= 7;
+			sum += (uint16_t)Eval_Network.accumulator_weights[row][col];
+		}
+	}
+	//std::cout << sum << std::endl;
+	// Load hiddenLayerBias
+	for (size_t i = 0; i < HL_SIZE; ++i) {
+		Eval_Network.accumulator_biases[i] = readLittleEndian<int16_t>(stream);
+		sum *= 7;
+		sum += (uint16_t)Eval_Network.accumulator_biases[i];
+	}
+	//std::cout << sum << std::endl;
+	// Load weightsToOut
+	for (size_t i = 0; i < 2 * HL_SIZE; ++i) {
+		Eval_Network.output_weights[i] = readLittleEndian<int16_t>(stream);
+		//std::cout << Eval_Network.output_weights[i] <<std::endl;
+		sum *= 7;
+		sum += (uint16_t)Eval_Network.output_weights[i];
+	}
+	//std::cout << sum << std::endl;
+	// Load outputBias
+	sum *= 7;
+
+	
+	Eval_Network.output_bias = readLittleEndian<int16_t>(stream);
+	sum += (uint16_t)Eval_Network.output_bias;
+	
+	//std::cout << sum << std::endl;
+	//std::cout << (uint16_t)Eval_Network.output_bias;
+}
 //int gamephaseInc[12] = { 0,0,1,1,1,1,2,2,4,4,0,0 };
 int gamephaseInc[12] = { 0,1,1,2,4,0,0,1,1,2,4,0 };
 int mg_table[12][64];
@@ -274,232 +341,187 @@ void init_tables()
 uint64_t getFileBitboard(uint64_t pieces, int file) {
     return pieces & files_bitboard[file];
 }
+inline int flipSquare(int square)//flip square so a1 = 0
+{
 
-uint64_t detectDoubledPawns(uint64_t pawns) {
-    // Shift pawns upward to find overlap on the same file
-    uint64_t doubledPawns = pawns & (pawns >> 8);
-    return doubledPawns;
+	return square ^ 56;
+}
+int calculateIndex(int perspective, int square, int pieceType, int side)
+{
+	square ^= 56;
+	if (perspective == Black) {
+		square = flipSquare(square);
+	}
+	return 6*64 * (side != perspective) + 64 * pieceType + square;
+
+	//return flippedSide * 64 * 6 + get_piece(pieceType, White) * 64 + flippedSquare;
+}
+int32_t clamp(int32_t value, int32_t min, int32_t max) {
+	if (value < min) {
+		return min;
+	}
+	else if (value > max) {
+		return max;
+	}
+	return value;
+}
+int32_t SCReLU(int32_t value, int32_t min, int32_t max)
+{
+	const int32_t clamped = clamp(value, min, max);
+	return clamped * clamped;
 }
 
-
-
-// Detect isolated pawns for a color
-uint64_t detectIsolatedPawns(uint64_t pawns) {
-    uint64_t isolatedPawns = 0;
-    for (int file = 0; file < 8; ++file) {
-        uint64_t pawnsInFile = getFileBitboard(pawns, file);
-        uint64_t adjacentFiles = 0;
-        if (file > 0) adjacentFiles |= getFileBitboard(pawns, file - 1);  // Left file
-        if (file < 7) adjacentFiles |= getFileBitboard(pawns, file + 1);  // Right file
-        if ((adjacentFiles & pawnsInFile) == 0) {  // No supporting pawns
-            isolatedPawns |= pawnsInFile;
-        }
-    }
-    return isolatedPawns;
+//SCReLU activation function
+int32_t activation(int16_t value)
+{
+	return SCReLU(value, 0, QA);
+}
+void accumulatorAdd(struct Network* const network, struct Accumulator* accumulator, size_t index)
+{
+	for (int i = 0; i < HL_SIZE; i++)
+		accumulator->values[i] += network->accumulator_weights[index][i];
 }
 
-uint64_t detectPassedPawns(uint64_t pawns, uint64_t opponentPawns, bool isWhite) {
-    uint64_t passedPawns = 0;
-    for (int file = 0; file < 8; ++file) {
-        uint64_t pawnsInFile = getFileBitboard(pawns, file);
+void accumulatorSub(struct Network* const network, struct Accumulator* accumulator, size_t index)
+{
+	for (int i = 0; i < HL_SIZE; i++)
+		accumulator->values[i] -= network->accumulator_weights[index][i];
+}
+struct AccumulatorPair {
+	Accumulator white;
+	Accumulator black;
+};
+void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
+	uint64_t whitePieces = board.occupancies[White];
+	uint64_t blackPieces = board.occupancies[Black];
 
-        uint64_t adjacentFiles = (file > 0 ? files_bitboard[file - 1] : 0) |
-            files_bitboard[file] |
-            (file < 7 ? files_bitboard[file + 1] : 0);
-        while (pawnsInFile)
-        {
-            // Calculate the span of potential blocking pawns
-            int square = get_ls1b(pawnsInFile);
+	
+	memcpy(accumulator.white.values, Eval_Network.accumulator_biases, sizeof(Eval_Network.accumulator_biases));
+	memcpy(accumulator.black.values, Eval_Network.accumulator_biases, sizeof(Eval_Network.accumulator_biases));
+	//for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout << accumulator.white.values[i] << " ";
+	//}
+	
+	while (whitePieces) {
+		int sq = get_ls1b(whitePieces);
 
+		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), White);
+		//std::cout << whiteInputFeature<<" ";
+		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), White);
+	    //std::cout << blackInputFeature << " ";
+		for (size_t i = 0; i < HL_SIZE; i++) {
+			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
+			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
+		}
 
-            //// Left shift to zero-out rows below
-            //uint64_t left_shifted = (0xFFFFFFFFFFFFFFFFull) << (8 * (getRank(square) + 1));
-            //
-            //// Right shift to zero-out rows above (adjusted by subtracting 1)
-            //uint64_t right_shifted = (0xFFFFFFFFFFFFFFFFull) >> ((8 * (7 - getRank(square) + 1)));
-            //if (getRank(square) <= 0)
-            //{
-            //    right_shifted = 0ull;
-            //}
+		Pop_bit(whitePieces, sq);
+	}
+	while (blackPieces) {
+		int sq = get_ls1b(blackPieces);
 
-            uint64_t frontSpan = isWhite
-                ? whitePassedMasks[square]
-                : blackPassedMasks[square];
-            //PrintBitboard(frontSpan);
-            //PrintBitboard(pawnsInFile);
-            //PrintBitboard(opponentPawns);
-            //PrintBitboard(frontSpan);
+		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), Black);
+		//std::cout << whiteInputFeature << " ";
+		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), Black);
+		//std::cout << blackInputFeature << " ";
+		for (size_t i = 0; i < HL_SIZE; i++) {
+			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
+			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
+		}
+		Pop_bit(blackPieces, sq);
+	}
+	//for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout<<accumulator.white.values[i]<<" ";
+	//}
+}
+// When forwarding the accumulator values, the network does not consider the color of the perspectives.
+// Rather, we are more interested in whether the accumulator is from the perspective of the side-to-move.
+int32_t forward(struct Network* const network,
+	struct Accumulator* const stm_accumulator,
+	struct Accumulator* const nstm_accumulator)
+{
+	int32_t eval = 0;
 
+	// Dot product to the weights
+	for (int i = 0; i < HL_SIZE; i++)
+	{
+		// BEWARE of integer overflows here.
+		eval += (int32_t)activation(stm_accumulator->values[i]) * network->output_weights[i];
+		eval += (int32_t)activation(nstm_accumulator->values[i]) * network->output_weights[i + HL_SIZE];
+	}
 
+	// Uncomment the following dequantization step when using SCReLU
+	 eval /= QA;
+	eval += network->output_bias;
 
-            // Check if any opponent pawns are in the front span
-            if ((frontSpan & opponentPawns) == 0) {
-                passedPawns |= 1ULL << square; // Mark pawns in this file as passed
-            }
-            Pop_bit(pawnsInFile, square);
-        }
-    }
-    return passedPawns;
+	eval *= SCALE;
+	eval /= QA * QB;
+
+	return eval;
 }
 
 int Evaluate(Board& board)
 {
-    int mg[2];
-    int eg[2];
+	AccumulatorPair eval_accumulator;
+	resetAccumulators(board, eval_accumulator);
+//	for (int i = 0; i < 16; i++)
+//{
+//	std::cout<< eval_accumulator.white.values[i]<<" ";
+//}
+	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	if (board.side == White)
+		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	else
+		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
 
-    mg[White] = 0;
-    mg[Black] = 0;
-    eg[White] = 0;
-    eg[Black] = 0;
 
-    //int eval = 0;
-    int gamePhase = 0;
+    //int mg[2];
+    //int eg[2];
 
-    int evalSide = board.side;
+    //mg[White] = 0;
+    //mg[Black] = 0;
+    //eg[White] = 0;
+    //eg[Black] = 0;
 
-    for (int sq = 0; sq < 64; ++sq) {
-        int pc = board.mailbox[sq];
-        if (pc != NO_PIECE) {
-            int col = getSide(pc);
-            mg[col] += mg_table[pc][sq];
-            eg[col] += eg_table[pc][sq];
-            gamePhase += gamephaseInc[pc];
-        }
-    }
-    //uint64_t eval_passer = detectPassedPawns(board.bitboards[get_piece(p, evalSide)], board.bitboards[get_piece(p, 1 - evalSide)], evalSide == White);
-    //uint64_t opp_passer = detectPassedPawns(board.bitboards[get_piece(p, 1 - evalSide)], board.bitboards[get_piece(p, evalSide)], evalSide != White);
+    ////int eval = 0;
+    //int gamePhase = 0;
 
-    ////PrintBitboard(board.bitboards[get_piece(p, evalSide)]);
-    ///*PrintBitboard(eval_passer);
-    //PrintBitboard(opp_passer);*/
-    //int passed_pawn_bonus_MG;
-    //int passed_pawn_bonus_EG;
-    //if (eval_passer)
-    //{
-    //    while (eval_passer) {
-    //        int square = get_ls1b(eval_passer);
-    //        //int y;
+    //int evalSide = board.side;
 
-    //        //if (evalSide == White)
-    //        //{
-    //        //    y = getRank(square);
-    //        //}
-    //        //else
-    //        //{
-    //        //    y = 7 - getRank(square);
-    //        //}
-
-    //        if (evalSide == White)
-    //        {
-    //            mg[evalSide] += white_passed_pawn_bonus_middle[square];
-    //            eg[evalSide] += white_passed_pawn_bonus_endgame[square];
-    //        }
-    //        else
-    //        {
-    //            mg[evalSide] -= black_passed_pawn_bonus_middle[square];
-    //            eg[evalSide] -= black_passed_pawn_bonus_endgame[square];
-    //        }
-
-    //        Pop_bit(eval_passer, square);
+    //for (int sq = 0; sq < 64; ++sq) {
+    //    int pc = board.mailbox[sq];
+    //    if (pc != NO_PIECE) {
+    //        int col = getSide(pc);
+    //        mg[col] += mg_table[pc][sq];
+    //        eg[col] += eg_table[pc][sq];
+    //        gamePhase += gamephaseInc[pc];
     //    }
     //}
+    //int mgScore = mg[evalSide] + mg[1 - evalSide];
+    //int egScore = eg[evalSide] + eg[1 - evalSide];
+    //int mgPhase = gamePhase;
+    //if (mgPhase > 24) mgPhase = 24; /* in case of early promotion */
+    //int egPhase = 24 - mgPhase;
 
-    //if (opp_passer)
+    //int Whiteeval = (mgScore * mgPhase + egScore * egPhase) / 24;
+
+    //int WhiteBishops = count_bits(board.bitboards[B]);
+    //int BlackBishops = count_bits(board.bitboards[b]);
+
+    //int white_bishoppair = 0;
+    //int black_bishoppair = 0;
+
+    //if (WhiteBishops >= 2)
     //{
-    //    while (opp_passer) {
-    //        int square = get_ls1b(opp_passer);
-    //        int y;
-
-    //        //if (evalSide != White)
-    //        //{
-    //        //    y = getRank(square);
-    //        //}
-    //        //else
-    //        //{
-    //        //    y = 7 - getRank(square);
-    //        //}
-
-
-    //        if (1- evalSide == White)
-    //        {
-    //            mg[1 - evalSide] += white_passed_pawn_bonus_middle[square];
-    //            eg[1 - evalSide] += white_passed_pawn_bonus_endgame[square];
-    //        }
-    //        else
-    //        {
-    //            mg[1 - evalSide] -= black_passed_pawn_bonus_middle[square];
-    //            eg[1 - evalSide] -= black_passed_pawn_bonus_endgame[square];
-    //        }
-    //        Pop_bit(opp_passer, square);
-    //    }
+    //    white_bishoppair = 50;
     //}
-    /*int double_pawns_evalside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, evalSide)]));
-    int double_pawns_oppside = count_bits(detectDoubledPawns(board.bitboards[get_piece(P, 1 - evalSide)]));
-
-    mg[evalSide] -= DOUBLED_PAWN_MALUS_MG * double_pawns_evalside;
-    mg[1 - evalSide] -= DOUBLED_PAWN_MALUS_MG * double_pawns_oppside;
-
-    eg[evalSide] -= DOUBLED_PAWN_MALUS_EG * double_pawns_evalside;
-    eg[1 - evalSide] -= DOUBLED_PAWN_MALUS_EG * double_pawns_oppside;*/
-
-    /*int isolated_pawns_evalside = count_bits(detectIsolatedPawns(board.bitboards[get_piece(P, evalSide)]));
-    int isolated_pawns_oppside = count_bits(detectIsolatedPawns(board.bitboards[get_piece(P, 1 - evalSide)]));*/
-
-
-    //std::cout << "doublepawn" << double_pawns_evalside<<","<<double_pawns_oppside;
-
-
-    /* tapered eval */
-    //int mgScore = mg[evalSide] + mg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_MG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_MG)/2;
-    //int egScore = eg[evalSide] + eg[1 - evalSide] - (double_pawns_evalside * DOUBLED_PAWN_MALUS_EG)/2 + (double_pawns_oppside * DOUBLED_PAWN_MALUS_EG)/2;
-    /*int WhiteBishops = count_bits(board.bitboards[B]);
-    int BlackBishops = count_bits(board.bitboards[b]);
-
-
-
-    int white_bishoppair_mg = 0;
-    int black_bishoppair_mg = 0;
-    int white_bishoppair_eg = 0;
-    int black_bishoppair_eg = 0;
-
-    if (WhiteBishops >= 2)
-    {
-        white_bishoppair_mg = 30;
-        white_bishoppair_eg = 50;
-    }
-    if (BlackBishops >= 2)
-    {
-        black_bishoppair_mg = 30;
-        black_bishoppair_eg = 50;
-    }
-    mg[White] += white_bishoppair_mg;
-    mg[Black] -= black_bishoppair_mg;
-    eg[White] += white_bishoppair_eg;
-    eg[Black] -= black_bishoppair_eg;*/
-    int mgScore = mg[evalSide] + mg[1 - evalSide];
-    int egScore = eg[evalSide] + eg[1 - evalSide];
-    int mgPhase = gamePhase;
-    if (mgPhase > 24) mgPhase = 24; /* in case of early promotion */
-    int egPhase = 24 - mgPhase;
-
-    int Whiteeval = (mgScore * mgPhase + egScore * egPhase) / 24;
-
-    int WhiteBishops = count_bits(board.bitboards[B]);
-    int BlackBishops = count_bits(board.bitboards[b]);
-
-    int white_bishoppair = 0;
-    int black_bishoppair = 0;
-
-    if (WhiteBishops >= 2)
-    {
-        white_bishoppair = 50;
-    }
-    if (BlackBishops >= 2)
-    {
-        black_bishoppair = 50;
-    }
-    Whiteeval += white_bishoppair;
-    Whiteeval -= black_bishoppair;
-    return Whiteeval * side_multiply[evalSide];
+    //if (BlackBishops >= 2)
+    //{
+    //    black_bishoppair = 50;
+    //}
+    //Whiteeval += white_bishoppair;
+    //Whiteeval -= black_bishoppair;
+    //return Whiteeval * side_multiply[evalSide];
 
 }
