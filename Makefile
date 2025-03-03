@@ -10,6 +10,7 @@ OBJ = $(SRC:.cpp=.o)
 
 # Output binary (default)
 EXE ?= Turbulence.exe
+EVALFILE ?= Turbulence_v4/nnue.bin
 
 RM := rm -f
 RMDIR := "Turbulence_v4/"*.o
@@ -22,8 +23,8 @@ endif
 all: $(EXE)
 
 # Rule to build the executable
-$(EXE): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+$(EXE): $(SRCS)
+	$(CXX) $(CXXFLAGS) -DEVALFILE=\"$(EVALFILE)\" $(SRC) -o $@
 
 # Rule to build object files
 %.o: %.cpp
