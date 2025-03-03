@@ -714,6 +714,11 @@ void ProcessUCI(std::string input)
             }
 
         }
+		else if (Commands[1] == "nodes")
+		{
+			int node = std::stoi(Commands[2]);
+			IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node);
+		}
         else if (Commands[1] == "movetime")
         {
             int movetime = std::stoi(Commands[2]);

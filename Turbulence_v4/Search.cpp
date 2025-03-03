@@ -1778,7 +1778,7 @@ void scaleTime(int& softLimit, uint8_t bestMoveStability, int baseSoft, int maxT
 	double bestMoveScale[5] = { 2.43, 1.35, 1.09, 0.88, 0.68 };
 	softLimit = std::min(static_cast<int>(baseSoft * bestMoveScale[bestMoveStability]), maxTime);
 }
-void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime)
+void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes)
 {
 
 	if (timeMS == -1)
@@ -1909,7 +1909,13 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		}
 
 
-
+		if (softNodes != -1)
+		{
+			if (searchNodeCount > softNodes)
+			{
+				break;
+			}
+		}
 
 		if (softbound != -1)
 		{
