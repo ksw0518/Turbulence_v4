@@ -23,7 +23,7 @@ endif
 all: $(EXE)
 
 # Rule to build the executable
-$(EXE): $(SRCS)
+$(EXE): $(SRC)
 	$(CXX) $(CXXFLAGS) -DEVALFILE=\"$(EVALFILE)\" $(SRC) -o $@
 
 # Rule to build object files
