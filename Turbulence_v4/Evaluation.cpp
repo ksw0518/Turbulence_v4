@@ -274,7 +274,7 @@ void LoadNetwork(const std::string& filepath)
 	
 	Eval_Network.output_bias = readLittleEndian<int16_t>(stream);
 	sum += (uint16_t)Eval_Network.output_bias;
-
+	
 	//std::cout << sum << std::endl;
 	//std::cout << (uint16_t)Eval_Network.output_bias;
 }
@@ -356,7 +356,7 @@ int calculateIndex(int perspective, int square, int pieceType, int side)
 
 	//return flippedSide * 64 * 6 + get_piece(pieceType, White) * 64 + flippedSquare;
 }
-int16_t clamp(int16_t value, int16_t min, int16_t max) {
+int32_t clamp(int32_t value, int32_t min, int32_t max) {
 	if (value < min) {
 		return min;
 	}
@@ -365,9 +365,9 @@ int16_t clamp(int16_t value, int16_t min, int16_t max) {
 	}
 	return value;
 }
-int16_t SCReLU(int16_t value, int16_t min, int16_t max)
+int32_t SCReLU(int32_t value, int32_t min, int32_t max)
 {
-	const int clamped = clamp(value, min, max);
+	const int32_t clamped = clamp(value, min, max);
 	return clamped * clamped;
 }
 
@@ -398,24 +398,30 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 	
 	memcpy(accumulator.white.values, Eval_Network.accumulator_biases, sizeof(Eval_Network.accumulator_biases));
 	memcpy(accumulator.black.values, Eval_Network.accumulator_biases, sizeof(Eval_Network.accumulator_biases));
+	//for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout << accumulator.white.values[i] << " ";
+	//}
+	
 	while (whitePieces) {
 		int sq = get_ls1b(whitePieces);
 
 		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), White);
-		//std::cout << whiteInputFeature<<std::endl;
+		//std::cout << whiteInputFeature<<" ";
 		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), White);
 	    //std::cout << blackInputFeature << " ";
 		for (size_t i = 0; i < HL_SIZE; i++) {
 			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
 			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
 		}
+
 		Pop_bit(whitePieces, sq);
 	}
 	while (blackPieces) {
 		int sq = get_ls1b(blackPieces);
 
 		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), Black);
-		//std::cout << whiteInputFeature << std::endl;
+		//std::cout << whiteInputFeature << " ";
 		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), Black);
 		//std::cout << blackInputFeature << " ";
 		for (size_t i = 0; i < HL_SIZE; i++) {
@@ -424,7 +430,10 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 		}
 		Pop_bit(blackPieces, sq);
 	}
-
+	//for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout<<accumulator.white.values[i]<<" ";
+	//}
 }
 // When forwarding the accumulator values, the network does not consider the color of the perspectives.
 // Rather, we are more interested in whether the accumulator is from the perspective of the side-to-move.
@@ -438,8 +447,8 @@ int32_t forward(struct Network* const network,
 	for (int i = 0; i < HL_SIZE; i++)
 	{
 		// BEWARE of integer overflows here.
-		eval += activation(stm_accumulator->values[i]) * network->output_weights[i];
-		eval += activation(nstm_accumulator->values[i]) * network->output_weights[i + HL_SIZE];
+		eval += (int32_t)activation(stm_accumulator->values[i]) * network->output_weights[i];
+		eval += (int32_t)activation(nstm_accumulator->values[i]) * network->output_weights[i + HL_SIZE];
 	}
 
 	// Uncomment the following dequantization step when using SCReLU
@@ -456,6 +465,11 @@ int Evaluate(Board& board)
 {
 	AccumulatorPair eval_accumulator;
 	resetAccumulators(board, eval_accumulator);
+//	for (int i = 0; i < 16; i++)
+//{
+//	std::cout<< eval_accumulator.white.values[i]<<" ";
+//}
+	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
 	if (board.side == White)
 		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
 	else
