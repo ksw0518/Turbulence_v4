@@ -15,7 +15,9 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
-
+#include <string>
+#include <random>
+#include <utility>  // for std::pair
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
@@ -280,6 +282,7 @@ void initializeLMRTable()
 	//{
 	//	TranspositionTable[i] = TranspositionEntry();
 	//}
+	
 }
 int scaledBonus(int score, int bonus)
 {
@@ -1778,7 +1781,7 @@ void scaleTime(int& softLimit, uint8_t bestMoveStability, int baseSoft, int maxT
 	double bestMoveScale[5] = { 2.43, 1.35, 1.09, 0.88, 0.68 };
 	softLimit = std::min(static_cast<int>(baseSoft * bestMoveScale[bestMoveStability]), maxTime);
 }
-void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes)
+std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes)
 {
 
 	if (timeMS == -1)
@@ -1888,11 +1891,12 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		if (currDepth >= 6 && softbound != -1 && baseTime != -1) {
 			scaleTime(softbound, bestMoveStability, baseSoft, maxTime);
 		}
+		bestmove = pvTable[0][0];
 		if (print_info)
 		{
 			if (!isSearchStop)
 			{
-				bestmove = pvTable[0][0];
+				
 				if (isPrettyPrinting && isOnWindow)
 				{
 					print_Pretty(pvTable, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val);
@@ -1940,6 +1944,456 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		std::cout << "bestmove ";
 		printMove(bestmove);
 		std::cout << "\n";
+		
+	}
+	return std::pair<Move, int>(bestmove, score);
+}
+inline void Initialize_TT(int size)
+{
+	//std::cout <<"size" << size << "\n";
+	uint64_t bytes = static_cast<uint64_t>(size) * 1024ULL * 1024ULL;
+
+	//std::cout << bytes<<"\n";
+	TTSize = bytes / sizeof(TranspositionEntry);
+
+	if (TTSize % 2 != 0)
+	{
+		TTSize -= 1;
 	}
 
+	if (TranspositionTable)
+		delete[] TranspositionTable;
+
+	TranspositionTable = new TranspositionEntry[TTSize]();
+
+}
+int randBool() {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	static std::uniform_int_distribution<int> dist(0, 1);
+	return dist(gen);
+}
+int randBetween(int n) {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(1, n); // Range 1 to n
+	return dist(gen);
+}
+
+
+// Function to get the castling rights part of the FEN
+std::string getCastlingRights(const Board& board) {
+	std::string rights = "";
+	if (board.castle & WhiteKingCastle) rights += "K"; // White kingside castling
+	if (board.castle & WhiteQueenCastle) rights += "Q"; // White queenside castling
+	if (board.castle & BlackKingCastle) rights += "k"; // Black kingside castling
+	if (board.castle & BlackQueenCastle) rights += "q"; // Black queenside castling
+	return (rights.empty()) ? "-" : rights;
+}
+std::string boardToFEN(const Board& board) {
+	// Step 1: Construct the piece placement part (ranks 8 to 1)
+	std::string piecePlacement = "";
+	for (int rank = 7; rank >= 0; --rank) {  // Fix: Iterate from 7 down to 0
+		int emptyCount = 0;
+		for (int file = 0; file < 8; ++file) {
+			int square = (7-rank) * 8 + file;
+			int piece = board.mailbox[square];
+
+			if (piece == NO_PIECE) {
+				++emptyCount; // Empty square
+			}
+			else {
+				if (emptyCount > 0) {
+					piecePlacement += std::to_string(emptyCount); // Insert the number of empty squares
+					emptyCount = 0;
+				}
+				piecePlacement += getCharFromPiece(piece); // Add the piece (e.g., 'p', 'R')
+			}
+		}
+
+		if (emptyCount > 0) {
+			piecePlacement += std::to_string(emptyCount); // End of rank with empty squares
+		}
+
+		if (rank > 0) {  // Fix: Only add '/' if it's not the last rank (rank 1)
+			piecePlacement += "/";
+		}
+	}
+
+	// Step 2: Construct the other parts of FEN
+	std::string sideToMove = (board.side == 0) ? "w" : "b"; // White or Black to move
+	std::string castlingRights = getCastlingRights(board); // Castling rights
+	std::string enPassant = (board.enpassent == NO_SQ) ? "-" : CoordinatesToChessNotation(board.enpassent); // En passant square
+	std::string halfmove = std::to_string(board.history.size() - board.lastIrreversiblePly); // Halfmove clock
+	std::string fullmove = std::to_string(board.history.size() / 2 + 1); // Fullmove number
+
+	// Step 3: Combine all parts into the final FEN string
+	std::string fen = piecePlacement + " " + sideToMove + " " + castlingRights + " " + enPassant + " " + halfmove + " " + fullmove;
+
+	return fen;
+}
+
+bool isNoLegalMoves(Board board, MoveList& moveList)
+{
+	int searchedMoves = 0;
+
+	uint64_t last_zobrist = board.zobristKey;
+	uint64_t last_pawnKey = board.PawnKey;
+	uint64_t last_minorKey = board.MinorKey;
+	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
+	uint64_t last_blacknpKey = board.BlackNonPawnKey;
+	for (int i = 0; i < moveList.count; ++i)
+	{
+		Move& move = moveList.moves[i];
+
+
+		int lastEp = board.enpassent;
+		uint64_t lastCastle = board.castle;
+		int lastside = board.side;
+		int captured_piece = board.mailbox[move.To];
+		int last_irreversible = board.lastIrreversiblePly;
+
+		MakeMove(board, move);
+		if (!isLegal(move, board))
+		{
+			UnmakeMove(board, move, captured_piece);
+
+
+
+
+			board.history.pop_back();
+			board.lastIrreversiblePly = last_irreversible;
+			board.zobristKey = last_zobrist;
+			board.enpassent = lastEp;
+			board.castle = lastCastle;
+			board.side = lastside;
+			board.PawnKey = last_pawnKey;
+			board.MinorKey = last_minorKey;
+			board.WhiteNonPawnKey = last_whitenpKey;
+			board.BlackNonPawnKey = last_blacknpKey;
+			continue;
+		}
+
+		searchedMoves++;
+
+
+		UnmakeMove(board, move, captured_piece);
+
+		board.history.pop_back();
+		board.lastIrreversiblePly = last_irreversible;
+		board.zobristKey = last_zobrist;
+		board.enpassent = lastEp;
+		board.castle = lastCastle;
+		board.side = lastside;
+		board.PawnKey = last_pawnKey;
+		board.MinorKey = last_minorKey;
+		board.WhiteNonPawnKey = last_whitenpKey;
+		board.BlackNonPawnKey = last_blacknpKey;
+
+
+	}
+	if(searchedMoves == 0)
+	{
+		return true;
+	}
+	return false;
+
+}
+
+void PickRandomPos(Board& board)
+{
+	const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+randomPos:int randomMovesNum = 8 + randBool();
+	board.history.clear();
+	parse_fen(start_pos, board);
+	board.zobristKey = generate_hash_key(board);
+	board.history.push_back(board.zobristKey);
+	initializeLMRTable();
+	Initialize_TT(16);
+	//std::cout << randomMovesNum;
+	for (int i = 0; i < randomMovesNum; i++)
+	{
+		MoveList moveList;
+		moveList.count = 0;
+		Generate_Legal_Moves(moveList, board, false);
+		//goto randomPos;
+		if (isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
+		{
+			goto randomPos;
+		}
+		int randomN = randBetween(moveList.count) - 1;
+		int howMuchTry = 0;
+		while (true)
+		{
+			howMuchTry++;
+			/*if (howMuchTry >= 20)
+			{
+				PrintBoards(board);
+			}*/
+			randomN = randBetween(moveList.count) - 1;
+			Move move = moveList.moves[randomN];
+
+			uint64_t last_zobrist = board.zobristKey;
+			uint64_t last_pawnKey = board.PawnKey;
+			uint64_t last_minorKey = board.MinorKey;
+			uint64_t last_whitenpKey = board.WhiteNonPawnKey;
+			uint64_t last_blacknpKey = board.BlackNonPawnKey;
+			int lastEp = board.enpassent;
+			uint64_t lastCastle = board.castle;
+			int lastside = board.side;
+			int captured_piece = board.mailbox[move.To];
+			int last_irreversible = board.lastIrreversiblePly;
+			MakeMove(board, move);
+			if (((move.Type & captureFlag) != 0) || move.Piece == p || move.Piece == P)
+			{
+				board.lastIrreversiblePly = board.history.size();
+			}
+			if (isLegal(move, board))
+			{
+				break;
+			}
+			else
+			{
+
+				UnmakeMove(board, move, captured_piece);
+
+				board.history.pop_back();
+				board.lastIrreversiblePly = last_irreversible;
+				board.zobristKey = last_zobrist;
+				board.enpassent = lastEp;
+				board.castle = lastCastle;
+				board.side = lastside;
+				board.PawnKey = last_pawnKey;
+				board.MinorKey = last_minorKey;
+				board.WhiteNonPawnKey = last_whitenpKey;
+				board.BlackNonPawnKey = last_blacknpKey;
+			}
+
+		}
+
+
+		//if(moveList.moves[randomN].From == 0 && moveList.moves[randomN].To == 0)
+		//{
+		//	printMove(moveList.moves[randomN]);
+		//	std::cout << "\n";
+		//	std::cout<< randomN<<", movelist real count :"<< moveList.count<<"\n";
+		//	//PrintBoards(board);
+		//	std::cout << "error\n";
+		//	break;
+		//}
+		//printMove(moveList.moves[randomN]);
+		//std::cout << "\n";
+		//MakeMove(board, moveList.moves[randomN]);
+		//if(board.zobristKey != generate_hash_key(board))
+		//{
+		//	PrintBoards(board);
+		//	std::cout << "hash error\n";
+		//	board.zobristKey = 0;
+		//	break;
+		//}
+	}
+
+}
+bool isDecisive(int score)
+{
+	if (score > 48000 || score < -48000)
+	{
+		return true;
+	}
+	return false;
+}
+struct GameData
+{
+	Board board;
+	int eval;
+	int result;
+};
+bool isInsufficientMaterial(const Board& board) {
+	int pieceCount[12] = { 0 }; // Count pieces on the board
+
+	// Count each piece type
+	for (int i = 0; i < 64; ++i) {
+		int piece = board.mailbox[i];
+		if (piece != NO_PIECE) {
+			pieceCount[piece]++;
+		}
+	}
+
+	int totalPieces = 0;
+	int bishops = 0, knights = 0;
+	int whiteBishops = 0, blackBishops = 0;
+	int whiteMinor = 0, blackMinor = 0;
+
+	// Classify pieces
+	for (int i = 1; i <= 5; ++i) { // White pieces (1 to 5)
+		totalPieces += pieceCount[i];
+		if (i == 2) knights += pieceCount[i]; // Knights
+		if (i == 3) { bishops += pieceCount[i]; whiteBishops += pieceCount[i]; } // Bishops
+		if (i == 2 || i == 3) whiteMinor += pieceCount[i]; // Minor pieces
+	}
+	for (int i = 7; i <= 11; ++i) { // Black pieces (7 to 11)
+		totalPieces += pieceCount[i];
+		if (i == 8) knights += pieceCount[i]; // Knights
+		if (i == 9) { bishops += pieceCount[i]; blackBishops += pieceCount[i]; } // Bishops
+		if (i == 8 || i == 9) blackMinor += pieceCount[i]; // Minor pieces
+	}
+
+	// 1. King vs King
+	if (totalPieces == 0) return true;
+
+	// 2. King + single minor piece (Knight or Bishop) vs King
+	if (totalPieces == 1 && (knights == 1 || bishops == 1)) return true;
+
+	// 3. King + Bishop vs King + Bishop (same color bishops)
+	if (totalPieces == 2 && bishops == 2) {
+		// If all bishops are on the same color, it's insufficient material
+		return (whiteBishops == blackBishops);
+	}
+
+	return false;
+}
+
+void Datagen()
+{
+	const int DATAGEN_MAX_PLY = 256;
+	const uint64_t targetPositions = 500;
+	uint64_t totalPositions = 0;
+	std::vector<GameData> gameData;
+	gameData.reserve(256);
+	//for (int i = 0; i < 500; i++)
+	//{
+	//   Board board;
+	//   PickRandomPos(board);
+	//   //PrintBoards(board);
+	//   if(board.zobristKey != generate_hash_key(board))
+	//   {
+	//	   std::cout << "hash error\n";
+	//	   break;
+	//   }
+	//  
+	//}
+	//std::cout << "done" << "\n";
+
+	//Board board;
+	//const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+ //   int randomMovesNum = 8 + randBool();
+	//board.history.clear();
+	//parse_fen(start_pos, board);
+	//board.zobristKey = generate_hash_key(board);
+	//board.history.push_back(board.zobristKey);
+	//initializeLMRTable();
+	//Initialize_TT(16);
+	//std::cout << boardToFEN(board);
+
+	//return;
+	while (totalPositions < targetPositions)
+	{
+
+		gameData.clear();
+		Board board;
+		PickRandomPos(board);
+		//PrintBoards(board);
+		//PrintBoards(board);
+		bool isGameOver = false;
+		int result = - 1;
+		int plyCount = 0;
+		while (!isGameOver) 
+		{
+			
+			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000);
+			
+			Move bestMove = searchResult.first;
+			int eval = searchResult.second;
+			if (board.side == Black)
+			{
+				eval = -eval;
+			}
+			MoveList moveList;
+			Generate_Legal_Moves(moveList, board, false);
+			if (isNoLegalMoves(board, moveList))//stalemate or mate
+			{
+				if (is_in_check(board))
+				{
+					if (board.side == White)//white gets mated
+					{
+						result = BLACKWIN;
+					}
+					else
+					{
+						result = WHITEWIN;
+					}
+				}
+				else
+				{
+					result = DRAW;
+				}
+				break;
+			}
+			if (plyCount >= 500 || is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board))
+			{
+				result = DRAW;
+				break;
+			}
+			if (isDecisive(eval))
+			{
+				if (eval > 48000)//stm is mating
+				{
+					if (board.side == White)//white gets mated
+					{
+						result = WHITEWIN;
+					}
+					else
+					{
+						result = BLACKWIN;
+					}
+					break;
+				}
+				else//stm is mated
+				{
+
+					if (board.side == White)//white gets mated
+					{
+						result = BLACKWIN;
+					}
+					else
+					{
+						result = WHITEWIN;
+					}
+					break;
+				}
+			}
+			MakeMove(board, bestMove);
+			//PrintBoards(board);
+			plyCount++;
+			
+
+			if (!is_in_check(board) && (bestMove.Type & captureFlag)==0 && !isDecisive(eval)) 
+			{
+				gameData.push_back(GameData(board, eval, -1));
+				totalPositions++;
+				//std::cout << totalPositions<<std::endl;
+			}
+		}
+		for (int i = 0; i < gameData.size(); i++)
+		{
+			gameData[i].result = result;
+			//PrintBoards(gameData[i].board);
+			std::cout << boardToFEN(gameData[i].board)<<"\n";
+			std::cout<< gameData[i].eval << "\n";
+			if (gameData[i].result == WHITEWIN)
+			{
+				std::cout <<"White win \n";
+			}
+			else if (gameData[i].result == BLACKWIN)
+			{
+				std::cout << "Black win \n";
+			}
+			else
+			{
+				std::cout << "Draw \n";
+			}
+			std::cout << "------\n";
+
+		}
+	}
 }

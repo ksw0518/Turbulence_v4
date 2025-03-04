@@ -158,6 +158,9 @@ static int Get_Whitepiece[] = { 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5 };
 static inline const uint16_t  Le = 1;
 static inline const bool IS_LITTLE_ENDIAN = *reinterpret_cast<const char*>(&Le) == 1;
 
+const int WHITEWIN = 1;
+const int DRAW = 2;
+const int BLACKWIN = 3;
 inline int get_piece(int piece, int col)
 {
     //std::cout << Get_Whitepiece[piece] << "\n";
