@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdint>
+
 #include "Board.h"
 
 extern int pvLengths[99];
@@ -66,7 +66,7 @@ struct Search_data
 };
 void initializeLMRTable();
 extern TranspositionEntry* TranspositionTable;
-void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1, uint64_t softNodes = -1);
+void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1);
 int SEE(Board& pos, Move move, int threshold);
 
 void bench();
