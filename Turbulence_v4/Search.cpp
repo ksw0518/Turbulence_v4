@@ -2252,6 +2252,12 @@ bool isInsufficientMaterial(const Board& board) {
 
 	return false;
 }
+int flipResult(int res) {
+	return 2 - res;
+}
+#include <iostream>
+#include <vector>
+#include <chrono>
 
 void Datagen()
 {
@@ -2260,140 +2266,77 @@ void Datagen()
 	uint64_t totalPositions = 0;
 	std::vector<GameData> gameData;
 	gameData.reserve(256);
-	//for (int i = 0; i < 500; i++)
-	//{
-	//   Board board;
-	//   PickRandomPos(board);
-	//   //PrintBoards(board);
-	//   if(board.zobristKey != generate_hash_key(board))
-	//   {
-	//	   std::cout << "hash error\n";
-	//	   break;
-	//   }
-	//  
-	//}
-	//std::cout << "done" << "\n";
 
-	//Board board;
-	//const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
- //   int randomMovesNum = 8 + randBool();
-	//board.history.clear();
-	//parse_fen(start_pos, board);
-	//board.zobristKey = generate_hash_key(board);
-	//board.history.push_back(board.zobristKey);
-	//initializeLMRTable();
-	//Initialize_TT(16);
-	//std::cout << boardToFEN(board);
-
-	//return;
 	while (totalPositions < targetPositions)
 	{
-
 		gameData.clear();
 		Board board;
 		PickRandomPos(board);
-		//PrintBoards(board);
-		//PrintBoards(board);
 		bool isGameOver = false;
-		int result = - 1;
+		int result = -1;
 		int plyCount = 0;
-		while (!isGameOver) 
+
+		// Start the timer
+		auto start_time = std::chrono::high_resolution_clock::now();
+
+		while (!isGameOver)
 		{
-			
 			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000);
-			
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
+
 			if (board.side == Black)
 			{
 				eval = -eval;
 			}
+
 			MoveList moveList;
 			Generate_Legal_Moves(moveList, board, false);
-			if (isNoLegalMoves(board, moveList))//stalemate or mate
+
+			if (isNoLegalMoves(board, moveList)) // Checkmate or stalemate
 			{
-				if (is_in_check(board))
-				{
-					if (board.side == White)//white gets mated
-					{
-						result = BLACKWIN;
-					}
-					else
-					{
-						result = WHITEWIN;
-					}
-				}
-				else
-				{
-					result = DRAW;
-				}
+				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
 				break;
 			}
+
 			if (plyCount >= 500 || is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board))
 			{
 				result = DRAW;
 				break;
 			}
-			if (isDecisive(eval))
-			{
-				if (eval > 48000)//stm is mating
-				{
-					if (board.side == White)//white gets mated
-					{
-						result = WHITEWIN;
-					}
-					else
-					{
-						result = BLACKWIN;
-					}
-					break;
-				}
-				else//stm is mated
-				{
 
-					if (board.side == White)//white gets mated
-					{
-						result = BLACKWIN;
-					}
-					else
-					{
-						result = WHITEWIN;
-					}
-					break;
-				}
+			if (isDecisive(eval)) {
+				result = (eval > 0) ? WHITEWIN : BLACKWIN;
+				if (board.side == Black)
+					result = flipResult(result);
 			}
-			MakeMove(board, bestMove);
-			//PrintBoards(board);
-			plyCount++;
-			
 
-			if (!is_in_check(board) && (bestMove.Type & captureFlag)==0 && !isDecisive(eval)) 
+			MakeMove(board, bestMove);
+			plyCount++;
+
+			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
 			{
 				gameData.push_back(GameData(board, eval, -1));
 				totalPositions++;
-				//std::cout << totalPositions<<std::endl;
 			}
 		}
-		for (int i = 0; i < gameData.size(); i++)
-		{
-			gameData[i].result = result;
-			//PrintBoards(gameData[i].board);
-			std::cout << boardToFEN(gameData[i].board)<<"\n";
-			std::cout<< gameData[i].eval << "\n";
-			if (gameData[i].result == WHITEWIN)
-			{
-				std::cout <<"White win \n";
-			}
-			else if (gameData[i].result == BLACKWIN)
-			{
-				std::cout << "Black win \n";
-			}
-			else
-			{
-				std::cout << "Draw \n";
-			}
-			std::cout << "------\n";
 
+		// End the timer
+		auto end_time = std::chrono::high_resolution_clock::now();
+		double elapsed_seconds = std::chrono::duration<double>(end_time - start_time).count();
+
+		// Print game data
+		for (const auto& data : gameData)
+		{
+			std::cout << boardToFEN(data.board) << "\n";
+			std::cout << data.eval << "\n";
+			std::cout << ((data.result == WHITEWIN) ? "White win" : (data.result == BLACKWIN) ? "Black win" : "Draw") << "\n";
+			std::cout << "------\n";
 		}
+
+		// Calculate and print positions per second (PPS)
+		double positions_per_second = totalPositions / elapsed_seconds;
+		std::cout << "Positions per second: " << positions_per_second << "\n";
 	}
 }
+
