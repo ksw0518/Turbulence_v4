@@ -179,6 +179,7 @@ constexpr int CORRHIST_WEIGHT_SCALE = 256;
 constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
+constexpr int MAXCORRHISTUPDATE = CORRHIST_MAX / 4;
 
 Move killerMoves[2][99];
 
@@ -291,8 +292,9 @@ void updateMinorCorrHist(Board& board, const int depth, const int diff)
 	int& entry = minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
-	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
+	int newValue = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	newValue = std::clamp(newValue, -MAXCORRHISTUPDATE, MAXCORRHISTUPDATE);
+	entry = std::clamp(newValue, -CORRHIST_MAX, CORRHIST_MAX);
 }
 void updatePawnCorrHist(Board& board, const int depth, const int diff)
 {
@@ -300,8 +302,9 @@ void updatePawnCorrHist(Board& board, const int depth, const int diff)
 	int& entry = pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
-	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
+	int newValue = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	newValue = std::clamp(newValue, -MAXCORRHISTUPDATE, MAXCORRHISTUPDATE);
+	entry = std::clamp(newValue, -CORRHIST_MAX, CORRHIST_MAX);
 }
 void updateNonPawnCorrHist(Board& board, const int depth, const int diff)
 {
@@ -313,13 +316,15 @@ void updateNonPawnCorrHist(Board& board, const int depth, const int diff)
 
 	int& whiteEntry = nonPawnCorrHist[White][board.side][whiteKey % CORRHIST_SIZE];
 
-	whiteEntry = (whiteEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	whiteEntry = std::clamp(whiteEntry, -CORRHIST_MAX, CORRHIST_MAX);
+	int newValueW = (whiteEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	newValueW = std::clamp(newValueW, -MAXCORRHISTUPDATE, MAXCORRHISTUPDATE);
+	whiteEntry = std::clamp(newValueW, -CORRHIST_MAX, CORRHIST_MAX);
 
 	int& blackEntry = nonPawnCorrHist[Black][board.side][blackKey % CORRHIST_SIZE];
 
-	blackEntry = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	blackEntry = std::clamp(blackEntry, -CORRHIST_MAX, CORRHIST_MAX);
+	int newValueB = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	newValueB = std::clamp(newValueB, -MAXCORRHISTUPDATE, MAXCORRHISTUPDATE);
+	blackEntry = std::clamp(newValueB, -CORRHIST_MAX, CORRHIST_MAX);
 }
 int adjustEvalWithCorrHist(Board& board, const int rawEval)
 {
