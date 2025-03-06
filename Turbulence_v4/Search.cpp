@@ -1155,6 +1155,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}*/
 	for (int i = 0; i < moveList.count; ++i)
 	{
+		int lmrDepth = depth - lmrTable[depth][searchedMoves] - 1;
 		Move& move = moveList.moves[i];
 
 		bool isQuiet = is_quiet(move.Type);
@@ -1167,7 +1168,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			continue;
 		}
 		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
-		if (depth <= MAX_PVS_SEE_DEPTH)
+		if (lmrDepth <= MAX_PVS_SEE_DEPTH)
 		{
 			if (!SEE(board, move, seeThreshold))
 			{
@@ -1186,7 +1187,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skipQuiets = true;
 			}
-			if (quietMoves > 1 && depth <= 5 && historyScore < (-HISTORY_PRUNING_MULTIPLIER * depth) + HISTORY_PRUNING_BASE)
+			if (quietMoves > 1 && lmrDepth <= 5 && historyScore < (-HISTORY_PRUNING_MULTIPLIER * lmrDepth) + HISTORY_PRUNING_BASE)
 			{
 				break;
 			}
