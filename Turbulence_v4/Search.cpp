@@ -818,9 +818,14 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		return Evaluate(board);
 	}
 	int score = 0;
-
+	bool isTTHit = false;
+	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
+	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
+	{
+		isTTHit = true;
+	}
 	int staticEval = Evaluate(board);
-	staticEval = adjustEvalWithCorrHist(board, staticEval);
+	staticEval = isTTHit ? staticEval : adjustEvalWithCorrHist(board, staticEval);
 
 
 	if (staticEval >= beta)
@@ -833,8 +838,8 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		alpha = staticEval;
 	}
 
-	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
-	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
+	
+	if (isTTHit)
 	{
 		if ((ttEntry.bound == ExactFlag)
 			|| (ttEntry.bound == UpperBound && ttEntry.score <= alpha)
