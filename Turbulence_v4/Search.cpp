@@ -856,6 +856,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	//int pvNode = beta - alpha > 1;
 	//int futilityMargin = evaluation + 120;
 
+	bool isInCheck = is_in_check(board);
 	uint64_t lastZobrist = board.zobristKey;
 	uint64_t lastPawnKey = board.PawnKey;
 	uint64_t lastMinorKey = board.MinorKey;
@@ -865,6 +866,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		Move& move = moveList.moves[i];
 		if (is_quiet(move.Type)) continue; //skip non capture moves
+		if (!isInCheck && staticEval + 200 <= alpha && !SEE(board, move, 1))
+		{
+			continue;
+		}
 
 		if (!SEE(board, move, 0))
 		{
