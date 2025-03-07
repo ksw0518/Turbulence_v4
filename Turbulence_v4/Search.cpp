@@ -824,8 +824,9 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		isTTHit = true;
 	}
+	bool is_ttmove_found = ttEntry.bestMove != NULLMOVE;
 	int staticEval = Evaluate(board);
-	staticEval = isTTHit ? staticEval : adjustEvalWithCorrHist(board, staticEval);
+	staticEval = is_ttmove_found ? staticEval : adjustEvalWithCorrHist(board, staticEval);
 
 
 	if (staticEval >= beta)
@@ -1059,7 +1060,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int rawEval = Evaluate(board);
 
-	int staticEval = is_ttmove_found ? rawEval : adjustEvalWithCorrHist(board, rawEval);
+	int staticEval = (ttEntry.bestMove != NULLMOVE) ? rawEval : adjustEvalWithCorrHist(board, rawEval);
 
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
