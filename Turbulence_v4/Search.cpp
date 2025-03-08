@@ -1282,6 +1282,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					extensions++;
 					//searchStack[ply].doubleExtensions++;
 				}
+				if (is_quiet(move.Type) && s_score + 40 < s_beta)
+				{
+					extensions++;
+				}
 
 			}
 
