@@ -56,6 +56,7 @@ struct TranspositionEntry
 	uint8_t depth;
 	
 	uint8_t bound;
+	bool ttPv;
 };
 
 struct Search_data

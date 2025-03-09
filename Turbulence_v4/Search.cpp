@@ -1011,6 +1011,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	bool isSingularSearch = excludedMove != NULLMOVE;
+	bool tt_pv = isPvNode;
 	// Only check TT for depths greater than zero (ply != 0)
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
@@ -1034,7 +1035,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
-
+	tt_pv |= ttEntry.ttPv;
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
@@ -1318,6 +1319,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
+			if (tt_pv)
+			{
+				reduction--;
+			}
 		}
 
 		if (reduction < 0) reduction = 0;
@@ -1467,6 +1472,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	ttEntry.bound = ttFlag;
 	ttEntry.depth = depth;
 	ttEntry.zobristKey = board.zobristKey;
+	ttEntry.ttPv = tt_pv;
 	if (bestMove != Move(0, 0, 0, 0))
 	{
 		ttEntry.bestMove = bestMove;
