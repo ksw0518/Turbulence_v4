@@ -1867,7 +1867,7 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 			{
 				break;
 			}
-
+			 
 
 
 			if (delta >= ASP_WINDOW_MAX)
