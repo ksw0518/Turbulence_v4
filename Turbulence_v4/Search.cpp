@@ -1827,6 +1827,8 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 		int alpha_val = std::max(MINUS_INFINITY, score - delta);
 		int beta_val = std::min(PLUS_INFINITY, score + delta);
 		int window_change = 1;
+
+		int aspirationWindowDepth = currDepth;
 		//std::cout << alpha_val << ","<<beta_val;
 		while (true)
 		{
@@ -1848,16 +1850,18 @@ void IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, 
 				}
 			}
 
-			score = Negamax(board, currDepth, alpha_val, beta_val, true, false);
+			score = Negamax(board, std::max(aspirationWindowDepth, 1), alpha_val, beta_val, true, false);
 
 			delta += delta;
 			if (score <= alpha_val)
 			{
 				alpha_val = std::max(MINUS_INFINITY, score - delta);
+				aspirationWindowDepth = currDepth;
 			}
 			else if (score >= beta_val)
 			{
 				beta_val = std::min(PLUS_INFINITY, score + delta);
+				aspirationWindowDepth = std::max(aspirationWindowDepth - 1, currDepth - 5);
 			}
 			else
 			{
