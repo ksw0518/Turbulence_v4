@@ -1191,7 +1191,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				break;
 			}
-
+			if (!isInCheck && depth <= 5 && staticEval + 300 * (depth) <= alpha)
+			{
+				skipQuiets = true;
+			}
 		}
 
 
