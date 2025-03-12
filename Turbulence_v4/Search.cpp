@@ -1191,7 +1191,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				break;
 			}
-			if (!isPvNode && !isInCheck && depth <= 3 && (staticEval + 65) + 89 * depth <= alpha)
+			if (!isPvNode && !isInCheck && depth <= 4 && (staticEval + 65) + 89 * depth <= alpha)
 			{
 				skipQuiets = true;
 			}
