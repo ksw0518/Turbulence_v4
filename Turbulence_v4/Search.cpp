@@ -1134,7 +1134,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	bool skipQuiets = false;
 
-	int lmpThreshold = LMP_BASE + LMP_MULTIPLIER * depth * depth;
+	int lmpThreshold;
+	if (!improving)
+	{
+		lmpThreshold = LMP_BASE + LMP_MULTIPLIER * (depth - 1) * (depth - 1);
+	}
+	else
+	{
+		lmpThreshold = LMP_BASE + LMP_MULTIPLIER * (depth) * (depth);
+	}
+	
 
 	int quietSEEMargin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
 	int noisySEEMargin = PVS_NOISY_BASE + (-PVS_NOISY_MULTIPLIER * depth * depth);
