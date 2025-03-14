@@ -184,6 +184,7 @@ const std::string kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/
 std::vector<std::string> position_commands = { "position", "startpos", "fen", "moves" };
 std::vector<std::string> go_commands = { "go", "movetime", "wtime", "btime", "winc", "binc", "movestogo" };
 std::vector<std::string> option_commands = { "setoption", "name",  "value" };
+std::vector<std::string> datagen_commands = { "datagen", "pos", "file" };
 
 Board main_board;
 
@@ -388,6 +389,13 @@ void ProcessUCI(std::string input)
         
         std::cout << "uciok" << "\n";
     }
+	else if (main_command == "datagen")
+	{
+		int pos = TryGetLabelledValueInt(input, "pos", datagen_commands);
+		std::string file = TryGetLabelledValue(input, "file", datagen_commands);
+		
+		Datagen(pos, file);
+	}
 	else if (main_command == "ucinewgame")
 	{
 		
@@ -717,7 +725,7 @@ void ProcessUCI(std::string input)
 		else if (Commands[1] == "nodes")
 		{
 			int node = std::stoi(Commands[2]);
-			IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node);
+			IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node, node);
 		}
         else if (Commands[1] == "movetime")
         {
@@ -935,7 +943,7 @@ int main(int argc, char* argv[])
     Initialize_TT(16);
 
     uint64_t hash_key = 0ULL;
-	Datagen();
+	//Datagen();
     if (argc > 1) {
         std::string command = argv[1]; // First argument (after program name)
 

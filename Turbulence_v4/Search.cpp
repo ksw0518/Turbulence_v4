@@ -18,6 +18,10 @@
 #include <string>
 #include <random>
 #include <utility>  // for std::pair
+#include <iostream>
+#include <vector>
+#include <chrono>
+#include <fstream>
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
@@ -226,6 +230,8 @@ double MAX_TIME_MULTIPLIER = 0.76;
 double HARD_LIMIT_MULTIPLIER = 3.04;
 double SOFT_LIMIT_MULTIPLIER = 0.76;
 
+
+uint64_t hardNodeBound;
 static int MVVLVA[6][6] = {
 	{105, 205, 305, 405, 505, 605},
 	{104, 204, 304, 404, 504, 604},
@@ -812,7 +818,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - clockStart).count();
-	if (elapsedMS > Searchtime_MS) {
+	if (elapsedMS > Searchtime_MS || searchNodeCount >= hardNodeBound) {
 		isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
@@ -990,7 +996,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - clockStart).count();
-	if (elapsedMS > Searchtime_MS) {
+	if (elapsedMS > Searchtime_MS || searchNodeCount >= hardNodeBound) {
 		isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
@@ -1787,9 +1793,9 @@ void scaleTime(int& softLimit, uint8_t bestMoveStability, int baseSoft, int maxT
 	double bestMoveScale[5] = { 2.43, 1.35, 1.09, 0.88, 0.68 };
 	softLimit = std::min(static_cast<int>(baseSoft * bestMoveScale[bestMoveStability]), maxTime);
 }
-std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes)
+std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes, uint64_t hardNodes)
 {
-
+	hardNodeBound = hardNodes;
 	if (timeMS == -1)
 	{
 		Searchtime_MS = std::numeric_limits<int>::max();
@@ -1805,7 +1811,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 	clockStart = std::chrono::steady_clock::now();
 
 	int score = 0;
-
+	int bestScore = 0;
 
 
 	memset(pvTable, 0, sizeof(pvTable));
@@ -1901,7 +1907,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		if (currDepth >= 6 && softbound != -1 && baseTime != -1) {
 			scaleTime(softbound, bestMoveStability, baseSoft, maxTime);
 		}
-		bestmove = pvTable[0][0];
+
 		if (print_info)
 		{
 			if (!isSearchStop)
@@ -1946,7 +1952,8 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 				break;
 			}
 		}
-
+		bestmove = pvTable[0][0];
+		bestScore = score;
 
 	}
 	if (print_info)
@@ -1956,7 +1963,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		std::cout << "\n";
 		
 	}
-	return std::pair<Move, int>(bestmove, score);
+	return std::pair<Move, int>(bestmove, bestScore);
 }
 inline void Initialize_TT(int size)
 {
@@ -2265,17 +2272,41 @@ bool isInsufficientMaterial(const Board& board) {
 int flipResult(int res) {
 	return 2 - res;
 }
-#include <iostream>
-#include <vector>
-#include <chrono>
 
-void Datagen()
+void appendToFile(const std::string& filename, const std::string& data) {
+	std::ofstream file(filename, std::ios::app | std::ios::out); // Open file in append mode, create if not exists
+	if (!file) {
+		std::cerr << "Error opening file: " << filename << std::endl;
+		return;
+	}
+	file << data << std::endl; // Write data to file
+	file.close();
+}
+std::string convertWDL(int wdl)
 {
-	const int DATAGEN_MAX_PLY = 256;
-	const uint64_t targetPositions = 500;
+	if (wdl == WHITEWIN)
+	{
+		return "1.0";
+	}
+	else if(wdl == DRAW)
+	{
+		return "0.5";
+	}
+	else
+	{
+		return "0.0";
+	}
+}
+void Datagen(int targetPos, std::string output_name)
+{
+	
+	//const int DATAGEN_MAX_PLY = 256;
+	const uint64_t targetPositions = (uint64_t)(targetPos);
 	uint64_t totalPositions = 0;
 	std::vector<GameData> gameData;
 	gameData.reserve(256);
+
+	auto start_time = std::chrono::high_resolution_clock::now();
 
 	while (totalPositions < targetPositions)
 	{
@@ -2287,11 +2318,10 @@ void Datagen()
 		int plyCount = 0;
 
 		// Start the timer
-		auto start_time = std::chrono::high_resolution_clock::now();
-
+		
 		while (!isGameOver)
 		{
-			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000);
+			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
 
@@ -2309,16 +2339,35 @@ void Datagen()
 				break;
 			}
 
-			if (plyCount >= 500 || is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board))
+			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board))
 			{
 				result = DRAW;
 				break;
 			}
 
 			if (isDecisive(eval)) {
-				result = (eval > 0) ? WHITEWIN : BLACKWIN;
-				if (board.side == Black)
-					result = flipResult(result);
+				if(eval > 48000)
+				{
+					if (board.side == White)
+					{
+						result = WHITEWIN;
+					}
+					if (board.side == Black)
+					{
+						result = BLACKWIN;
+					}
+				}
+				else
+				{
+					if (board.side == White)
+					{
+						result = BLACKWIN;
+					}
+					if (board.side == Black)
+					{
+						result = WHITEWIN;
+					}
+				}
 			}
 
 			MakeMove(board, bestMove);
@@ -2330,23 +2379,31 @@ void Datagen()
 				totalPositions++;
 			}
 		}
-
+		// Print game data
+		for(int i = 0; i < gameData.size(); i++)
+		{
+			gameData[i].result = result;
+			std::string output_data = boardToFEN(gameData[i].board) + " | " + std::to_string(gameData[i].eval) + " | " + convertWDL(gameData[i].result);
+			appendToFile(output_name + ".txt", output_data);
+			
+			//std::cout << output_data;
+		}
 		// End the timer
 		auto end_time = std::chrono::high_resolution_clock::now();
 		double elapsed_seconds = std::chrono::duration<double>(end_time - start_time).count();
 
 		// Print game data
-		for (const auto& data : gameData)
-		{
-			std::cout << boardToFEN(data.board) << "\n";
-			std::cout << data.eval << "\n";
-			std::cout << ((data.result == WHITEWIN) ? "White win" : (data.result == BLACKWIN) ? "Black win" : "Draw") << "\n";
-			std::cout << "------\n";
-		}
+		//for (const auto& data : gameData)
+		//{
+		//	std::cout << boardToFEN(data.board) << "\n";
+		//	std::cout << data.eval << "\n";
+		//	std::cout << ((data.result == WHITEWIN) ? "White win" : (data.result == BLACKWIN) ? "Black win" : "Draw") << "\n";
+		//	std::cout << "------\n";
+		//}
 
 		// Calculate and print positions per second (PPS)
 		double positions_per_second = totalPositions / elapsed_seconds;
-		std::cout << "Positions per second: " << positions_per_second << "\n";
+		std::cout << "Positions per second: " << positions_per_second << "totalPos: "<< totalPositions<<"\n";
 	}
 }
 
