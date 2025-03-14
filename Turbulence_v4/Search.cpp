@@ -1014,6 +1014,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	bool isSingularSearch = excludedMove != NULLMOVE;
+	bool tt_pv = isPvNode;
 	// Only check TT for depths greater than zero (ply != 0)
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
@@ -1037,7 +1038,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
-
+	tt_pv |= ttEntry.ttPv;
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
@@ -1321,6 +1322,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
+			if (tt_pv)
+			{
+				reduction--;
+			}
 		}
 
 		if (reduction < 0) reduction = 0;
@@ -1470,6 +1475,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	ttEntry.bound = ttFlag;
 	ttEntry.depth = depth;
 	ttEntry.zobristKey = board.zobristKey;
+	ttEntry.ttPv = tt_pv;
 	if (bestMove != Move(0, 0, 0, 0))
 	{
 		ttEntry.bestMove = bestMove;
@@ -1824,6 +1830,8 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		int alpha_val = std::max(MINUS_INFINITY, score - delta);
 		int beta_val = std::min(PLUS_INFINITY, score + delta);
 		int window_change = 1;
+
+		int aspirationWindowDepth = currDepth;
 		//std::cout << alpha_val << ","<<beta_val;
 		while (true)
 		{
@@ -1845,22 +1853,24 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 				}
 			}
 
-			score = Negamax(board, currDepth, alpha_val, beta_val, true, false);
+			score = Negamax(board, std::max(aspirationWindowDepth, 1), alpha_val, beta_val, true, false);
 
 			delta += delta;
 			if (score <= alpha_val)
 			{
 				alpha_val = std::max(MINUS_INFINITY, score - delta);
+				aspirationWindowDepth = currDepth;
 			}
 			else if (score >= beta_val)
 			{
 				beta_val = std::min(PLUS_INFINITY, score + delta);
+				aspirationWindowDepth = std::max(aspirationWindowDepth - 1, currDepth - 5);
 			}
 			else
 			{
 				break;
 			}
-
+			 
 
 
 			if (delta >= ASP_WINDOW_MAX)

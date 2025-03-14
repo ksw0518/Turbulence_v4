@@ -463,17 +463,20 @@ int32_t forward(struct Network* const network,
 
 int Evaluate(Board& board)
 {
-	//AccumulatorPair eval_accumulator;
-	//resetAccumulators(board, eval_accumulator);
-//	for (int i = 0; i < 16; i++)
-//{
-//	std::cout<< eval_accumulator.white.values[i]<<" ";
-//}
-	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
-	/*if (board.side == White)
-		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
-	else
-		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);*/
+
+//	AccumulatorPair eval_accumulator;
+//	resetAccumulators(board, eval_accumulator);
+////	for (int i = 0; i < 16; i++)
+////{
+////	std::cout<< eval_accumulator.white.values[i]<<" ";
+////}
+//	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+//	if (board.side == White)
+//		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+//	else
+//		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
+
+
 
 
     int mg[2];
