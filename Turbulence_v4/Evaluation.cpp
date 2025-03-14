@@ -463,6 +463,7 @@ int32_t forward(struct Network* const network,
 
 int Evaluate(Board& board)
 {
+
 //	AccumulatorPair eval_accumulator;
 //	resetAccumulators(board, eval_accumulator);
 ////	for (int i = 0; i < 16; i++)
@@ -474,6 +475,8 @@ int Evaluate(Board& board)
 //		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
 //	else
 //		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
+
+
 
 
     int mg[2];

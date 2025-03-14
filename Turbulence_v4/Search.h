@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include "Board.h"
+#include <utility>
 
 extern int pvLengths[99];
 extern Move pvTable[99][99];
@@ -67,7 +68,7 @@ struct Search_data
 };
 void initializeLMRTable();
 extern TranspositionEntry* TranspositionTable;
-void IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1, uint64_t softNodes = -1);
+std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1, uint64_t softNodes = -1);
 int SEE(Board& pos, Move move, int threshold);
 
 void bench();
@@ -92,3 +93,4 @@ inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversi
 	}
 	return false;
 } 
+void Datagen();

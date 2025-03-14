@@ -935,7 +935,7 @@ int main(int argc, char* argv[])
     Initialize_TT(16);
 
     uint64_t hash_key = 0ULL;
-
+	Datagen();
     if (argc > 1) {
         std::string command = argv[1]; // First argument (after program name)
 
