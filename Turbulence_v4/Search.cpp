@@ -2134,7 +2134,7 @@ randomPos:int randomMovesNum = 8 + randBool();
 		moveList.count = 0;
 		Generate_Legal_Moves(moveList, board, false);
 		//goto randomPos;
-		if (isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
+		if (moveList.count == 0 ||isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
 		{
 			goto randomPos;
 		}
@@ -2316,11 +2316,13 @@ void Datagen(int targetPos, std::string output_name)
 		bool isGameOver = false;
 		int result = -1;
 		int plyCount = 0;
-
+		//std::vector<Move> MoveHist;
+		//Board startBoard = board;
 		// Start the timer
 		
 		while (!isGameOver)
 		{
+			
 			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
@@ -2371,6 +2373,17 @@ void Datagen(int targetPos, std::string output_name)
 			}
 
 			MakeMove(board, bestMove);
+			//if (!isLegal(bestMove, board))
+			//{
+			//	std::cout << "FUCK YOU, ILLEGAL MOVE";
+			//	PrintBoards(startBoard);
+			//	PrintBoards(board);
+			//	for (int i = 0; i < MoveHist.size(); i++)
+			//	{
+			//		printMove(MoveHist[i]);
+			//		std::cout << "\n";
+			//	}
+			//}
 			plyCount++;
 
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
