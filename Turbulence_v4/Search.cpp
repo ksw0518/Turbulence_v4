@@ -2298,6 +2298,23 @@ std::string convertWDL(int wdl)
 		return "0.0";
 	}
 }
+void estimate_time_remaining(uint64_t remaining_positions, int pps) {
+	if (pps <= 0) {
+		std::cout << "Invalid PPS value!" << std::endl;
+		return;
+	}
+
+	double seconds_remaining = remaining_positions / pps;
+
+	int hours = static_cast<int>(seconds_remaining) / 3600;
+	int minutes = (static_cast<int>(seconds_remaining) % 3600) / 60;
+	int seconds = static_cast<int>(seconds_remaining) % 60;
+
+	std::cout << "Estimated remaining time: "
+		<< hours << "h " << minutes << "m " << seconds << "s"
+		<< std::endl;
+}
+
 void Datagen(int targetPos, std::string output_name)
 {
 	
@@ -2417,7 +2434,10 @@ void Datagen(int targetPos, std::string output_name)
 
 		// Calculate and print positions per second (PPS)
 		double positions_per_second = totalPositions / elapsed_seconds;
-		std::cout << "Positions per second: " << positions_per_second << "totalPos: "<< totalPositions<<"\n";
+		std::cout << "Positions per second: " << positions_per_second << " totalPos: "<< totalPositions<<"\n";
+		std::cout << (static_cast<double>(totalPositions) / targetPos) * 100 << "% \n";
+		estimate_time_remaining(targetPositions - totalPositions, positions_per_second);
+		std::cout << "\n";
 	}
 }
 
