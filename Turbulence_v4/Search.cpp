@@ -1178,7 +1178,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			continue;
 		}
 		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
-		if (depth <= MAX_PVS_SEE_DEPTH)
+		if (ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
 		{
 			if (!SEE(board, move, seeThreshold))
 			{
@@ -2334,8 +2334,9 @@ void Datagen(int targetPos, std::string output_name)
 		bool isGameOver = false;
 		int result = -1;
 		int plyCount = 0;
-		//std::vector<Move> MoveHist;
-		//Board startBoard = board;
+		std::vector<Move> MoveHist;
+		Board startBoard = board;
+		
 		// Start the timer
 		
 		while (!isGameOver)
@@ -2391,17 +2392,18 @@ void Datagen(int targetPos, std::string output_name)
 			}
 
 			MakeMove(board, bestMove);
-			//if (!isLegal(bestMove, board))
-			//{
-			//	std::cout << "FUCK YOU, ILLEGAL MOVE";
-			//	PrintBoards(startBoard);
-			//	PrintBoards(board);
-			//	for (int i = 0; i < MoveHist.size(); i++)
-			//	{
-			//		printMove(MoveHist[i]);
-			//		std::cout << "\n";
-			//	}
-			//}
+			MoveHist.push_back(bestMove);
+			if (!isLegal(bestMove, board))
+			{
+				std::cout << "FUCK YOU, ILLEGAL MOVE";
+				PrintBoards(startBoard);
+				PrintBoards(board);
+				for (int i = 0; i < MoveHist.size(); i++)
+				{
+					printMove(MoveHist[i]);
+					std::cout << "\n";
+				}
+			}
 			plyCount++;
 
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
