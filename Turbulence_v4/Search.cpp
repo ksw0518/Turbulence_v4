@@ -2312,7 +2312,92 @@ void estimate_time_remaining(uint64_t remaining_positions, int pps) {
 
 	std::cout << "Estimated remaining time: "
 		<< hours << "h " << minutes << "m " << seconds << "s"
-		<< std::endl;
+		<<"\n";
+}
+void print_progress_bar(double percentage) {
+	int barWidth = 50;  // Width of the progress bar
+	int progress = static_cast<int>(percentage / 2);  // Calculate the number of '#' to print
+
+	std::cout << "\n[";
+	for (int i = 0; i < barWidth; ++i) {
+		if (i < progress) {
+			std::cout << "#";  // Print filled part of the progress bar
+		}
+		else {
+			std::cout << "-";  // Print empty part of the progress bar
+		}
+	}
+	std::cout << "] " << static_cast<int>(percentage) << "%";
+}
+bool fileExists(const std::string& filename) {
+	std::ifstream file(filename);
+	return file.good();
+}
+std::vector<std::string> splitByPipe(const std::string& input) {
+	std::vector<std::string> tokens;
+	std::stringstream ss(input);
+	std::string token;
+
+	while (std::getline(ss, token, '|')) {
+		tokens.push_back(token);
+	}
+
+	return tokens;
+}
+void filterData(const std::string& input, const std::string& output) {
+	std::ifstream file(input);
+	if (!file.is_open()) {
+		std::cerr << "Error: Unable to open file " << input << std::endl;
+		return;
+	}
+
+	std::string line;
+	uint64_t currentLine = 0;
+	Board board;
+	int prevPieceCount = 0;
+	std::string prevLine = "";
+	while (std::getline(file, line)) {
+		//std::cout << line << std::endl;
+		std::vector<std::string> result = splitByPipe(line);
+
+		//for (const auto& part : result) {
+		//	std::cout << "[" << part << "]" << std::endl;
+		//}
+		std::string fen = result[0];
+		std::string eval = result[1];
+		std::string wdl = result[2];
+		parse_fen(fen, board);
+		int pieceCount = count_bits(board.occupancies[Both]);
+		if(pieceCount > prevPieceCount) {
+			//new game occurs
+			//std::cout << "NEWGAME------------------------------------------\n";
+;		}
+		else
+		{
+			if (pieceCount == prevPieceCount || currentLine == 0) {// previous fen was quiet positions
+				std::cout<<prevLine<<"\n";
+			}
+			else
+			{
+				std::cout << "filtered";
+			}
+			
+		}
+
+		//PrintBoards(board);
+		//std::cout << pieceCount;
+		
+		currentLine++;
+
+		if (currentLine > 100) {
+			break;
+		}
+		prevPieceCount = pieceCount;
+		prevLine = line;
+
+	}
+
+	std::cout << "Finished reading " << currentLine << " lines.\n";
 }
 
 void Datagen(int targetPos, std::string output_name)
@@ -2392,18 +2477,18 @@ void Datagen(int targetPos, std::string output_name)
 			}
 
 			MakeMove(board, bestMove);
-			MoveHist.push_back(bestMove);
-			if (!isLegal(bestMove, board))
-			{
-				std::cout << "FUCK YOU, ILLEGAL MOVE";
-				PrintBoards(startBoard);
-				PrintBoards(board);
-				for (int i = 0; i < MoveHist.size(); i++)
-				{
-					printMove(MoveHist[i]);
-					std::cout << "\n";
-				}
-			}
+			//MoveHist.push_back(bestMove);
+			//if (!isLegal(bestMove, board))
+			//{
+			//	std::cout << "FUCK YOU, ILLEGAL MOVE";
+			//	PrintBoards(startBoard);
+			//	PrintBoards(board);
+			//	for (int i = 0; i < MoveHist.size(); i++)
+			//	{
+			//		printMove(MoveHist[i]);
+			//		std::cout << "\n";
+			//	}
+			//}
 			plyCount++;
 
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
@@ -2436,10 +2521,18 @@ void Datagen(int targetPos, std::string output_name)
 
 		// Calculate and print positions per second (PPS)
 		double positions_per_second = totalPositions / elapsed_seconds;
-		std::cout << "Positions per second: " << positions_per_second << " totalPos: "<< totalPositions<<"\n";
-		std::cout << (static_cast<double>(totalPositions) / targetPos) * 100 << "% \n";
+		double percentage = (static_cast<double>(totalPositions) / targetPos) * 100;
+
+		//std::cout << "\033[2K";  // Clears the line
+		//std::cout << "\033[2K\r";
+		std::cout << "Positions per second: " << std::fixed << std::setprecision(2) << positions_per_second
+			<< " | Total Positions: " << totalPositions
+			<< " | Progress: " << std::fixed << std::setprecision(5) << percentage << "% ";
 		estimate_time_remaining(targetPositions - totalPositions, positions_per_second);
-		std::cout << "\n";
+		print_progress_bar(percentage);  // Print the progress bar
+		std::cout << "\n\n";
+
+		std::cout << std::flush;  // Ensures the output is immediately written to the console
 	}
 }
 

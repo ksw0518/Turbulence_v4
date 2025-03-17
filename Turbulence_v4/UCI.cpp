@@ -185,6 +185,7 @@ std::vector<std::string> position_commands = { "position", "startpos", "fen", "m
 std::vector<std::string> go_commands = { "go", "movetime", "wtime", "btime", "winc", "binc", "movestogo" };
 std::vector<std::string> option_commands = { "setoption", "name",  "value" };
 std::vector<std::string> datagen_commands = { "datagen", "pos", "file" };
+std::vector<std::string> filter_commands = { "filter", "input", "output"};
 
 Board main_board;
 
@@ -202,6 +203,7 @@ std::string trim(const std::string& str) {
 }
 
 std::string TryGetLabelledValue(const std::string& text, const std::string& label, const std::vector<std::string>& allLabels, const std::string& defaultValue = "") {
+	
     // Trim leading and trailing whitespace
     std::string trimmedText = trim(text);
 
@@ -395,6 +397,15 @@ void ProcessUCI(std::string input)
 		std::string file = TryGetLabelledValue(input, "file", datagen_commands);
 		
 		Datagen(pos, file);
+	}
+	else if (main_command == "filter")
+	{
+		//std::cout << "fuck";
+		//std::cout << input;
+		std::string input_file = TryGetLabelledValue(input, "input", filter_commands);
+		std::string output_file = TryGetLabelledValue(input, "output", filter_commands);
+		//std::cout << "data processed";
+		filterData(input_file, output_file);
 	}
 	else if (main_command == "ucinewgame")
 	{
