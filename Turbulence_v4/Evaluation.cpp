@@ -1,10 +1,11 @@
 
 
 #include "Evaluation.h"
-#include "MoveGeneration.h"
+//#include "MoveGeneration.h"
 #include "Board.h"
 #include "BitManipulation.h"
 #include "const.h"
+#include "Accumulator.h"
 
 #include <iostream>
 #include <iomanip>
@@ -33,8 +34,17 @@ uint64_t fileMasks[64];
 uint64_t rankMasks[64];
 uint64_t whitePassedMasks[64];
 uint64_t blackPassedMasks[64];
+Network Eval_Network;
 //static int history[12][64];
+inline int getFile(int square)
+{
+	return (square) % 8;
+}
 
+inline int getRank(int square)
+{
+	return (square) != 0 ? 7 - (square) / 8 : 7;
+}
 //int pawn_mg_passed_bonus[8] = {}
 inline int getSide(int piece)
 {
@@ -216,25 +226,7 @@ int side_multiply[2]
 
 
 
-const int INPUT_SIZE = 768;
-const int HL_SIZE = 64;
 
-// These parameters are part of the training configuration
-// These are the commonly used values as of 2024
-const int SCALE = 400;
-const int QA = 255;
-const int QB = 64;
-
-struct Network {
-	int16_t accumulator_weights[INPUT_SIZE][HL_SIZE];
-	int16_t accumulator_biases[HL_SIZE];
-	int16_t output_weights[2 * HL_SIZE];
-	int16_t output_bias;
-};
-Network Eval_Network;
-struct Accumulator {
-	int16_t values[HL_SIZE];
-};
 
 void LoadNetwork(const std::string& filepath)
 {
@@ -341,21 +333,12 @@ void init_tables()
 uint64_t getFileBitboard(uint64_t pieces, int file) {
     return pieces & files_bitboard[file];
 }
-inline int flipSquare(int square)//flip square so a1 = 0
-{
+//inline int flipSquare(int square)//flip square so a1 = 0
+//{
+//
+//	return square ^ 56;
+//}
 
-	return square ^ 56;
-}
-int calculateIndex(int perspective, int square, int pieceType, int side)
-{
-	square ^= 56;
-	if (perspective == Black) {
-		square = flipSquare(square);
-	}
-	return 6*64 * (side != perspective) + 64 * pieceType + square;
-
-	//return flippedSide * 64 * 6 + get_piece(pieceType, White) * 64 + flippedSquare;
-}
 int32_t clamp(int32_t value, int32_t min, int32_t max) {
 	if (value < min) {
 		return min;
@@ -387,10 +370,7 @@ void accumulatorSub(struct Network* const network, struct Accumulator* accumulat
 	for (int i = 0; i < HL_SIZE; i++)
 		accumulator->values[i] -= network->accumulator_weights[index][i];
 }
-struct AccumulatorPair {
-	Accumulator white;
-	Accumulator black;
-};
+
 void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 	uint64_t whitePieces = board.occupancies[White];
 	uint64_t blackPieces = board.occupancies[Black];
@@ -464,17 +444,39 @@ int32_t forward(struct Network* const network,
 int Evaluate(Board& board)
 {
 
-	AccumulatorPair eval_accumulator;
-	resetAccumulators(board, eval_accumulator);
-//	for (int i = 0; i < 16; i++)
-//{
-//	std::cout<< eval_accumulator.white.values[i]<<" ";
-//}
-	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	//	for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout<< eval_accumulator.white.values[i]<<" ";
+	//}
+		//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
 	if (board.side == White)
-		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+		return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
 	else
-		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
+		return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+
+
+//
+//	if (board.side == White)
+//		std::cout<< forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+//	else
+//		std::cout<< forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+//
+//	//if (board.side == White)
+//	//	return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+//	//else
+//	//	return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+//
+//	AccumulatorPair eval_accumulator;
+//	resetAccumulators(board, eval_accumulator);
+////	for (int i = 0; i < 16; i++)
+////{
+////	std::cout<< eval_accumulator.white.values[i]<<" ";
+////}
+//	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+//	if (board.side == White)
+//		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+//	else
+//		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
 
 
 

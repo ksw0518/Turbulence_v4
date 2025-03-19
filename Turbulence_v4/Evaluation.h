@@ -7,3 +7,4 @@ int Evaluate(Board& board);
 
 void print_tables();
 void LoadNetwork(const std::string& filepath);
+void resetAccumulators(const Board& board, AccumulatorPair& accumulator);

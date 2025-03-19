@@ -1,5 +1,6 @@
 #include "MoveGeneration.h"
 #include "Board.h"
+#include "Evaluation.h"
 
 #include "BitManipulation.h"
 #include "const.h"
@@ -1666,13 +1667,17 @@ void MakeMove(Board& board, Move move)
 
 		//remove previous place
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
-
+		
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.mailbox[move.To] = move.Piece;
 
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.To];
 		//update enpassent square
 
@@ -1717,6 +1722,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		if (move.Piece == P || move.Piece == p)//pawn
 		{
 			board.PawnKey ^= piece_keys[move.Piece][move.From];
@@ -1743,6 +1750,8 @@ void MakeMove(Board& board, Move move)
 		
 		board.mailbox[move.To] = move.Piece;
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side));
 		//update enpassent square
 		//if (move.Type == double_pawn_push)
 		//{
@@ -1847,10 +1856,18 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
+
 		board.mailbox[move.From] = NO_PIECE;
 
 		board.zobristKey ^= piece_keys[captured_piece][move.To];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(captured_piece, White), 1 - board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(captured_piece, White), 1 - board.side));
+
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side));
 
 		board.mailbox[move.To] = move.Piece;
 
@@ -1972,6 +1989,8 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 
 		board.MinorKey ^= piece_keys[move.Piece][move.From];
 		if (getSide(move.Piece) == White)
@@ -1986,6 +2005,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.To] = move.Piece;
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side));
 
 		board.MinorKey ^= piece_keys[move.Piece][move.To];
 		if (getSide(move.Piece) == White)
@@ -1998,6 +2019,8 @@ void MakeMove(Board& board, Move move)
 		}
 		int rook = board.mailbox[rookSquare];
 		board.zobristKey ^= piece_keys[rook][rookSquare];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, rookSquare, R, board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, rookSquare, R, board.side));
 		if (getSide(rook) == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[rook][rookSquare];
@@ -2012,7 +2035,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[rookSquare - 2] = get_piece(r, side);
 		board.zobristKey ^= piece_keys[get_piece(r, side)][rookSquare - 2];
-
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, rookSquare - 2, R, board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, rookSquare - 2, R, board.side));
 		/*Zobrist ^= PIECES[move.Piece][move.From];
 		Zobrist ^= PIECES[move.Piece][move.To];
 		Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare];
@@ -2069,6 +2093,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(& Eval_Network, & board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.MinorKey ^= piece_keys[move.Piece][move.From];
 		if (getSide(move.Piece) == White)
 		{
@@ -2083,6 +2109,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.To] = move.Piece;
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side));
 		board.MinorKey ^= piece_keys[move.Piece][move.To];
 		if (getSide(move.Piece) == White)
 		{
@@ -2094,6 +2122,8 @@ void MakeMove(Board& board, Move move)
 		}
 		int rook = board.mailbox[rookSquare];
 		board.zobristKey ^= piece_keys[rook][rookSquare];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, rookSquare, R, board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, rookSquare, R, board.side));
 		if (getSide(rook) == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[rook][rookSquare];
@@ -2109,6 +2139,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[rookSquare + 3] = get_piece(r, side);
 		board.zobristKey ^= piece_keys[get_piece(r, side)][rookSquare + 3];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, rookSquare + 3, R, board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, rookSquare + 3, R, board.side));
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[move.Piece][move.To];
 		//Zobrist ^= PIECES[get_piece(Piece.r, side)][rookSquare];
@@ -2138,6 +2170,8 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		if (board.side == White)
@@ -2151,6 +2185,8 @@ void MakeMove(Board& board, Move move)
 		
 		board.mailbox[move.To] = get_piece(q, side);
 		board.zobristKey ^= piece_keys[get_piece(q, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(q, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(q, White), board.side));
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(q, side)][move.To];
 		board.side = 1 - board.side;
@@ -2177,6 +2213,8 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		if (board.side == White)
@@ -2189,6 +2227,8 @@ void MakeMove(Board& board, Move move)
 		}
 		board.mailbox[move.To] = get_piece(r, side);
 		board.zobristKey ^= piece_keys[get_piece(r, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(r, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(r, White), board.side));
 		//Zobrist ^= PIECES[move.Piece][move.From];
 		//Zobrist ^= PIECES[get_piece(Piece.r, side)][move.To];
 		board.side = 1 - board.side;
@@ -2215,9 +2255,13 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 		board.mailbox[move.To] = get_piece(b, side);
 		board.zobristKey ^= piece_keys[get_piece(b, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(b, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(b, White), board.side));
 		board.MinorKey ^= piece_keys[get_piece(b, side)][move.To];
 		if (board.side == White)
 		{
@@ -2255,10 +2299,14 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 		board.mailbox[move.To] = get_piece(n, side);
 		board.zobristKey ^= piece_keys[get_piece(n, side)][move.To];
 		board.MinorKey ^= piece_keys[get_piece(n, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(n, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(n, White), board.side));
 		if (board.side == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[get_piece(n, side)][move.To];
@@ -2353,9 +2401,13 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.zobristKey ^= piece_keys[board.mailbox[move.To]][move.To];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
 		if (getSide(captured_piece) == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
@@ -2370,6 +2422,8 @@ void MakeMove(Board& board, Move move)
 		}
 		board.mailbox[move.To] = get_piece(q, side);
 		board.zobristKey ^= piece_keys[get_piece(q, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(q, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(q, White), board.side));
 		if (board.side == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[get_piece(q, side)][move.To];
@@ -2465,9 +2519,14 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.zobristKey ^= piece_keys[board.mailbox[move.To]][move.To];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
 		if (getSide(captured_piece) == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
@@ -2482,6 +2541,8 @@ void MakeMove(Board& board, Move move)
 		}
 		board.mailbox[move.To] = get_piece(r, side);
 		board.zobristKey ^= piece_keys[get_piece(r, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(r, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(r, White), board.side));
 		if (board.side == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[get_piece(r, side)][move.To];
@@ -2577,9 +2638,13 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.zobristKey ^= piece_keys[board.mailbox[move.To]][move.To];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
 		if (isMinor(captured_piece))
 		{
 			board.MinorKey ^= piece_keys[captured_piece][move.To];
@@ -2594,6 +2659,8 @@ void MakeMove(Board& board, Move move)
 		}
 		board.mailbox[move.To] = get_piece(b, side);
 		board.zobristKey ^= piece_keys[get_piece(b, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(b, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(b, White), board.side));
 		board.MinorKey ^= piece_keys[get_piece(b, side)][move.To];
 		if (board.side == White)
 		{
@@ -2690,9 +2757,14 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
+
 		board.PawnKey ^= piece_keys[move.Piece][move.From];
 
 		board.zobristKey ^= piece_keys[board.mailbox[move.To]][move.To];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(board.mailbox[move.To], White), 1 - board.side));
 		if (getSide(captured_piece) == White)
 		{
 			board.WhiteNonPawnKey ^= piece_keys[captured_piece][move.To];
@@ -2709,6 +2781,8 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.To] = get_piece(n, side);
 		board.zobristKey ^= piece_keys[get_piece(n, side)][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(n, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(n, White), board.side));
 		board.MinorKey ^= piece_keys[get_piece(n, side)][move.To];
 		if (board.side == White)
 		{
@@ -2766,14 +2840,20 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 
 		board.zobristKey ^= piece_keys[board.mailbox[move.From]][move.From];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[board.mailbox[move.From]][move.From];
 		board.mailbox[move.From] = NO_PIECE;
 
 		board.mailbox[move.To] = move.Piece;
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side));
 		board.PawnKey ^= piece_keys[move.Piece][move.To];
 
 		board.zobristKey ^= piece_keys[board.mailbox[capture_square]][capture_square];
+		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, capture_square, get_piece(board.mailbox[capture_square], White), 1 - board.side));
+		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, capture_square, get_piece(board.mailbox[capture_square], White), 1 - board.side));
 		board.PawnKey ^= piece_keys[board.mailbox[capture_square]][capture_square];
 		board.mailbox[capture_square] = NO_PIECE;
 

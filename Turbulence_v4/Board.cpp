@@ -1,12 +1,15 @@
 #include "Board.h"
-
+#include "Evaluation.h"
 #include "Search.h"
+#include "Accumulator.h"
 #include "MoveGeneration.h"
 #include "BitManipulation.h"
 #include "const.h"
 #include <cstdint>
 #include <cctype>
 #include <iostream>
+
+
 Board::Board()
     : side(0), enpassent((no_sq)), castle(0), halfmove(0) , zobristKey(0), PawnKey(0), MinorKey(0){
     // Initialize arrays
@@ -22,6 +25,7 @@ Board::Board()
 
     history.clear();
     history.reserve(256);
+	//accumulator = new AccumulatorPair();
 }
 
 // Move constructor
@@ -307,7 +311,8 @@ void parse_fen(std::string fen, Board& board)
 	board.MinorKey = generate_Minor_Hash(board);
 	board.WhiteNonPawnKey = generate_WhiteNP_Hash(board);
 	board.BlackNonPawnKey = generate_BlackNP_Hash(board);
-
+	//board.accumulator = new AccumulatorPair();
+	resetAccumulators(board, board.accumulator);
 }
 void PrintLegalMoves(std::vector<Move> moveList)
 {

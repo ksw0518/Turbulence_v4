@@ -870,6 +870,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastMinorKey = board.MinorKey;
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
+	AccumulatorPair last_accumulator = board.accumulator;
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
@@ -901,6 +902,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			ply--;
 			UnmakeMove(board, move, captured_piece);
 
+			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
 			board.enpassent = lastEp;
@@ -929,6 +931,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 		if (isSearchStop) {
 			UnmakeMove(board, move, captured_piece);
+			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
 			board.enpassent = lastEp;
@@ -944,6 +947,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 		ply--;
 		UnmakeMove(board, move, captured_piece);
+		board.accumulator = last_accumulator;
 		board.history.pop_back();
 		board.lastIrreversiblePly = last_irreversible;
 		board.enpassent = lastEp;
@@ -1160,6 +1164,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_minorKey = board.MinorKey;
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
+	AccumulatorPair last_accumulator = board.accumulator;
 	/*if (ply > 0)
 	{
 		searchStack[ply].doubleExtensions = searchStack[ply - 1].doubleExtensions;
@@ -1233,7 +1238,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 
-
+			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
 			board.zobristKey = last_zobrist;
@@ -1269,6 +1274,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ply--;
 			UnmakeMove(board, move, captured_piece);
 
+			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
 
@@ -1376,6 +1382,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (isSearchStop) {
 			ply--;
+			board.accumulator = last_accumulator;
 			UnmakeMove(board, move, captured_piece);
 
 			board.history.pop_back();
@@ -1393,6 +1400,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 
 		ply--;
+		board.accumulator = last_accumulator;
 		UnmakeMove(board, move, captured_piece);
 
 		board.history.pop_back();
