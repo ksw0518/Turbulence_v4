@@ -1,6 +1,7 @@
 #pragma once
 //#include "const.h"
 #include <cstdint>
+#include <cstddef>
 
 const int INPUT_SIZE = 768;
 const int HL_SIZE = 64;
