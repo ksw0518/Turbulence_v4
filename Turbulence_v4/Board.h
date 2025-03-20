@@ -1,8 +1,14 @@
 #pragma once
 
+
+
+#include "Accumulator.h"
+
 #include <string> 
 #include <vector>
 #include <cstdint>
+
+
 class Board
 {
 public:
@@ -23,6 +29,7 @@ public:
     std::vector<uint64_t> history;
 
     int lastIrreversiblePly = 0;
+	AccumulatorPair accumulator;
     //u64 Zobrist;
 
     // Constructor to initialize members

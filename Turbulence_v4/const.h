@@ -1,7 +1,9 @@
 #pragma once
+#include "Board.h"
 #include <cstdint> 
 #include <iostream>
 #include <cstring>
+
 enum Square {
     A8 = 0, B8, C8, D8, E8, F8, G8, H8,
     A7 = 8, B7, C7, D7, E7, F7, G7, H7,
@@ -161,6 +163,7 @@ static inline const bool IS_LITTLE_ENDIAN = *reinterpret_cast<const char*>(&Le) 
 const int WHITEWIN = 2;
 const int DRAW = 1;
 const int BLACKWIN = 0;
+
 inline int get_piece(int piece, int col)
 {
     //std::cout << Get_Whitepiece[piece] << "\n";

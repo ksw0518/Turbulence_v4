@@ -151,6 +151,7 @@
     <ClCompile Include="UCI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Accumulator.h" />
     <ClInclude Include="BitManipulation.h" />
     <ClInclude Include="Board.h" />
     <ClInclude Include="const.h" />
