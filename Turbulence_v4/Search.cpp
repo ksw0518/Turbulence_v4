@@ -727,6 +727,20 @@ int SEE(Board& pos, Move move, int threshold)
 	return pos.side != colour;
 }
 
+template<typename I, typename C>
+constexpr void insertion_sort(I first, I last, C const &&comp) {
+	if (first == last) return; 
+	for (auto i = std::next(first); i != last; ++i) {
+		auto k = *i;
+		auto j = i;
+		while (j > first && comp(k, *(j - 1))) {
+			*j = *(j - 1);
+			--j;
+		}
+		*j = k;
+	}
+}
+
 static inline void sort_moves_captures(MoveList& moveList, Board& board)
 {
 	// Temporary array for captures
@@ -743,7 +757,7 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board)
 	}
 
 	// Sort only the capture moves
-	std::stable_sort(captures, captures + captureCount, [&board](const Move& move1, const Move& move2) {
+	insertion_sort(captures, captures + captureCount, [&board](const Move& move1, const Move& move2) {
 		return get_move_score_capture(move1, board) > get_move_score_capture(move2, board);
 		});
 
@@ -766,9 +780,6 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board)
 	moveList.count = index;  // Update move count
 }
 
-
-
-
 static inline void sort_moves(MoveList& moveList, Board& board, TranspositionEntry& tt_entry, uint64_t opp_threat)
 {
 	// Precompute scores for all moves
@@ -779,7 +790,7 @@ static inline void sort_moves(MoveList& moveList, Board& board, TranspositionEnt
 	}
 
 	// Sort the scored moves based on the scores
-	std::stable_sort(scored_moves, scored_moves + moveList.count, [](const auto& a, const auto& b)
+	insertion_sort(scored_moves, scored_moves + moveList.count, [](const auto& a, const auto& b)
 		{
 			return a.first > b.first; // Sort by score (descending)
 		});
