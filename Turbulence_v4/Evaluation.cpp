@@ -7,6 +7,9 @@
 #include "const.h"
 #include "Accumulator.h"
 
+#include <bit>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -415,24 +418,108 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 	//	std::cout<<accumulator.white.values[i]<<" ";
 	//}
 }
+
+
+std::int32_t autovectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm) {
+	std::int32_t accumulator{};
+	for (int i = 0; i < HL_SIZE; i++) {
+		accumulator += (int32_t)activation(stm->values[i]) * network->output_weights[i];
+		accumulator += (int32_t)activation(nstm->values[i]) * network->output_weights[i + HL_SIZE];
+	}
+	return accumulator;
+}
+#if defined(__x86_64__)
+#include <immintrin.h>
+std::int32_t vectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm) {
+#if defined(__AVX512F__)
+	using native_vector = __m512i;
+	#define set1_epi16 _mm512_set1_epi16
+	#define min_epi16 _mm512_min_epi16
+	#define max_epi16 _mm512_max_epi16
+	#define madd_epi16 _mm512_madd_epi16
+	#define mullo_epi16 _mm512_mullo_epi16
+	#define add_epi32 _mm512_add_epi32
+	#define reduce_epi32 _mm512_reduce_add_epi32 
+#elif defined(__AVX2__)
+	using native_vector = __m256i;
+	#define set1_epi16 _mm256_set1_epi16
+	#define min_epi16 _mm256_min_epi16
+	#define max_epi16 _mm256_max_epi16
+	#define madd_epi16 _mm256_madd_epi16
+	#define mullo_epi16 _mm256_mullo_epi16
+	#define add_epi32 _mm256_add_epi32
+	// based on output from zig 0.14.0 for @reduce(.Add, @as(@Vector(8, i32), x)
+	#define reduce_epi32 [](native_vector vec) {             \
+		__m128i xmm1 = _mm256_extracti128_si256(vec, 1); \
+		__m128i xmm0 = _mm256_castsi256_si128(vec);      \
+		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
+		xmm1 = _mm_shuffle_epi32(xmm0, 238);             \
+		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
+		xmm1 = _mm_shuffle_epi32(xmm0, 85);              \
+		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
+		return _mm_cvtsi128_si32(xmm0);                  \
+	}
+#elif defined(__SSE__)
+	using native_vector = __m128i;
+	#define set1_epi16 _mm_set1_epi16
+	#define min_epi16 _mm_min_epi16
+	#define max_epi16 _mm_max_epi16
+	#define madd_epi16 _mm_madd_epi16
+	#define mullo_epi16 _mm_mullo_epi16
+	#define add_epi32 _mm_add_epi32
+	// Based on Zig's output for @reduce(.Add, @as(@Vector(4, i32), x):
+	#define reduce_epi32 [](native_vector vec) {        \
+		__m128i xmm1 = _mm_shuffle_epi32(vec, 238); \
+		vec = _mm_add_epi32(vec, xmm1);             \
+		xmm1 = _mm_shuffle_epi32(vec, 85);          \
+		vec = _mm_add_epi32(vec, xmm1);             \
+		return _mm_cvtsi128_si32(vec);              \
+	}
+#endif
+	const auto VECTOR_SIZE = sizeof(native_vector) / sizeof(std::int16_t);
+	static_assert(HL_SIZE % VECTOR_SIZE == 0, "HL_SIZE must be divisible by the native register size for this vectorization implementation to work");
+	const native_vector VEC_QA = set1_epi16(QA);
+	const native_vector VEC_ZERO = set1_epi16(0);
+	native_vector accumulator{};
+	for (int i = 0; i < HL_SIZE; i += VECTOR_SIZE) {
+		// load accumulator values
+		native_vector stm_accum_values;
+		std::memcpy(&stm_accum_values, &stm->values[i], sizeof(native_vector));
+		native_vector nstm_accum_values;
+		std::memcpy(&nstm_accum_values, &nstm->values[i], sizeof(native_vector));
+		
+		// clamp the values to [0, QA] 
+		native_vector stm_clamped = min_epi16(VEC_QA, max_epi16(stm_accum_values, VEC_ZERO));
+		native_vector nstm_clamped = min_epi16(VEC_QA, max_epi16(nstm_accum_values, VEC_ZERO));
+
+		// load network weights
+		native_vector stm_weights;
+		std::memcpy(&stm_weights, &network->output_weights[i], sizeof(native_vector));
+		native_vector nstm_weights;
+		std::memcpy(&nstm_weights, &network->output_weights[i + HL_SIZE], sizeof(native_vector));
+		
+		// apply lizard screlu
+		native_vector stm_screlud = madd_epi16(stm_clamped, mullo_epi16(stm_clamped, stm_weights));
+		native_vector nstm_screlud = madd_epi16(nstm_clamped, mullo_epi16(nstm_clamped, nstm_weights));
+		
+		accumulator = add_epi32(accumulator, stm_screlud);
+		accumulator = add_epi32(accumulator, nstm_screlud);
+	}
+
+	return reduce_epi32(accumulator);
+}
+#endif
+
 // When forwarding the accumulator values, the network does not consider the color of the perspectives.
 // Rather, we are more interested in whether the accumulator is from the perspective of the side-to-move.
 int32_t forward(struct Network* const network,
 	struct Accumulator* const stm_accumulator,
 	struct Accumulator* const nstm_accumulator)
 {
-	int32_t eval = 0;
-
-	// Dot product to the weights
-	for (int i = 0; i < HL_SIZE; i++)
-	{
-		// BEWARE of integer overflows here.
-		eval += (int32_t)activation(stm_accumulator->values[i]) * network->output_weights[i];
-		eval += (int32_t)activation(nstm_accumulator->values[i]) * network->output_weights[i + HL_SIZE];
-	}
+	int32_t eval = vectorised_screlu(network, stm_accumulator, nstm_accumulator);
 
 	// Uncomment the following dequantization step when using SCReLU
-	 eval /= QA;
+	eval /= QA;
 	eval += network->output_bias;
 
 	eval *= SCALE;
