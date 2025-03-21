@@ -1286,7 +1286,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.MinorKey = last_minorKey;
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
-
+			
 
 			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
@@ -1299,7 +1299,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					extensions++;
 					//searchStack[ply].doubleExtensions++;
 				}
-
+				if (s_score + 100 < s_beta)
+				{
+					extensions++;
+				}
 			}
 			else if (ttEntry.score >= beta)
 			{
