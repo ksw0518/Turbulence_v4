@@ -1,7 +1,6 @@
 #include "Board.h"
 #include "Evaluation.h"
 #include "Search.h"
-#include "Accumulator.h"
 #include "MoveGeneration.h"
 #include "BitManipulation.h"
 #include "const.h"

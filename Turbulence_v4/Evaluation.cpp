@@ -7,7 +7,7 @@
 #include "const.h"
 #include "Accumulator.h"
 
-#include <bit>
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -342,18 +342,9 @@ uint64_t getFileBitboard(uint64_t pieces, int file) {
 //	return square ^ 56;
 //}
 
-int32_t clamp(int32_t value, int32_t min, int32_t max) {
-	if (value < min) {
-		return min;
-	}
-	else if (value > max) {
-		return max;
-	}
-	return value;
-}
 int32_t SCReLU(int32_t value, int32_t min, int32_t max)
 {
-	const int32_t clamped = clamp(value, min, max);
+	const int32_t clamped = std::clamp(value, min, max);
 	return clamped * clamped;
 }
 

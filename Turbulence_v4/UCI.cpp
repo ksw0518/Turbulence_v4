@@ -9,150 +9,148 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <cstdlib>
-#include <random>
 
 std::vector<std::string> option_name = {
-	"RFP_MULTIPLIER",
-	"RFP_IMPROVING_MULTIPLIER",
-	"RFP_BASE",
-	"RFP_IMPROVING_BASE",
-	"LMP_BASE",
-	"LMP_MULTIPLIER",
-	"PVS_QUIET_BASE",
-	"PVS_QUIET_MULTIPLIER",
-	"PVS_NOISY_BASE",
-	"PVS_NOISY_MULTIPLIER",
-	"HISTORY_BASE",
-	"HISTORY_MULTIPLIER",
-	"ASP_WINDOW_INITIAL",
-	"ASP_WINDOW_MAX",
-	"PAWN_CORRHIST_MULTIPLIER",
-	"MINOR_CORRHIST_MULTIPLIER",
-	"NONPAWN_CORRHIST_MULTIPLIER",
-	"QS_SEE_PRUNING_MARGIN",
-	"HISTORY_PRUNING_MULTIPLIER",
-	"HISTORY_PRUNING_BASE",
-	"HISTORY_LMR_MULTIPLIER",
-	"HISTORY_LMR_BASE",
-	"NMP_EVAL_DIVISER",
-	"NMP_DEPTH_DIVISER",
-	"MAX_NMP_EVAL_R"
+    "RFP_MULTIPLIER",
+    "RFP_IMPROVING_MULTIPLIER",
+    "RFP_BASE",
+    "RFP_IMPROVING_BASE",
+    "LMP_BASE",
+    "LMP_MULTIPLIER",
+    "PVS_QUIET_BASE",
+    "PVS_QUIET_MULTIPLIER",
+    "PVS_NOISY_BASE",
+    "PVS_NOISY_MULTIPLIER",
+    "HISTORY_BASE",
+    "HISTORY_MULTIPLIER",
+    "ASP_WINDOW_INITIAL",
+    "ASP_WINDOW_MAX",
+    "PAWN_CORRHIST_MULTIPLIER",
+    "MINOR_CORRHIST_MULTIPLIER",
+    "NONPAWN_CORRHIST_MULTIPLIER",
+    "QS_SEE_PRUNING_MARGIN",
+    "HISTORY_PRUNING_MULTIPLIER",
+    "HISTORY_PRUNING_BASE",
+    "HISTORY_LMR_MULTIPLIER",
+    "HISTORY_LMR_BASE",
+    "NMP_EVAL_DIVISER",
+    "NMP_DEPTH_DIVISER",
+    "MAX_NMP_EVAL_R"
 };
 
 std::vector<int> option_base = {
-	85,
-	60,
-	-49,
-	-49,
-	0,
-	1,
-	0,
-	63,
-	-1,
-	18,
-	4,
-	2,
-	40,
-	300,
-	5,
-	5,
-	5,
-	0,
-	50,
-	0,
-	25,
-	0,
-	400,
-	3,
-	3
+    85,
+    60,
+    -49,
+    -49,
+    0,
+    1,
+    0,
+    63,
+    -1,
+    18,
+    4,
+    2,
+    40,
+    300,
+    5,
+    5,
+    5,
+    0,
+    50,
+    0,
+    25,
+    0,
+    400,
+    3,
+    3
 };
 
 
 std::vector<int> option_min = { 
-	50,
-	30, 
-	-100, 
-	-100, 
-	-1, 
-	1,
-	-70,
-	20,
-	-70, 
-	5,
-	0, 
-	1,
-	20, 
-	100,
-	1,
-	1,
-	1,
-	-150,
-	10,
+    50,
+    30, 
+    -100, 
+    -100, 
+    -1, 
+    1,
+    -70,
+    20,
+    -70, 
+    5,
+    0, 
+    1,
+    20, 
+    100,
+    1,
+    1,
+    1,
+    -150,
+    10,
     -200,
-	10, 
-	-100,
-	200,
-	2,
-	2
+    10, 
+    -100,
+    200,
+    2,
+    2
 };
 std::vector<int> option_max = {
-	160,
-	150,
-	100,
-	100,
-	6,
-	3,
-	100,
-	150,
-	50,
-	80,
-	20,
-	10,
-	100,
-	1000,
-	10,
-	10,
-	10,
-	100,
-	200,
-	100,
-	80,
-	100,
-	800,
-	7,
-	4
+    160,
+    150,
+    100,
+    100,
+    6,
+    3,
+    100,
+    150,
+    50,
+    80,
+    20,
+    10,
+    100,
+    1000,
+    10,
+    10,
+    10,
+    100,
+    200,
+    100,
+    80,
+    100,
+    800,
+    7,
+    4
 };
 
 std::vector<int*> option_var = {
-	&RFP_MULTIPLIER,
-	&RFP_IMPROVING_MULTIPLIER,
-	&RFP_BASE,
-	&RFP_IMPROVING_BASE,
-	&LMP_BASE,
-	&LMP_MULTIPLIER,
-	&PVS_QUIET_BASE,
-	&PVS_QUIET_MULTIPLIER,
-	&PVS_NOISY_BASE,
-	&PVS_NOISY_MULTIPLIER,
-	&HISTORY_BASE,
-	&HISTORY_MULTIPLIER,
-	&ASP_WINDOW_INITIAL,
-	&ASP_WINDOW_MAX,
-	&PAWN_CORRHIST_MULTIPLIER,
-	&MINOR_CORRHIST_MULTIPLIER,
-	&NONPAWN_CORRHIST_MULTIPLIER,
-	&QS_SEE_PRUNING_MARGIN,
-	&HISTORY_PRUNING_MULTIPLIER,
-	&HISTORY_PRUNING_BASE,
-	&HISTORY_LMR_MULTIPLIER,
-	&HISTORY_LMR_BASE,
-	&NMP_EVAL_DIVISER,
-	&NMP_DEPTH_DIVISER,
-	&MAX_NMP_EVAL_R
+    &RFP_MULTIPLIER,
+    &RFP_IMPROVING_MULTIPLIER,
+    &RFP_BASE,
+    &RFP_IMPROVING_BASE,
+    &LMP_BASE,
+    &LMP_MULTIPLIER,
+    &PVS_QUIET_BASE,
+    &PVS_QUIET_MULTIPLIER,
+    &PVS_NOISY_BASE,
+    &PVS_NOISY_MULTIPLIER,
+    &HISTORY_BASE,
+    &HISTORY_MULTIPLIER,
+    &ASP_WINDOW_INITIAL,
+    &ASP_WINDOW_MAX,
+    &PAWN_CORRHIST_MULTIPLIER,
+    &MINOR_CORRHIST_MULTIPLIER,
+    &NONPAWN_CORRHIST_MULTIPLIER,
+    &QS_SEE_PRUNING_MARGIN,
+    &HISTORY_PRUNING_MULTIPLIER,
+    &HISTORY_PRUNING_BASE,
+    &HISTORY_LMR_MULTIPLIER,
+    &HISTORY_LMR_BASE,
+    &NMP_EVAL_DIVISER,
+    &NMP_DEPTH_DIVISER,
+    &MAX_NMP_EVAL_R
 };
 
 
@@ -203,7 +201,7 @@ std::string trim(const std::string& str) {
 }
 
 std::string TryGetLabelledValue(const std::string& text, const std::string& label, const std::vector<std::string>& allLabels, const std::string& defaultValue = "") {
-	
+    
     // Trim leading and trailing whitespace
     std::string trimmedText = trim(text);
 
@@ -290,30 +288,30 @@ static uint64_t Perft(Board& board, int depth)
 
     Generate_Legal_Moves(move_list, board, false);
 
-	for (int i = 0; i < move_list.count; ++i)
-	{
-		Move& move = move_list.moves[i];
+    for (int i = 0; i < move_list.count; ++i)
+    {
+        Move& move = move_list.moves[i];
         int lastEp = board.enpassent;
         uint64_t lastCastle = board.castle;
         int lastside = board.side;
         int captured_piece = board.mailbox[move.To];
 
         uint64_t last_zobrist = board.zobristKey;
-		uint64_t last_pawnKey = board.PawnKey;
-		uint64_t last_minorKey = board.MinorKey;
-		uint64_t last_whiteNPKey = board.WhiteNonPawnKey;
-		uint64_t last_blackNPKey = board.BlackNonPawnKey;
-		
+        uint64_t last_pawnKey = board.PawnKey;
+        uint64_t last_minorKey = board.MinorKey;
+        uint64_t last_whiteNPKey = board.WhiteNonPawnKey;
+        uint64_t last_blackNPKey = board.BlackNonPawnKey;
+        
         MakeMove(board, move);
 
 
-		uint64_t blackNPKey_from_scratch = generate_BlackNP_Hash(board);
-		if (board.BlackNonPawnKey != blackNPKey_from_scratch)
-		{
-			std::cout << "CRITICAL ERROR: black np key doesn't match\n";
-			printMove(move);
-			std::cout << "\n\n";
-		}
+        uint64_t blackNPKey_from_scratch = generate_BlackNP_Hash(board);
+        if (board.BlackNonPawnKey != blackNPKey_from_scratch)
+        {
+            std::cout << "CRITICAL ERROR: black np key doesn't match\n";
+            printMove(move);
+            std::cout << "\n\n";
+        }
         if (isLegal(move, board))
         {
             uint64_t nodes_added = Perft(board, depth - 1);
@@ -327,10 +325,10 @@ static uint64_t Perft(Board& board, int depth)
         board.castle = lastCastle;
         board.side = lastside;
         board.zobristKey = last_zobrist;
-		board.PawnKey = last_pawnKey;
-		board.MinorKey = last_minorKey;
-		board.WhiteNonPawnKey = last_whiteNPKey;
-		board.BlackNonPawnKey = last_blackNPKey;
+        board.PawnKey = last_pawnKey;
+        board.MinorKey = last_minorKey;
+        board.WhiteNonPawnKey = last_whiteNPKey;
+        board.BlackNonPawnKey = last_blackNPKey;
 
     }
     return nodes;
@@ -354,14 +352,14 @@ void Initialize_TT(int size)
 
     if (TTSize % 2 != 0)
     {
-		TTSize -= 1;
+        TTSize -= 1;
     }
 
-	if (TranspositionTable)
-		delete [] TranspositionTable;
+    if (TranspositionTable)
+        delete [] TranspositionTable;
 
     TranspositionTable = new TranspositionEntry[TTSize]();
-	
+    
 }
 void ProcessUCI(std::string input)
 {
@@ -378,42 +376,42 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
-		//for (int i = 0; i < option_name.size(); i++)//for spsa
-		//{
-		//	std::cout << "option name " << option_name[i];
-		//	std::cout << " type spin ";
-		//	std::cout << " default " << option_base[i];
-		//	std::cout << " min " << option_min[i];
-		//	std::cout << " max " << option_max[i];
-		//	std::cout << "\n";
-		//}
+        //for (int i = 0; i < option_name.size(); i++)//for spsa
+        //{
+        //    std::cout << "option name " << option_name[i];
+        //    std::cout << " type spin ";
+        //    std::cout << " default " << option_base[i];
+        //    std::cout << " min " << option_min[i];
+        //    std::cout << " max " << option_max[i];
+        //    std::cout << "\n";
+        //}
         isPrettyPrinting = false;
         
         std::cout << "uciok" << "\n";
     }
-	else if (main_command == "datagen")
-	{
-		int pos = TryGetLabelledValueInt(input, "pos", datagen_commands);
-		std::string file = TryGetLabelledValue(input, "file", datagen_commands);
-		
-		Datagen(pos, file);
-	}
-	else if (main_command == "filter")
-	{
-		//std::cout << "fuck";
-		//std::cout << input;
-		std::string input_file = TryGetLabelledValue(input, "input", filter_commands);
-		std::string output_file = TryGetLabelledValue(input, "output", filter_commands);
-		//std::cout << "data processed";
-		filterData(input_file, output_file);
-	}
-	else if (main_command == "ucinewgame")
-	{
-		
-		Initialize_TT(16);
-		initializeLMRTable();
-		isPrettyPrinting = false;
-	}
+    else if (main_command == "datagen")
+    {
+        int pos = TryGetLabelledValueInt(input, "pos", datagen_commands);
+        std::string file = TryGetLabelledValue(input, "file", datagen_commands);
+        
+        Datagen(pos, file);
+    }
+    else if (main_command == "filter")
+    {
+        //std::cout << "fuck";
+        //std::cout << input;
+        std::string input_file = TryGetLabelledValue(input, "input", filter_commands);
+        std::string output_file = TryGetLabelledValue(input, "output", filter_commands);
+        //std::cout << "data processed";
+        filterData(input_file, output_file);
+    }
+    else if (main_command == "ucinewgame")
+    {
+        
+        Initialize_TT(16);
+        initializeLMRTable();
+        isPrettyPrinting = false;
+    }
     else if (main_command == "setoption")
     {
         std::string option = TryGetLabelledValue(input, "name", option_commands);
@@ -569,7 +567,7 @@ void ProcessUCI(std::string input)
             {
                 parse_fen(fen, main_board);
                 main_board.zobristKey = generate_hash_key(main_board);
-			
+            
                 main_board.history.push_back(main_board.zobristKey);
 
             }
@@ -672,8 +670,6 @@ void ProcessUCI(std::string input)
 
                 }
             }
-
-           
             //std::cout << TryGetLabelledValue(input, "fen", position_commands);
         }
         else if ((Commands[1] == "kiwi"))
@@ -713,7 +709,6 @@ void ProcessUCI(std::string input)
         }
     else if (main_command == "go")
     {
-        
         if (Commands[1] == "depth")
         {
             //Negamax_nodecount = 0;
@@ -733,11 +728,11 @@ void ProcessUCI(std::string input)
             }
 
         }
-		else if (Commands[1] == "nodes")
-		{
-			int node = std::stoi(Commands[2]);
-			IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node, node);
-		}
+        else if (Commands[1] == "nodes")
+        {
+                int node = std::stoi(Commands[2]);
+                IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node, node);
+        }
         else if (Commands[1] == "movetime")
         {
             int movetime = std::stoi(Commands[2]);
@@ -762,22 +757,22 @@ void ProcessUCI(std::string input)
             {
                 int hard_bound;
                 int soft_bound;
-				int baseTime = 0;
-				int maxTime = 0;
+                int baseTime = 0;
+                int maxTime = 0;
                 if (main_board.side == White)
                 {
                     hard_bound = Calculate_Hard_Bound(wtime, winc);
                     soft_bound = Calculate_Soft_Bound(wtime, winc);
-					baseTime = wtime * DEF_TIME_MULTIPLIER + winc * DEF_INC_MULTIPLIER;
-					maxTime = std::max(1.00, wtime * MAX_TIME_MULTIPLIER);
-				}
+                    baseTime = wtime * DEF_TIME_MULTIPLIER + winc * DEF_INC_MULTIPLIER;
+                    maxTime = std::max(1.00, wtime * MAX_TIME_MULTIPLIER);
+                }
                 else
                 {
                     hard_bound = Calculate_Hard_Bound(btime, binc);
                     soft_bound = Calculate_Soft_Bound(btime, binc);
-					baseTime = btime * DEF_TIME_MULTIPLIER + binc * DEF_INC_MULTIPLIER;
-					maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
-				}
+                    baseTime = btime * DEF_TIME_MULTIPLIER + binc * DEF_INC_MULTIPLIER;
+                    maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
+                }
 
                 IterativeDeepening(main_board, 99, hard_bound, false, true, soft_bound, baseTime, maxTime);
             }
@@ -954,7 +949,7 @@ int main(int argc, char* argv[])
     Initialize_TT(16);
 
     uint64_t hash_key = 0ULL;
-	//Datagen();
+    //Datagen();
     if (argc > 1) {
         std::string command = argv[1]; // First argument (after program name)
 
@@ -962,10 +957,6 @@ int main(int argc, char* argv[])
 
             bench();
             return EXIT_SUCCESS;
-
-
-            
-           
         }
     }
     while (true)
