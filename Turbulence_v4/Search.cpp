@@ -40,22 +40,19 @@
 #define EVALFILE "./nnue.bin"
 #endif
 
-bool isOnWindow;
 
-#define NULLMOVE Move(0,0,0,0)
-
-void initialize_platform() {
 #if defined(_WIN32) || defined(_WIN64)
 	// Windows platform
-	isOnWindow = true;
+constexpr bool isOnWindow = true;
 #elif defined(__linux__)
 	// Linux platform
-	isOnWindow = false;
+constexpr bool isOnWindow = false;
 #else
 	// Unknown platform
-	isOnWindow = false;  // Default to false (assuming Linux if not Windows)
+constexpr bool isOnWindow = false;  // Default to false (likely macOS)
 #endif
-}
+#define NULLMOVE Move(0,0,0,0)
+
 enum class ConsoleColor {
 	Black = 0,
 	Blue = 1,
@@ -254,7 +251,6 @@ bool is_quiet(int type)
 }
 void initializeLMRTable()
 {
-	initialize_platform();
 	for (int depth = 1; depth < 99; depth++)
 	{
 		for (int move = 1; move < 256; move++)
@@ -940,23 +936,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		legal_moves++;
 		score = -Quiescence(board, -beta, -alpha);
 
-		if (isSearchStop) {
-			UnmakeMove(board, move, captured_piece);
-			board.accumulator = last_accumulator;
-			board.history.pop_back();
-			board.lastIrreversiblePly = last_irreversible;
-			board.enpassent = lastEp;
-			board.castle = lastCastle;
-			board.side = lastside;
-			board.zobristKey = lastZobrist;
-			board.PawnKey = lastPawnKey;
-			board.MinorKey = lastMinorKey;
-			board.WhiteNonPawnKey = lastWhiteNPKey;
-			board.BlackNonPawnKey = lastBlackNPKey;
-			return 0; // Return a neutral score if time is exceeded during recursive calls
-		}
-
-		ply--;
 		UnmakeMove(board, move, captured_piece);
 		board.accumulator = last_accumulator;
 		board.history.pop_back();
@@ -969,6 +948,11 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.MinorKey = lastMinorKey;
 		board.WhiteNonPawnKey = lastWhiteNPKey;
 		board.BlackNonPawnKey = lastBlackNPKey;
+		if (isSearchStop) {
+			return 0; // Return a neutral score if time is exceeded during recursive calls
+		}
+
+		ply--;
 		if (score > bestValue)
 		{
 			bestValue = score;
@@ -1161,8 +1145,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	depth = std::min(depth, 98);
 	int lmpThreshold = LMP_BASE + LMP_MULTIPLIER * depth * depth;
 
-	int quietSEEMargin = PVS_QUIET_BASE + (-PVS_QUIET_MULTIPLIER * depth);
-	int noisySEEMargin = PVS_NOISY_BASE + (-PVS_NOISY_MULTIPLIER * depth * depth);
+	int quietSEEMargin = PVS_QUIET_BASE - PVS_QUIET_MULTIPLIER * depth;
+	int noisySEEMargin = PVS_NOISY_BASE - PVS_NOISY_MULTIPLIER * depth * depth;
+	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth;
 
 	MoveList quietsList;
 
@@ -1213,7 +1198,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skipQuiets = true;
 			}
-			if (quietMoves > 1 && depth <= 5 && historyScore < (-HISTORY_PRUNING_MULTIPLIER * depth) + HISTORY_PRUNING_BASE)
+			if (quietMoves > 1 && depth <= 5 && historyScore < historyPruningMargin)
 			{
 				break;
 			}
@@ -1394,31 +1379,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 
 
-		if (isSearchStop) {
-			ply--;
-			board.accumulator = last_accumulator;
-			UnmakeMove(board, move, captured_piece);
-
-			board.history.pop_back();
-			board.lastIrreversiblePly = last_irreversible;
-
-			board.zobristKey = last_zobrist;
-			board.enpassent = lastEp;
-			board.castle = lastCastle;
-			board.side = lastside;
-			board.PawnKey = last_pawnKey;
-			board.MinorKey = last_minorKey;
-			board.WhiteNonPawnKey = last_whitenpKey;
-			board.BlackNonPawnKey = last_blacknpKey;
-			return 0; // Return a neutral score if time is exceeded during recursive calls
-		}
-
-		ply--;
 		board.accumulator = last_accumulator;
 		UnmakeMove(board, move, captured_piece);
 
 		board.history.pop_back();
 		board.lastIrreversiblePly = last_irreversible;
+
 		board.zobristKey = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
@@ -1427,6 +1393,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.MinorKey = last_minorKey;
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
+		ply--;
+		if (isSearchStop) {
+			return 0; // Return a neutral score if time is exceeded during recursive calls
+		}
 
 		bestValue = std::max(score, bestValue);
 
@@ -1788,8 +1758,6 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 			std::cout << "+";
 		}
 		std::cout << std::fixed << std::setprecision(2) << score_fullPawn;
-
-		std::setprecision(1);
 	}
 
 	setColor(ConsoleColor::Gray);
@@ -2326,7 +2294,7 @@ void estimate_time_remaining(uint64_t remaining_positions, int pps) {
 		return;
 	}
 
-	double seconds_remaining = remaining_positions / pps;
+	double seconds_remaining = double(remaining_positions) / pps;
 
 	int hours = static_cast<int>(seconds_remaining) / 3600;
 	int minutes = (static_cast<int>(seconds_remaining) % 3600) / 60;

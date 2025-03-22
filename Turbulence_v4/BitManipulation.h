@@ -5,13 +5,6 @@
 #include <cstdint>  // For uint64_t
 //#include <bitset>   // For std::bitset
 
-
-
-
-
-
-
-
 // Gets a specific bit from the bitboard
 inline bool Get_bit(uint64_t bitboard, int index) {
 	return (bitboard & (1ULL << index)) != 0;
@@ -34,7 +27,7 @@ inline int count_bits(uint64_t bitboard) {
 
 // Gets the index of the least significant 1-bit
 inline int get_ls1b(uint64_t bitboard) {
-	return bitboard ? std::countr_zero(bitboard) : 64; // or return -1;
+	return std::countr_zero(bitboard); // or return -1;
 }
 // Sets occupancy bits based on the index and attack mask
 uint64_t set_occupancy(int index, int bits_in_mask, uint64_t attack_mask);
