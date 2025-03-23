@@ -1873,7 +1873,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 			if (delta >= ASP_WINDOW_MAX)
 			{
 				delta = PLUS_INFINITY;
-			} 
+			}
 			window_change++;
 		}
 
