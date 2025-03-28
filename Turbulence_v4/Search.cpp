@@ -286,6 +286,28 @@ void initializeLMRTable()
 	//}
 	
 }
+int getPiecePromoting(int type, int side)
+{
+	int return_piece = 0;
+	if ((type == queen_promo) || (type == queen_promo_capture))
+	{
+		return_piece = Q;
+	}
+	else if (type == rook_promo || (type == rook_promo_capture))
+	{
+		return_piece = R;
+	}
+	else if (type == bishop_promo || (type == bishop_promo_capture))
+	{
+		return_piece = B;
+	}
+	else if (type == knight_promo || (type == knight_promo_capture))
+	{
+		return_piece = N;
+	}
+
+	return get_piece(return_piece, side);
+}
 int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
@@ -494,6 +516,19 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			return 99999999;
 		}
 	}
+	if((move.Type & promotionFlag) != 0)
+	{
+		
+		switch (getPiecePromoting(move.Type, White))
+		{
+		case Q:
+			return 9999999;
+			break;
+		case N:
+			return 9999997;
+			break;
+		}
+	}
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
 		int victim;
@@ -566,28 +601,7 @@ bool is_promotion(int type)
 {
 	return  (type & promotionFlag) != 0;
 }
-int getPiecePromoting(int type, int side)
-{
-	int return_piece = 0;
-	if ((type == queen_promo) || (type == queen_promo_capture))
-	{
-		return_piece = Q;
-	}
-	else if (type == rook_promo || (type == rook_promo_capture))
-	{
-		return_piece = R;
-	}
-	else if (type == bishop_promo || (type == bishop_promo_capture))
-	{
-		return_piece = B;
-	}
-	else if (type == knight_promo || (type == knight_promo_capture))
-	{
-		return_piece = N;
-	}
 
-	return get_piece(return_piece, side);
-}
 int move_estimated_value(Board& board, Move move)
 {
 	// Start with the value of the piece on the target square
