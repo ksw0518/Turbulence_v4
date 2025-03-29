@@ -2390,139 +2390,80 @@ void filterData(const std::string& input, const std::string& output) {
 	std::cout << "Finished reading " << currentLine << " lines.\n";
 }
 
-void Datagen(int targetPos, std::string output_name)
-{
-	
-	//const int DATAGEN_MAX_PLY = 256;
-	const uint64_t targetPositions = (uint64_t)(targetPos);
+void Datagen(int targetPos, std::string output_name) {
+	const uint64_t targetPositions = static_cast<uint64_t>(targetPos);
 	uint64_t totalPositions = 0;
 	std::vector<GameData> gameData;
 	gameData.reserve(256);
 
+	std::ofstream file(output_name + ".txt", std::ios::app | std::ios::out); // Open file once
+	if (!file) {
+		std::cerr << "Error opening file: " << output_name << std::endl;
+		return;
+	}
+
 	auto start_time = std::chrono::high_resolution_clock::now();
 
-	while (totalPositions < targetPositions)
-	{
+	while (totalPositions < targetPositions) {
 		gameData.clear();
 		Board board;
 		PickRandomPos(board);
 		bool isGameOver = false;
 		int result = -1;
 		int plyCount = 0;
-		std::vector<Move> MoveHist;
-		Board startBoard = board;
-		
-		// Start the timer
-		
-		while (!isGameOver)
-		{
-			
+
+		while (!isGameOver) {
 			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
-
-			if (board.side == Black)
-			{
-				eval = -eval;
-			}
+			if (board.side == Black) eval = -eval;
 
 			MoveList moveList;
 			Generate_Legal_Moves(moveList, board, false);
 
-			if (isNoLegalMoves(board, moveList)) // Checkmate or stalemate
-			{
+			if (isNoLegalMoves(board, moveList)) {
 				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
 				break;
 			}
-
-			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board))
-			{
+			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board)) {
 				result = DRAW;
 				break;
 			}
-
 			if (isDecisive(eval)) {
-				if(eval > 48000)
-				{
-					if (board.side == White)
-					{
-						result = WHITEWIN;
-					}
-					if (board.side == Black)
-					{
-						result = BLACKWIN;
-					}
-				}
-				else
-				{
-					if (board.side == White)
-					{
-						result = BLACKWIN;
-					}
-					if (board.side == Black)
-					{
-						result = WHITEWIN;
-					}
-				}
+				result = (eval > 48000) ? (board.side == White ? WHITEWIN : BLACKWIN) : (board.side == White ? BLACKWIN : WHITEWIN);
 			}
 
 			MakeMove(board, bestMove);
-			//MoveHist.push_back(bestMove);
-			//if (!isLegal(bestMove, board))
-			//{
-			//	std::cout << "FUCK YOU, ILLEGAL MOVE";
-			//	PrintBoards(startBoard);
-			//	PrintBoards(board);
-			//	for (int i = 0; i < MoveHist.size(); i++)
-			//	{
-			//		printMove(MoveHist[i]);
-			//		std::cout << "\n";
-			//	}
-			//}
 			plyCount++;
 
-			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
-			{
+			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) {
 				gameData.push_back(GameData(board, eval, -1));
 				totalPositions++;
 			}
 		}
-		// Print game data
-		for(int i = 0; i < gameData.size(); i++)
-		{
+
+		// **Batch write game data to file instead of writing each line separately**
+		std::ostringstream buffer;
+		for (int i = 0; i < gameData.size(); i++) {
 			gameData[i].result = result;
-			std::string output_data = boardToFEN(gameData[i].board) + " | " + std::to_string(gameData[i].eval) + " | " + convertWDL(gameData[i].result);
-			appendToFile(output_name + ".txt", output_data);
-			
-			//std::cout << output_data;
+			buffer << boardToFEN(gameData[i].board) << " | " << gameData[i].eval << " | " << convertWDL(gameData[i].result) << "\n";
 		}
-		// End the timer
+		file << buffer.str(); // **Write all at once**
+
 		auto end_time = std::chrono::high_resolution_clock::now();
 		double elapsed_seconds = std::chrono::duration<double>(end_time - start_time).count();
-
-		// Print game data
-		//for (const auto& data : gameData)
-		//{
-		//	std::cout << boardToFEN(data.board) << "\n";
-		//	std::cout << data.eval << "\n";
-		//	std::cout << ((data.result == WHITEWIN) ? "White win" : (data.result == BLACKWIN) ? "Black win" : "Draw") << "\n";
-		//	std::cout << "------\n";
-		//}
-
-		// Calculate and print positions per second (PPS)
 		double positions_per_second = totalPositions / elapsed_seconds;
 		double percentage = (static_cast<double>(totalPositions) / targetPos) * 100;
 
-		//std::cout << "\033[2K";  // Clears the line
-		//std::cout << "\033[2K\r";
 		std::cout << "Positions per second: " << std::fixed << std::setprecision(2) << positions_per_second
 			<< " | Total Positions: " << totalPositions
 			<< " | Progress: " << std::fixed << std::setprecision(5) << percentage << "% ";
 		estimate_time_remaining(targetPositions - totalPositions, positions_per_second);
-		print_progress_bar(percentage);  // Print the progress bar
-		std::cout << "\n\n";
-
-		std::cout << std::flush;  // Ensures the output is immediately written to the console
+		print_progress_bar(percentage);
+		std::cout << "\n\n" << std::flush;
 	}
+
+	file.close(); // **Close file only once after everything is written**
 }
+
 
