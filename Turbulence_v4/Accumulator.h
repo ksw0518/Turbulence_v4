@@ -13,14 +13,14 @@ const int QA = 255;
 const int QB = 64;
 
 struct Network {
-	int16_t accumulator_weights[INPUT_SIZE][HL_SIZE];
-	int16_t accumulator_biases[HL_SIZE];
-	int16_t output_weights[2 * HL_SIZE];
-	int16_t output_bias;
+	alignas(64) int16_t accumulator_weights[INPUT_SIZE][HL_SIZE];
+	alignas(64) int16_t accumulator_biases[HL_SIZE];
+	alignas(64) int16_t output_weights[2 * HL_SIZE];
+	alignas(64) int16_t output_bias;
 };
 
 struct Accumulator {
-	int16_t values[HL_SIZE];
+	alignas(64) int16_t values[HL_SIZE];
 };
 struct AccumulatorPair {
 	Accumulator white;
