@@ -453,7 +453,7 @@ std::int32_t vectorised_screlu(Network const * network, Accumulator const * stm,
 #elif defined(__AVX2__)
 	using native_vector = __m256i;
 	#define set1_epi16 _mm256_set1_epi16
-	#define load_epi16 [](void *ptr) { return _mm256_load_si256((native_vector const *) ptr; }
+	#define load_epi16 [](void *ptr) { return _mm256_load_si256((native_vector const *) ptr); }
 	#define min_epi16 _mm256_min_epi16
 	#define max_epi16 _mm256_max_epi16
 	#define madd_epi16 _mm256_madd_epi16
@@ -473,7 +473,7 @@ std::int32_t vectorised_screlu(Network const * network, Accumulator const * stm,
 #elif defined(__SSE__)
 	using native_vector = __m128i;
 	#define set1_epi16 _mm_set1_epi16
-	#define load_epi16 [](void *ptr) { return _mm_load_si128((native_vector const *) ptr; }
+	#define load_epi16 [](void *ptr) { return _mm_load_si128((native_vector const *) ptr); }
 	#define min_epi16 _mm_min_epi16
 	#define max_epi16 _mm_max_epi16
 	#define madd_epi16 _mm_madd_epi16
