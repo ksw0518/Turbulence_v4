@@ -4,7 +4,7 @@
 #include <cstddef>
 
 const int INPUT_SIZE = 768;
-const int HL_SIZE = 256;
+const int HL_SIZE = 512;
 
 // These parameters are part of the training configuration
 // These are the commonly used values as of 2024
