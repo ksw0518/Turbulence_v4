@@ -159,6 +159,9 @@ int NMP_EVAL_DIVISER = 418;
 int NMP_DEPTH_DIVISER = 4;
 int MAX_NMP_EVAL_R = 3;
 
+int DEXT_MARGIN = 20;
+
+
 auto clockStart = std::chrono::steady_clock::now();
 
 int pvLengths[99];
@@ -1290,7 +1293,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if (s_score < s_beta)
 			{
 				extensions++;
-				if (!isPvNode && s_score <= s_beta - 20) 
+				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN) 
 				{
 					extensions++;
 					//searchStack[ply].doubleExtensions++;

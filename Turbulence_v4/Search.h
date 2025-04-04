@@ -39,6 +39,7 @@ extern int HISTORY_LMR_BASE;
 extern int NMP_EVAL_DIVISER;
 extern int NMP_DEPTH_DIVISER;
 extern int MAX_NMP_EVAL_R;
+extern int DEXT_MARGIN;
 
 extern uint64_t TTSize;
 
