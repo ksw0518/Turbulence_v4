@@ -159,7 +159,7 @@ int NMP_EVAL_DIVISER = 408;
 int NMP_DEPTH_DIVISER = 3;
 int MAX_NMP_EVAL_R = 3;
 
-int DEXT_MARGIN = 19;
+int DEXT_MARGIN = 19; 
 
 
 auto clockStart = std::chrono::steady_clock::now();
