@@ -49,6 +49,8 @@ extern double DEF_INC_MULTIPLIER;
 extern double MAX_TIME_MULTIPLIER;
 extern double HARD_LIMIT_MULTIPLIER;
 extern double SOFT_LIMIT_MULTIPLIER;
+
+
 struct TranspositionEntry
 {
 	uint64_t zobristKey;
@@ -66,9 +68,32 @@ struct Search_data
 	int staticEval;
 	int doubleExtensions = 0;
 };
-void initializeLMRTable();
+struct ThreadData
+{
+	Move killerMoves[2][99];
+
+	int mainHistory[2][64][64][2][2];
+
+	int CaptureHistory[12][64][12];
+
+	int onePlyContHist[12][64][12][64];
+	int twoPlyContHist[12][64][12][64];
+
+	int pawnCorrHist[2][16384];
+	int minorCorrHist[2][16384];
+
+	/// <summary>
+	/// [keySide][currentBoardSide][hash]
+	/// </summary>
+	int nonPawnCorrHist[2][2][16384];
+	Search_data searchStack[99];
+	Move bestMove;
+	int bestScore;
+	int threadsID;
+};
+void initializeLMRTable(ThreadData& data);
 extern TranspositionEntry* TranspositionTable;
-std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1, uint64_t softNodes = -1, uint64_t = -1);
+std::pair<Move, int> IterativeDeepening(ThreadData& data, Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1, uint64_t softNodes = -1, uint64_t = -1);
 int SEE(Board& pos, Move move, int threshold);
 
 void bench();

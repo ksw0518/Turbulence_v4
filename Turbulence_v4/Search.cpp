@@ -183,28 +183,14 @@ constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
 
-Move killerMoves[2][99];
 
-int mainHistory[2][64][64][2][2];
 
-int CaptureHistory[12][64][12];
-
-int onePlyContHist[12][64][12][64];
-int twoPlyContHist[12][64][12][64];
-
-int pawnCorrHist[2][CORRHIST_SIZE];
-int minorCorrHist[2][CORRHIST_SIZE];
-
-/// <summary>
-/// [keySide][currentBoardSide][hash]
-/// </summary>
-int nonPawnCorrHist[2][2][CORRHIST_SIZE];
 
 size_t TTSize = 699050;
 TranspositionEntry* TranspositionTable = nullptr;
 
 
-Search_data searchStack[99];
+
 
 constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 1024;
@@ -249,7 +235,7 @@ bool is_quiet(int type)
 	}
 
 }
-void initializeLMRTable()
+void initializeLMRTable(ThreadData& data)
 {
 	for (int depth = 1; depth < 99; depth++)
 	{
@@ -258,26 +244,22 @@ void initializeLMRTable()
 			lmrTable[depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
 		}
 	}
-	for (int ply = 0; ply < 99; ply++)
-	{
-		killerMoves[0][ply] = Move();
-		killerMoves[1][ply] = Move();
-	}
-	memset(mainHistory, 0, sizeof(mainHistory));
-	memset(onePlyContHist, 0, sizeof(onePlyContHist));
-	memset(twoPlyContHist, 0, sizeof(twoPlyContHist));
-	memset(CaptureHistory, 0, sizeof(CaptureHistory));
-	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
-	memset(nonPawnCorrHist, 0, sizeof(nonPawnCorrHist));
-	memset(minorCorrHist, 0, sizeof(minorCorrHist));
+
+	memset(data.mainHistory, 0, sizeof(data.mainHistory));
+	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
+	memset(data.twoPlyContHist, 0, sizeof(data.twoPlyContHist));
+	memset(data.CaptureHistory, 0, sizeof(data.CaptureHistory));
+	memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
+	memset(data.nonPawnCorrHist, 0, sizeof(data.nonPawnCorrHist));
+	memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
 
 	isPrettyPrinting = true;
 	for (int ply = 0; ply < 99; ply++)
 	{
-		killerMoves[0][ply] = Move();
-		killerMoves[1][ply] = Move();
+		data.killerMoves[0][ply] = Move();
+		data.killerMoves[1][ply] = Move();
 	}
-	memset(mainHistory, 0, sizeof(mainHistory));
+
 
 	LoadNetwork(EVALFILE);
 	//for (size_t i = 0; i < TTSize; i++)
@@ -290,25 +272,25 @@ int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
 }
-void updateMinorCorrHist(Board& board, const int depth, const int diff)
+void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
 {
 	uint64_t minorKey = board.MinorKey;
-	int& entry = minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
+	int& entry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-void updatePawnCorrHist(Board& board, const int depth, const int diff)
+void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadData &data)
 {
 	uint64_t pawnKey = board.PawnKey;
-	int& entry = pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
+	int& entry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-void updateNonPawnCorrHist(Board& board, const int depth, const int diff)
+void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
 {
 	uint64_t whiteKey = board.WhiteNonPawnKey;
 	uint64_t blackKey = board.BlackNonPawnKey;
@@ -316,29 +298,29 @@ void updateNonPawnCorrHist(Board& board, const int depth, const int diff)
 	const int scaledDiff = diff * CORRHIST_GRAIN;
 	const int newWeight = std::min(depth + 1, 16);
 
-	int& whiteEntry = nonPawnCorrHist[White][board.side][whiteKey % CORRHIST_SIZE];
+	int& whiteEntry = data.nonPawnCorrHist[White][board.side][whiteKey % CORRHIST_SIZE];
 
 	whiteEntry = (whiteEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	whiteEntry = std::clamp(whiteEntry, -CORRHIST_MAX, CORRHIST_MAX);
 
-	int& blackEntry = nonPawnCorrHist[Black][board.side][blackKey % CORRHIST_SIZE];
+	int& blackEntry = data.nonPawnCorrHist[Black][board.side][blackKey % CORRHIST_SIZE];
 
 	blackEntry = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	blackEntry = std::clamp(blackEntry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-int adjustEvalWithCorrHist(Board& board, const int rawEval)
+int adjustEvalWithCorrHist(Board& board, const int rawEval, ThreadData& data)
 {
 	uint64_t pawnKey = board.PawnKey;
-	const int& pawnEntry = pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
+	const int& pawnEntry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
 
 
 	uint64_t minorKey = board.MinorKey;
-	const int& minorEntry = minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
+	const int& minorEntry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
 
 	uint64_t whiteNPKey = board.WhiteNonPawnKey;
-	const int& whiteNPEntry = nonPawnCorrHist[White][board.side][whiteNPKey % CORRHIST_SIZE];
+	const int& whiteNPEntry = data.nonPawnCorrHist[White][board.side][whiteNPKey % CORRHIST_SIZE];
 	uint64_t blackNPKey = board.BlackNonPawnKey;
-	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
+	const int& blackNPEntry = data.nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 	int mate_found = 49000 - 99;
 
 	int adjust = 0;
@@ -351,40 +333,40 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
-void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
+void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat, ThreadData& data)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
+	data.mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - data.mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
 }
-void update_capthist(int attacker, int to, int victim, int bonus)
-{
-	int clampedBonus = std::clamp(bonus, -MAX_CAPTHIST, MAX_CAPTHIST);
-	CaptureHistory[attacker][to][victim] += clampedBonus - CaptureHistory[attacker][to][victim] * abs(clampedBonus) / MAX_CAPTHIST;
-}
-int getSingleContinuationHistoryScore(Move move, const int offSet)
+//void update_capthist(int attacker, int to, int victim, int bonus)
+//{
+//	int clampedBonus = std::clamp(bonus, -MAX_CAPTHIST, MAX_CAPTHIST);
+//	CaptureHistory[attacker][to][victim] += clampedBonus - CaptureHistory[attacker][to][victim] * abs(clampedBonus) / MAX_CAPTHIST;
+//}
+int getSingleContinuationHistoryScore(Move move, const int offSet, ThreadData& data)
 {
 	if (ply >= offSet)
 	{
-		Move previousMove = searchStack[ply - offSet].move;
+		Move previousMove = data.searchStack[ply - offSet].move;
 
 		if (offSet == 1)
 		{
-			return onePlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+			return data.onePlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
 		else if (offSet == 2)
 		{
-			return twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+			return data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
 
 	}
 	return 0;
 }
-int getContinuationHistoryScore(Move& move)
+int getContinuationHistoryScore(Move& move, ThreadData& data)
 {
 	if (ply >= 1)
 	{
-		int onePly = getSingleContinuationHistoryScore(move, 1);
-		int twoPly = getSingleContinuationHistoryScore(move, 2);
+		int onePly = getSingleContinuationHistoryScore(move, 1, data);
+		int twoPly = getSingleContinuationHistoryScore(move, 2, data);
 
 
 		int finalScore = onePly + twoPly;
@@ -392,96 +374,96 @@ int getContinuationHistoryScore(Move& move)
 	}
 	return 0;
 }
-void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet)
+void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet, ThreadData& data)
 {
 	if (ply >= offSet) {
-		Move previousMove = searchStack[ply - offSet].move;
+		Move previousMove = data.searchStack[ply - offSet].move;
 
 		int clampedBonus = std::clamp(bonus, -MAX_CONTHIST, MAX_CONTHIST);
-		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet) * abs(clampedBonus) / MAX_CONTHIST;
+		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet, data) * abs(clampedBonus) / MAX_CONTHIST;
 		//std::cout << scaledBonus;
 
 		if (offSet == 1)
 		{
-			onePlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+			data.onePlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
 		else if (offSet == 2)
 		{
-			twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+			data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
 
 	}
 }
-void updateContinuationHistoryScore(Move& move, const int bonus)
+void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& data)
 {
-	updateSingleContinuationHistoryScore(move, bonus, 1);
-	updateSingleContinuationHistoryScore(move, bonus, 2);
+	updateSingleContinuationHistoryScore(move, bonus, 1, data);
+	updateSingleContinuationHistoryScore(move, bonus, 2, data);
 }
 
-void printTopCapthist(int side) {
-	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
+//void printTopCapthist(int side) {
+//	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
+//
+//	// Populate the vector with scores and moves
+//	for (int from = 0; from < 64; ++from) {
+//		for (int to = 0; to < 64; ++to) {
+//			int score = CaptureHistory[side][from][to];
+//			moves.emplace_back(score, from, to);
+//		}
+//	}
+//
+//	// Sort moves by score in descending order
+//	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+//		return std::get<0>(a) < std::get<0>(b);
+//		});
+//
+//	// Print the top 10 moves
+//	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
+//	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
+//		auto [score, from, to] = moves[i];
+//		std::cout << "from: " << CoordinatesToChessNotation(from)
+//			<< " to: " << CoordinatesToChessNotation(to)
+//			<< " score = " << score
+//			<< " side_to_move = " << side
+//			<< std::endl;
+//	}
+//}
+//void printTopOneplyContHist() {
+//	std::vector<std::tuple<int, int, int, int, int>> moves; // Stores <score, piece_from, from, piece_to, to>
+//
+//	// Populate the vector with scores and moves
+//	for (int piece_from = 0; piece_from < 12; ++piece_from) {
+//		for (int from = 0; from < 64; ++from) {
+//			for (int piece_to = 0; piece_to < 12; ++piece_to) {
+//				for (int to = 0; to < 64; ++to) {
+//					int score = onePlyContHist[piece_from][from][piece_to][to];
+//					moves.emplace_back(score, piece_from, from, piece_to, to); // 5 values pushed
+//				}
+//			}
+//		}
+//	}
+//
+//	// Sort moves by score in descending order
+//	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
+//		return std::get<0>(a) < std::get<0>(b);
+//		});
+//
+//	// Print the top 10 moves
+//	std::cout << "Top 10 moves from Oneply_ContHist:" << std::endl;
+//	for (int i = 0; i < std::min(50, (int)moves.size()); ++i) {
+//		auto [score, piece_from, from, piece_to, to] = moves[i];
+//
+//		// Print the pieces and coordinates
+//		std::cout << "PieceA: " << getCharFromPiece(piece_from)
+//			<< " toA: " << CoordinatesToChessNotation(from)
+//			<< " PieceB: " << getCharFromPiece(piece_to)
+//			<< " toB: " << CoordinatesToChessNotation(to)
+//			<< " score = " << score
+//			<< std::endl;
+//	}
+//}
 
-	// Populate the vector with scores and moves
-	for (int from = 0; from < 64; ++from) {
-		for (int to = 0; to < 64; ++to) {
-			int score = CaptureHistory[side][from][to];
-			moves.emplace_back(score, from, to);
-		}
-	}
 
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
-	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
-		auto [score, from, to] = moves[i];
-		std::cout << "from: " << CoordinatesToChessNotation(from)
-			<< " to: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< " side_to_move = " << side
-			<< std::endl;
-	}
-}
-void printTopOneplyContHist() {
-	std::vector<std::tuple<int, int, int, int, int>> moves; // Stores <score, piece_from, from, piece_to, to>
-
-	// Populate the vector with scores and moves
-	for (int piece_from = 0; piece_from < 12; ++piece_from) {
-		for (int from = 0; from < 64; ++from) {
-			for (int piece_to = 0; piece_to < 12; ++piece_to) {
-				for (int to = 0; to < 64; ++to) {
-					int score = onePlyContHist[piece_from][from][piece_to][to];
-					moves.emplace_back(score, piece_from, from, piece_to, to); // 5 values pushed
-				}
-			}
-		}
-	}
-
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves from Oneply_ContHist:" << std::endl;
-	for (int i = 0; i < std::min(50, (int)moves.size()); ++i) {
-		auto [score, piece_from, from, piece_to, to] = moves[i];
-
-		// Print the pieces and coordinates
-		std::cout << "PieceA: " << getCharFromPiece(piece_from)
-			<< " toA: " << CoordinatesToChessNotation(from)
-			<< " PieceB: " << getCharFromPiece(piece_to)
-			<< " toB: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< std::endl;
-	}
-}
-
-
-static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entry, uint64_t opp_threat)
+static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entry, uint64_t opp_threat, ThreadData& data)
 {
 
 	// Check if the entry is valid and matches the current Zobrist key
@@ -513,19 +495,19 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 	}
 	else
 	{
-		if (killerMoves[0][ply] == move)
+		if (data.killerMoves[0][ply] == move)
 		{
 			return 150000;
 		}
-		else if (killerMoves[1][ply] == move)
+		else if (data.killerMoves[1][ply] == move)
 		{
 			return 100000;
 		}
 		else
 		{
 			// Return history score for non-capture and non-killer moves
-			int mainHistScore = mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)] / 32;
-			int contHistScore = getContinuationHistoryScore(move);
+			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)] / 32;
+			int contHistScore = getContinuationHistoryScore(move, data);
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
@@ -776,13 +758,13 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board)
 	moveList.count = index;  // Update move count
 }
 
-static inline void sort_moves(MoveList& moveList, Board& board, TranspositionEntry& tt_entry, uint64_t opp_threat)
+static inline void sort_moves(MoveList& moveList, Board& board, TranspositionEntry& tt_entry, uint64_t opp_threat, ThreadData& data)
 {
 	// Precompute scores for all moves
 	std::pair<int, Move> scored_moves[256];  // Use fixed-size array
 	for (int i = 0; i < moveList.count; ++i)
 	{
-		scored_moves[i] = { getMoveScore(moveList.moves[i], board, tt_entry, opp_threat), moveList.moves[i] };
+		scored_moves[i] = { getMoveScore(moveList.moves[i], board, tt_entry, opp_threat, data), moveList.moves[i] };
 	}
 
 	// Sort the scored moves based on the scores
@@ -820,7 +802,7 @@ bool is_checking(Board& board)
 	}
 	return false;
 }
-static inline int Quiescence(Board& board, int alpha, int beta)
+static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data)
 {
 
 	auto now = std::chrono::steady_clock::now();
@@ -836,7 +818,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int score = 0;
 
 	int staticEval = Evaluate(board);
-	staticEval = adjustEvalWithCorrHist(board, staticEval);
+	staticEval = adjustEvalWithCorrHist(board, staticEval, data);
 
 
 	if (staticEval >= beta)
@@ -934,7 +916,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 
 		legal_moves++;
-		score = -Quiescence(board, -beta, -alpha);
+		score = -Quiescence(board, -beta, -alpha, data);
 
 		UnmakeMove(board, move, captured_piece);
 		board.accumulator = last_accumulator;
@@ -989,7 +971,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 }
 
 
-static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, Move excludedMove = NULLMOVE)
+static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, ThreadData& data ,Move excludedMove = NULLMOVE)
 {
 	bool isPvNode = beta - alpha > 1;
 
@@ -1052,18 +1034,18 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (depth <= 0)
 	{
-		return Quiescence(board, alpha, beta);
+		return Quiescence(board, alpha, beta, data);
 		//return Evaluate(board);
 	}
 	if (ply + 1 <= 99)
 	{
-		killerMoves[0][ply + 1] = Move(0, 0, 0, 0);
-		killerMoves[1][ply + 1] = Move(0, 0, 0, 0);
+		data.killerMoves[0][ply + 1] = Move(0, 0, 0, 0);
+		data.killerMoves[1][ply + 1] = Move(0, 0, 0, 0);
 	}
 
 	int rawEval = Evaluate(board);
 
-	int staticEval = adjustEvalWithCorrHist(board, rawEval);
+	int staticEval = adjustEvalWithCorrHist(board, rawEval, data);
 
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
@@ -1071,9 +1053,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
-	searchStack[ply].staticEval = staticEval;
+	data.searchStack[ply].staticEval = staticEval;
 
-	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
+	bool improving = !isInCheck && ply > 1 && staticEval > data.searchStack[ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
 	if (!isSingularSearch && depth < 5 && canPrune)//rfp
@@ -1108,7 +1090,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				Make_Nullmove(board);
 				int R = 3 + depth / NMP_DEPTH_DIVISER;
 				R += std::min((ttAdjustedEval - beta) / NMP_EVAL_DIVISER, MAX_NMP_EVAL_R);
-				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode);
+				int score = -Negamax(board, depth - R, -beta, -beta + 1, false, !cutnode, data,NULLMOVE);
 
 				Unmake_Nullmove(board);
 				ply--;
@@ -1134,7 +1116,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int searchedMoves = 0;
 
 	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
-	sort_moves(moveList, board, ttEntry, oppThreats);
+	sort_moves(moveList, board, ttEntry, oppThreats, data);
 
 	int orgAlpha = alpha;
 
@@ -1189,8 +1171,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		bool isNotMated = alpha > -49000 + 99;
 
-		int main_history = mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move) * 32;
+		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
+		int conthist = getContinuationHistoryScore(move, data) * 32;
 		int historyScore = main_history + conthist;
 		if (ply != 0 && isQuiet && isNotMated)
 		{
@@ -1286,7 +1268,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
-			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
+			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, data,move);
 			if (s_score < s_beta)
 			{
 				extensions++;
@@ -1305,7 +1287,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			MakeMove(board, move);
 			ply++;
 		}
-		searchStack[ply - 1].move = move;
+		data.searchStack[ply - 1].move = move;
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
 			reduction = lmrTable[depth][searchedMoves];
@@ -1330,7 +1312,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			if ((move == killerMoves[0][ply - 1]) || (move == killerMoves[1][ply - 1]))
+			if ((move == data.killerMoves[0][ply - 1]) || (move == data.killerMoves[1][ply - 1]))
 			{
 				reduction--;
 			}
@@ -1354,13 +1336,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				isChildCutNode = !cutnode;
 			}
-			score = -Negamax(board, depthToSearch + extensions, -beta, -alpha, true, isChildCutNode);
+			score = -Negamax(board, depthToSearch + extensions, -beta, -alpha, true, isChildCutNode,data, NULLMOVE);
 		}
 		else
 		{
 			if (is_reduced)
 			{
-				score = -Negamax(board, depthToSearch - reduction, -alpha - 1, -alpha, true, true);
+				score = -Negamax(board, depthToSearch - reduction, -alpha - 1, -alpha, true, true, data,NULLMOVE);
 
 			}
 			else
@@ -1369,11 +1351,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			if (score > alpha)
 			{
-				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode);
+				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode, data,NULLMOVE);
 			}
 			if (score > alpha && score < beta)
 			{
-				score = -Negamax(board, depthToSearch, -beta, -alpha, true, false);
+				score = -Negamax(board, depthToSearch, -beta, -alpha, true, false, data,NULLMOVE);
 			}
 
 		}
@@ -1425,10 +1407,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = LowerBound;
 			if ((move.Type & capture) == 0)
 			{
-				if (!(killerMoves[0][ply] == move))
+				if (!(data.killerMoves[0][ply] == move))
 				{
-					killerMoves[1][ply] = killerMoves[0][ply];
-					killerMoves[0][ply] = move;
+					data.killerMoves[1][ply] = data.killerMoves[0][ply];
+					data.killerMoves[0][ply] = move;
 				}
 				int mainHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
 				int contHistBonus = CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth;
@@ -1437,19 +1419,19 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					Move& move_quiet = quietsList.moves[i];
 					if (move_quiet == move)
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, mainHistBonus, oppThreats);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, mainHistBonus, oppThreats, data);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, contHistBonus);
+							updateContinuationHistoryScore(move_quiet, contHistBonus, data);
 						}
 
 					}
 					else
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, -mainHistBonus, oppThreats);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, -mainHistBonus, oppThreats, data);
 						if (ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, -contHistBonus);
+							updateContinuationHistoryScore(move_quiet, -contHistBonus, data);
 						}
 					}
 
@@ -1483,9 +1465,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int bound = bestValue >= beta ? HFLOWER : alpha != orgAlpha ? HFEXACT : HFUPPER;
 	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || is_quiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
 	{
-		updatePawnCorrHist(board, depth, bestValue - staticEval);
-		updateMinorCorrHist(board, depth, bestValue - staticEval);
-		updateNonPawnCorrHist(board, depth, bestValue - staticEval);
+		updatePawnCorrHist(board, depth, bestValue - staticEval, data);
+		updateMinorCorrHist(board, depth, bestValue - staticEval, data);
+		updateNonPawnCorrHist(board, depth, bestValue - staticEval, data);
 	}
 	if (!isSingularSearch)
 	{
@@ -1516,30 +1498,33 @@ void bench()
 	Board board;
 	uint64_t nodecount = 0;
 	int totalsearchtime = 0;
+	ThreadData* data = new ThreadData();
+	//std::cout << "happy";
 	for (int i = 0; i < 50; i++)
 	{
+		//std::cout << i;
 		for (int ply = 0; ply < 99; ply++)
 		{
-			killerMoves[0][ply] = Move();
-			killerMoves[1][ply] = Move();
+			data->killerMoves[0][ply] = Move();
+			data->killerMoves[1][ply] = Move();
 		}
-		memset(mainHistory, 0, sizeof(mainHistory));
+		memset(data->mainHistory, 0, sizeof(data->mainHistory));
 		for (size_t i = 0; i < TTSize; i++)
 		{
 			TranspositionTable[i] = TranspositionEntry();
 		}
-		memset(onePlyContHist, 0, sizeof(onePlyContHist));
-		memset(twoPlyContHist, 0, sizeof(twoPlyContHist));
-		memset(CaptureHistory, 0, sizeof(CaptureHistory));
-		memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
-		memset(minorCorrHist, 0, sizeof(minorCorrHist));
+		memset(data->onePlyContHist, 0, sizeof(data->onePlyContHist));
+		memset(data->twoPlyContHist, 0, sizeof(data->twoPlyContHist));
+		memset(data->CaptureHistory, 0, sizeof(data->CaptureHistory));
+		memset(data->pawnCorrHist, 0, sizeof(data->pawnCorrHist));
+		memset(data->minorCorrHist, 0, sizeof(data->minorCorrHist));
 
 		parse_fen(benchFens[i], board);
 		board.zobristKey = generate_hash_key(board);
 		board.history.push_back(board.zobristKey);
 
 		search_start = std::chrono::steady_clock::now();
-		IterativeDeepening(board, 11, -1, false, false);
+		IterativeDeepening(*data, board, 11, -1, false, false);
 		search_end = std::chrono::steady_clock::now();
 
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
@@ -1553,19 +1538,19 @@ void bench()
 	std::cout << nodecount << " nodes " << nodecount / (totalsearchtime + 1) * 1000 << " nps " << "\n";
 	for (int ply = 0; ply < 99; ply++)
 	{
-		killerMoves[0][ply] = Move();
-		killerMoves[1][ply] = Move();
+		data->killerMoves[0][ply] = Move();
+		data->killerMoves[1][ply] = Move();
 	}
-	memset(mainHistory, 0, sizeof(mainHistory));
+	memset(data->mainHistory, 0, sizeof(data->mainHistory));
 	for (size_t i = 0; i < TTSize; i++)
 	{
 		TranspositionTable[i] = TranspositionEntry();
 	}
-	memset(onePlyContHist, 0, sizeof(onePlyContHist));
-	memset(CaptureHistory, 0, sizeof(CaptureHistory));
-	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
-	memset(minorCorrHist, 0, sizeof(minorCorrHist));
-
+	memset(data->onePlyContHist, 0, sizeof(data->onePlyContHist));
+	memset(data->CaptureHistory, 0, sizeof(data->CaptureHistory));
+	memset(data->pawnCorrHist, 0, sizeof(data->pawnCorrHist));
+	memset(data->minorCorrHist, 0, sizeof(data->minorCorrHist));
+	delete data;
 }
 void setColor([[maybe_unused]] ConsoleColor color)
 {
@@ -1784,7 +1769,7 @@ void scaleTime(int& softLimit, uint8_t bestMoveStability, int baseSoft, int maxT
 	double bestMoveScale[5] = { 2.43, 1.35, 1.09, 0.88, 0.68 };
 	softLimit = std::min(static_cast<int>(baseSoft * bestMoveScale[bestMoveStability]), maxTime);
 }
-std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes, uint64_t hardNodes)
+std::pair<Move, int> IterativeDeepening(ThreadData& data, Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes, uint64_t hardNodes)
 {
 	hardNodeBound = hardNodes;
 	if (timeMS == -1)
@@ -1820,7 +1805,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		isSearchStop = false;
 		for (int i = 0; i < 99; i++)
 		{
-			searchStack[i].move = Move(0, 0, 0, 0);
+			data.searchStack[i].move = Move(0, 0, 0, 0);
 		}
 
 		int delta = ASP_WINDOW_INITIAL;
@@ -1850,7 +1835,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 				}
 			}
 
-			score = Negamax(board, std::max(aspirationWindowDepth, 1), alpha_val, beta_val, true, false);
+			score = Negamax(board, std::max(aspirationWindowDepth, 1), alpha_val, beta_val, true, false,data, NULLMOVE);
 
 			delta += delta;
 			if (score <= alpha_val)
@@ -2108,7 +2093,7 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 
 }
 
-void PickRandomPos(Board& board)
+void PickRandomPos(Board& board, ThreadData &data)
 {
 	const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 randomPos:int randomMovesNum = 8 + randBool();
@@ -2116,7 +2101,7 @@ randomPos:int randomMovesNum = 8 + randBool();
 	parse_fen(start_pos, board);
 	board.zobristKey = generate_hash_key(board);
 	board.history.push_back(board.zobristKey);
-	initializeLMRTable();
+	initializeLMRTable(data);
 	Initialize_TT(16);
 	//std::cout << randomMovesNum;
 	for (int i = 0; i < randomMovesNum; i++)
@@ -2403,17 +2388,18 @@ void Datagen(int targetPos, std::string output_name) {
 	}
 
 	auto start_time = std::chrono::high_resolution_clock::now();
-
+	ThreadData mainData;
+	initializeLMRTable(mainData);
 	while (totalPositions < targetPositions) {
 		gameData.clear();
 		Board board;
-		PickRandomPos(board);
+		PickRandomPos(board, mainData);
 		bool isGameOver = false;
 		int result = -1;
 		int plyCount = 0;
 
 		while (!isGameOver) {
-			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
+			auto searchResult = IterativeDeepening(mainData, board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
 			if (board.side == Black) eval = -eval;

@@ -188,6 +188,8 @@ std::vector<std::string> filter_commands = { "filter", "input", "output"};
 Board main_board;
 
 int perft_depth;
+
+ThreadData main_data;
 std::string trim(const std::string& str) {
     const std::string whitespace = " \t\n\r\f\v";
     const auto start = str.find_first_not_of(whitespace);
@@ -409,7 +411,7 @@ void ProcessUCI(std::string input)
     {
         
         Initialize_TT(16);
-        initializeLMRTable();
+        initializeLMRTable(main_data);
         isPrettyPrinting = false;
     }
     else if (main_command == "setoption")
@@ -715,7 +717,7 @@ void ProcessUCI(std::string input)
             if (Commands.size() == 3)
             {
                 int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth);
+                IterativeDeepening(main_data, main_board, depth);
 
             }
             else if (Commands.size() > 3)
@@ -723,7 +725,7 @@ void ProcessUCI(std::string input)
                 if (Commands[3] == "root")
                 {
                     int depth = std::stoi(Commands[2]);
-                    IterativeDeepening(main_board, depth, -1, true);
+                    IterativeDeepening(main_data, main_board, depth, -1, true);
                 }
             }
 
@@ -731,12 +733,12 @@ void ProcessUCI(std::string input)
         else if (Commands[1] == "nodes")
         {
                 int node = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node, node);
+                IterativeDeepening(main_data, main_board, 99, -1, false, true, -1, -1, -1, node, node);
         }
         else if (Commands[1] == "movetime")
         {
             int movetime = std::stoi(Commands[2]);
-            IterativeDeepening(main_board, 99, movetime);
+            IterativeDeepening(main_data, main_board, 99, movetime);
         }
         else if (Commands[1] == "wtime")
         {
@@ -750,7 +752,7 @@ void ProcessUCI(std::string input)
             if (depth != 0)
             {
                 //int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth);
+                IterativeDeepening(main_data, main_board, depth);
                 
             }
             else
@@ -774,13 +776,13 @@ void ProcessUCI(std::string input)
                     maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
                 }
 
-                IterativeDeepening(main_board, 99, hard_bound, false, true, soft_bound, baseTime, maxTime);
+                IterativeDeepening(main_data, main_board, 99, hard_bound, false, true, soft_bound, baseTime, maxTime);
             }
            
         }
         else
         {
-            IterativeDeepening(main_board, 99);
+            IterativeDeepening(main_data, main_board, 99);
         }
         //else if (Commands[1] == "perft")
         //{
@@ -938,7 +940,7 @@ static void InitAll()
 int main(int argc, char* argv[])
 {
 
-    initializeLMRTable();
+    initializeLMRTable(main_data);
     std::cout.sync_with_stdio(false);
     InitAll();
     
