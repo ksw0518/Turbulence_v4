@@ -1141,7 +1141,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int orgAlpha = alpha;
 
-	int depthToSearch;
+	int depthToSearch; 
 
 	bool skipQuiets = false;
 
