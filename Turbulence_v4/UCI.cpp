@@ -31,99 +31,102 @@ std::vector<std::string> option_name = {
     "PAWN_CORRHIST_MULTIPLIER",
     "MINOR_CORRHIST_MULTIPLIER",
     "NONPAWN_CORRHIST_MULTIPLIER",
-    "QS_SEE_PRUNING_MARGIN",
     "HISTORY_PRUNING_MULTIPLIER",
     "HISTORY_PRUNING_BASE",
     "HISTORY_LMR_MULTIPLIER",
     "HISTORY_LMR_BASE",
     "NMP_EVAL_DIVISER",
     "NMP_DEPTH_DIVISER",
-    "MAX_NMP_EVAL_R"
+    "MAX_NMP_EVAL_R",
+	"DEXT_MARGIN"
 };
 
 std::vector<int> option_base = {
-    85,
-    60,
-    -49,
-    -49,
-    0,
-    1,
-    0,
-    63,
-    -1,
-    18,
-    4,
-    2,
-    40,
-    300,
-    5,
-    5,
-    5,
-    0,
-    50,
-    0,
-    25,
-    0,
-    400,
-    3,
-    3
+	89,           // RFP_MULTIPLIER
+	65,           // RFP_IMPROVING_MULTIPLIER
+	-36,          // RFP_BASE
+	-39,          // RFP_IMPROVING_BASE
+	0,            // LMP_BASE
+	1,            // LMP_MULTIPLIER
+	4,            // PVS_QUIET_BASE
+	57,           // PVS_QUIET_MULTIPLIER
+	-3,           // PVS_NOISY_BASE
+	14,           // PVS_NOISY_MULTIPLIER
+	4 * 32,       // HISTORY_BASE
+	3 * 32,       // HISTORY_MULTIPLIER
+	38,           // ASP_WINDOW_INITIAL
+	311,          // ASP_WINDOW_MAX
+	179,          // PAWN_CORRHIST_MULTIPLIER
+	154,          // MINOR_CORRHIST_MULTIPLIER
+	179,          // NONPAWN_CORRHIST_MULTIPLIER
+	41 * 32,      // HISTORY_PRUNING_MULTIPLIER
+	2 * 32,       // HISTORY_PRUNING_BASE
+	24 * 32,      // HISTORY_LMR_MULTIPLIER
+	3 * 32,       // HISTORY_LMR_BASE
+	418,          // NMP_EVAL_DIVISER
+	4,            // NMP_DEPTH_DIVISER
+	3,            // MAX_NMP_EVAL_R
+	20            // DEXT_MARGIN
 };
 
 
-std::vector<int> option_min = { 
-    50,
-    30, 
-    -100, 
-    -100, 
-    -1, 
-    1,
-    -70,
-    20,
-    -70, 
-    5,
-    0, 
-    1,
-    20, 
-    100,
-    1,
-    1,
-    1,
-    -150,
-    10,
-    -200,
-    10, 
-    -100,
-    200,
-    2,
-    2
+std::vector<int> option_min = {
+	50,     // RFP_MULTIPLIER
+	30,     // RFP_IMPROVING_MULTIPLIER
+	-100,   // RFP_BASE
+	-100,   // RFP_IMPROVING_BASE
+	-1,     // LMP_BASE
+	1,      // LMP_MULTIPLIER
+	-70,    // PVS_QUIET_BASE
+	20,     // PVS_QUIET_MULTIPLIER
+	-70,    // PVS_NOISY_BASE
+	5,      // PVS_NOISY_MULTIPLIER
+	0,      // HISTORY_BASE
+	1,      // HISTORY_MULTIPLIER
+	20,     // ASP_WINDOW_INITIAL
+	100,    // ASP_WINDOW_MAX
+	1,      // PAWN_CORRHIST_MULTIPLIER
+	1,      // MINOR_CORRHIST_MULTIPLIER
+	1,      // NONPAWN_CORRHIST_MULTIPLIER
+	10,     // HISTORY_PRUNING_MULTIPLIER
+	-200,   // HISTORY_PRUNING_BASE
+	10,     // HISTORY_LMR_MULTIPLIER
+	-100,   // HISTORY_LMR_BASE
+	200,    // NMP_EVAL_DIVISER
+	2,      // NMP_DEPTH_DIVISER
+	2,      // MAX_NMP_EVAL_R
+	5       // DEXT_MARGIN
 };
+
 std::vector<int> option_max = {
-    160,
-    150,
-    100,
-    100,
-    6,
-    3,
-    100,
-    150,
-    50,
-    80,
-    20,
-    10,
-    100,
-    1000,
-    10,
-    10,
-    10,
-    100,
-    200,
-    100,
-    80,
-    100,
-    800,
-    7,
-    4
+	180,    // RFP_MULTIPLIER          (89 + 10% = ~98 ¡æ min 10 ¡æ 180)
+	150,    // RFP_IMPROVING_MULTIPLIER
+	100,    // RFP_BASE
+	100,    // RFP_IMPROVING_BASE
+	20,     // LMP_BASE                (6 + margin)
+	20,     // LMP_MULTIPLIER          (3 + margin)
+	120,    // PVS_QUIET_BASE          (4 + margin)
+	200,    // PVS_QUIET_MULTIPLIER    (57 + margin)
+	50,     // PVS_NOISY_BASE
+	100,    // PVS_NOISY_MULTIPLIER    (14 + margin)
+	200,    // HISTORY_BASE            (128 + margin)
+	160,    // HISTORY_MULTIPLIER      (96 + margin)
+	150,    // ASP_WINDOW_INITIAL
+	1200,   // ASP_WINDOW_MAX          (311 + margin)
+	250,    // PAWN_CORRHIST_MULTIPLIER
+	200,    // MINOR_CORRHIST_MULTIPLIER
+	250,    // NONPAWN_CORRHIST_MULTIPLIER
+	1500,   // HISTORY_PRUNING_MULTIPLIER
+	200,    // HISTORY_PRUNING_BASE
+	900,    // HISTORY_LMR_MULTIPLIER
+	150,    // HISTORY_LMR_BASE
+	1000,   // NMP_EVAL_DIVISER
+	10,     // NMP_DEPTH_DIVISER
+	10,     // MAX_NMP_EVAL_R
+	150     // DEXT_MARGIN
 };
+
+
 
 std::vector<int*> option_var = {
     &RFP_MULTIPLIER,
@@ -143,14 +146,14 @@ std::vector<int*> option_var = {
     &PAWN_CORRHIST_MULTIPLIER,
     &MINOR_CORRHIST_MULTIPLIER,
     &NONPAWN_CORRHIST_MULTIPLIER,
-    &QS_SEE_PRUNING_MARGIN,
     &HISTORY_PRUNING_MULTIPLIER,
     &HISTORY_PRUNING_BASE,
     &HISTORY_LMR_MULTIPLIER,
     &HISTORY_LMR_BASE,
     &NMP_EVAL_DIVISER,
     &NMP_DEPTH_DIVISER,
-    &MAX_NMP_EVAL_R
+    &MAX_NMP_EVAL_R,
+	&DEXT_MARGIN
 };
 
 
@@ -376,15 +379,15 @@ void ProcessUCI(std::string input)
         std::cout << "\n";
         std::cout << "option name Threads type spin default 1 min 1 max 1\n";
         std::cout << "option name Hash type spin default 12 min 1 max 4096\n";
-        //for (int i = 0; i < option_name.size(); i++)//for spsa
-        //{
-        //    std::cout << "option name " << option_name[i];
-        //    std::cout << " type spin ";
-        //    std::cout << " default " << option_base[i];
-        //    std::cout << " min " << option_min[i];
-        //    std::cout << " max " << option_max[i];
-        //    std::cout << "\n";
-        //}
+        for (int i = 0; i < option_name.size(); i++)//for spsa
+        {
+            std::cout << "option name " << option_name[i];
+            std::cout << " type spin ";
+            std::cout << " default " << option_base[i];
+            std::cout << " min " << option_min[i];
+            std::cout << " max " << option_max[i];
+            std::cout << "\n";
+        }
         isPrettyPrinting = false;
         
         std::cout << "uciok" << "\n";

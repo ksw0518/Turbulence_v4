@@ -125,39 +125,42 @@ std::string benchFens[] = { // fens from alexandria, ultimately from bitgenie
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
 int RFP_MULTIPLIER = 89;
-int RFP_IMPROVING_MULTIPLIER = 65;
-int RFP_BASE = -36;
-int RFP_IMPROVING_BASE = -39;
+int RFP_IMPROVING_MULTIPLIER = 60;
+int RFP_BASE = -42;
+int RFP_IMPROVING_BASE = -35;
 
-int LMP_BASE = 0;
-int LMP_MULTIPLIER = 1;
+int LMP_BASE = 1;
+int LMP_MULTIPLIER = 2;
 
-int PVS_QUIET_BASE = 4;
-int PVS_QUIET_MULTIPLIER = 57;
+int PVS_QUIET_BASE = -3;
+int PVS_QUIET_MULTIPLIER = 62;
 
-int PVS_NOISY_BASE = -3;
-int PVS_NOISY_MULTIPLIER = 14;
+int PVS_NOISY_BASE = -11;
+int PVS_NOISY_MULTIPLIER = 19;
 
-int HISTORY_BASE = 4 * 32;
-int HISTORY_MULTIPLIER = 3 * 32;
+int HISTORY_BASE = 130;
+int HISTORY_MULTIPLIER = 87;
 int CONTHIST_BASE = 4;
 int CONTHIST_MULTIPLIER = 3;
 
-int ASP_WINDOW_INITIAL = 38;
-int ASP_WINDOW_MAX = 311;
+int ASP_WINDOW_INITIAL = 25;
+int ASP_WINDOW_MAX = 306;
 
-int PAWN_CORRHIST_MULTIPLIER = 179;// divide by 5 later
-int MINOR_CORRHIST_MULTIPLIER = 154;// divide by 5 later
-int NONPAWN_CORRHIST_MULTIPLIER = 179;// divide by 5 later
+int PAWN_CORRHIST_MULTIPLIER = 177;// divide by 5 later
+int MINOR_CORRHIST_MULTIPLIER = 156;// divide by 5 later
+int NONPAWN_CORRHIST_MULTIPLIER = 183;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
-int HISTORY_PRUNING_MULTIPLIER = 41 * 32;
-int HISTORY_PRUNING_BASE = 2 * 32;
-int HISTORY_LMR_MULTIPLIER = 24 * 32;
-int HISTORY_LMR_BASE = 3 * 32;
-int NMP_EVAL_DIVISER = 418;
-int NMP_DEPTH_DIVISER = 4;
+int HISTORY_PRUNING_MULTIPLIER = 1320;
+int HISTORY_PRUNING_BASE = 62;
+int HISTORY_LMR_MULTIPLIER = 772;
+int HISTORY_LMR_BASE = 86;
+int NMP_EVAL_DIVISER = 399;
+int NMP_DEPTH_DIVISER = 3;
 int MAX_NMP_EVAL_R = 3;
+
+int DEXT_MARGIN = 21; 
+
 
 auto clockStart = std::chrono::steady_clock::now();
 
@@ -1290,7 +1293,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if (s_score < s_beta)
 			{
 				extensions++;
-				if (!isPvNode && s_score <= s_beta - 20) 
+				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN) 
 				{
 					extensions++;
 					//searchStack[ply].doubleExtensions++;
