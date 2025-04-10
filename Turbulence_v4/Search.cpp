@@ -1293,9 +1293,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if (s_score < s_beta)
 			{
 				extensions++;
-				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN) 
+				if (!isPvNode)
 				{
-					extensions++;
+					if (s_score <= s_beta - DEXT_MARGIN)
+					{
+						extensions++;
+						if (s_score < s_beta - 150)
+						{
+							extensions++;
+						}
+					}
+					
 					//searchStack[ply].doubleExtensions++;
 				}
 
