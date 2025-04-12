@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <fstream>
 #include <cassert>
+#include <sstream>
 //#include "Movegen.h"
 //inline int getFile(int square)
 //{
@@ -232,15 +233,11 @@ int side_multiply[2]
 
 
 
-void LoadNetwork(const std::string& filepath)
-{
-	std::ifstream stream(filepath, std::ios::binary);
-	if (!stream.is_open()) {
-		std::cerr << "Failed to open file: " << filepath << std::endl;
-	}
+void LoadNetworkFromMemory(const uint8_t* data, size_t size) {
+	std::istringstream stream(std::string(reinterpret_cast<const char*>(data), size), std::ios::binary);
+
 	uint64_t sum = 0;
-	//std::cout << sum << std::endl;
-	// Load weightsToHL
+
 	for (size_t row = 0; row < INPUT_SIZE; ++row) {
 		for (size_t col = 0; col < HL_SIZE; ++col) {
 			Eval_Network.accumulator_weights[row][col] = readLittleEndian<int16_t>(stream);
@@ -248,31 +245,22 @@ void LoadNetwork(const std::string& filepath)
 			sum += (uint16_t)Eval_Network.accumulator_weights[row][col];
 		}
 	}
-	//std::cout << sum << std::endl;
-	// Load hiddenLayerBias
+
 	for (size_t i = 0; i < HL_SIZE; ++i) {
 		Eval_Network.accumulator_biases[i] = readLittleEndian<int16_t>(stream);
 		sum *= 7;
 		sum += (uint16_t)Eval_Network.accumulator_biases[i];
 	}
-	//std::cout << sum << std::endl;
-	// Load weightsToOut
+
 	for (size_t i = 0; i < 2 * HL_SIZE; ++i) {
 		Eval_Network.output_weights[i] = readLittleEndian<int16_t>(stream);
-		//std::cout << Eval_Network.output_weights[i] <<std::endl;
 		sum *= 7;
 		sum += (uint16_t)Eval_Network.output_weights[i];
 	}
-	//std::cout << sum << std::endl;
-	// Load outputBias
-	sum *= 7;
 
-	
+	sum *= 7;
 	Eval_Network.output_bias = readLittleEndian<int16_t>(stream);
 	sum += (uint16_t)Eval_Network.output_bias;
-	
-	//std::cout << sum << std::endl;
-	//std::cout << (uint16_t)Eval_Network.output_bias;
 }
 //int gamephaseInc[12] = { 0,0,1,1,1,1,2,2,4,4,0,0 };
 int gamephaseInc[12] = { 0,1,1,2,4,0,0,1,1,2,4,0 };

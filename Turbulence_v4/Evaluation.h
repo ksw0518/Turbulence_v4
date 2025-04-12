@@ -6,5 +6,5 @@ void init_tables();
 int Evaluate(Board& board);
 
 void print_tables();
-void LoadNetwork(const std::string& filepath);
+void LoadNetworkFromMemory(const uint8_t* data, size_t size);
 void resetAccumulators(const Board& board, AccumulatorPair& accumulator);
