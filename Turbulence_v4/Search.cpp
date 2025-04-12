@@ -1046,6 +1046,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
+	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (ttEntry.bestMove == NULLMOVE || !is_ttmove_found))
+	{
+		depth--;
+	}
+
 	tt_pv |= ttEntry.ttPv;
 	bool isInCheck = is_in_check(board);
 
