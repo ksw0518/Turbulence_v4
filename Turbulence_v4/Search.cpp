@@ -884,8 +884,13 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
+		
 		if (is_quiet(move.Type)) continue; //skip non capture moves
-
+		int margin = 100;
+		if (staticEval + margin <= alpha && !SEE(board, move, 1)) {
+			bestValue = std::max(bestValue, staticEval + margin);
+			continue;
+		}
 		if (!SEE(board, move, 0))
 		{
 			continue;
