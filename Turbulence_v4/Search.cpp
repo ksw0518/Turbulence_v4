@@ -149,6 +149,7 @@ int ASP_WINDOW_MAX = 306;
 int PAWN_CORRHIST_MULTIPLIER = 177;// divide by 5 later
 int MINOR_CORRHIST_MULTIPLIER = 156;// divide by 5 later
 int NONPAWN_CORRHIST_MULTIPLIER = 183;// divide by 5 later
+int COUNTERMOVE_CORRHIST_MULTIPLIER = 150;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
 int HISTORY_PRUNING_MULTIPLIER = 1320;
@@ -197,6 +198,11 @@ int twoPlyContHist[12][64][12][64];
 
 int pawnCorrHist[2][CORRHIST_SIZE];
 int minorCorrHist[2][CORRHIST_SIZE];
+
+/// <summary>
+/// [piece][to]
+/// </summary>
+int counterMoveCorrHist[12][64];
 
 /// <summary>
 /// [keySide][currentBoardSide][hash]
@@ -273,6 +279,7 @@ void initializeLMRTable()
 	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 	memset(nonPawnCorrHist, 0, sizeof(nonPawnCorrHist));
 	memset(minorCorrHist, 0, sizeof(minorCorrHist));
+	memset(counterMoveCorrHist, 0, sizeof(counterMoveCorrHist));
 
 	isPrettyPrinting = true;
 	for (int ply = 0; ply < 99; ply++)
@@ -311,6 +318,15 @@ void updatePawnCorrHist(Board& board, const int depth, const int diff)
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
+void updateCounterCorrHist(Move prevMove, const int depth, const int diff)
+{
+	//uint64_t pawnKey = board.PawnKey;
+	int& entry = counterMoveCorrHist[prevMove.Piece][prevMove.To];
+	const int scaledDiff = diff * CORRHIST_GRAIN;
+	const int newWeight = std::min(depth + 1, 16);
+	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
+}
 void updateNonPawnCorrHist(Board& board, const int depth, const int diff)
 {
 	uint64_t whiteKey = board.WhiteNonPawnKey;
@@ -329,7 +345,7 @@ void updateNonPawnCorrHist(Board& board, const int depth, const int diff)
 	blackEntry = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	blackEntry = std::clamp(blackEntry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-int adjustEvalWithCorrHist(Board& board, const int rawEval)
+int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove)
 {
 	uint64_t pawnKey = board.PawnKey;
 	const int& pawnEntry = pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
@@ -342,12 +358,16 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval)
 	const int& whiteNPEntry = nonPawnCorrHist[White][board.side][whiteNPKey % CORRHIST_SIZE];
 	uint64_t blackNPKey = board.BlackNonPawnKey;
 	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
+	
+	const int& contEntry = counterMoveCorrHist[prevMove.Piece][prevMove.To];
+
 	int mate_found = 49000 - 99;
 
 	int adjust = 0;
 
 	adjust += pawnEntry * PAWN_CORRHIST_MULTIPLIER;
 	adjust += minorEntry * MINOR_CORRHIST_MULTIPLIER;
+	adjust += contEntry * COUNTERMOVE_CORRHIST_MULTIPLIER;
 	adjust += (whiteNPEntry + blackNPEntry) * NONPAWN_CORRHIST_MULTIPLIER;
 
 	adjust /= 128;
@@ -839,7 +859,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	int score = 0;
 
 	int staticEval = Evaluate(board);
-	staticEval = adjustEvalWithCorrHist(board, staticEval);
+	staticEval = adjustEvalWithCorrHist(board, staticEval, searchStack[ply - 1].move);
 
 
 	if (staticEval >= beta)
@@ -905,7 +925,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			selDepth = ply;
 		}
 		MakeMove(board, move);
-
+		searchStack[ply-1].move = move;
 		if (!isLegal(move, board))//isMoveValid(move, board)
 		{
 
@@ -1071,7 +1091,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int rawEval = Evaluate(board);
 
-	int staticEval = adjustEvalWithCorrHist(board, rawEval);
+	int staticEval = adjustEvalWithCorrHist(board, rawEval, searchStack[ply - 1].move);
 
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
@@ -1494,6 +1514,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		updatePawnCorrHist(board, depth, bestValue - staticEval);
 		updateMinorCorrHist(board, depth, bestValue - staticEval);
 		updateNonPawnCorrHist(board, depth, bestValue - staticEval);
+		updateCounterCorrHist(searchStack[ply - 1].move, depth, bestValue - staticEval);
 	}
 	if (!isSingularSearch)
 	{
@@ -1541,6 +1562,7 @@ void bench()
 		memset(CaptureHistory, 0, sizeof(CaptureHistory));
 		memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 		memset(minorCorrHist, 0, sizeof(minorCorrHist));
+		memset(counterMoveCorrHist, 0, sizeof(counterMoveCorrHist));
 
 		parse_fen(benchFens[i], board);
 		board.zobristKey = generate_hash_key(board);
@@ -1573,7 +1595,7 @@ void bench()
 	memset(CaptureHistory, 0, sizeof(CaptureHistory));
 	memset(pawnCorrHist, 0, sizeof(pawnCorrHist));
 	memset(minorCorrHist, 0, sizeof(minorCorrHist));
-
+	memset(counterMoveCorrHist, 0, sizeof(counterMoveCorrHist));
 }
 void setColor([[maybe_unused]] ConsoleColor color)
 {
