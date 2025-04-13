@@ -1046,7 +1046,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 	}
-	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (ttEntry.bestMove == NULLMOVE || !is_ttmove_found))
+	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (ttEntry.bestMove == NULLMOVE || !is_ttmove_found || ttEntry.depth < depth - 3))
 	{
 		depth--;
 	}
