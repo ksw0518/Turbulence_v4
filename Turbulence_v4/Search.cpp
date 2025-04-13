@@ -1346,6 +1346,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
+			if (tt_pv && is_ttmove_found && ttEntry.score <= alpha)
+			{
+				reduction++;
+			}
 		}
 
 		if (reduction < 0) reduction = 0;
