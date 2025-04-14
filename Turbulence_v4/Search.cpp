@@ -503,7 +503,28 @@ void printTopOneplyContHist() {
 	}
 }
 
+int getPiecePromoting(int type, int side)
+{
+	int return_piece = 0;
+	if ((type == queen_promo) || (type == queen_promo_capture))
+	{
+		return_piece = Q;
+	}
+	else if (type == rook_promo || (type == rook_promo_capture))
+	{
+		return_piece = R;
+	}
+	else if (type == bishop_promo || (type == bishop_promo_capture))
+	{
+		return_piece = B;
+	}
+	else if (type == knight_promo || (type == knight_promo_capture))
+	{
+		return_piece = N;
+	}
 
+	return get_piece(return_piece, side);
+}
 static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entry, uint64_t opp_threat)
 {
 
@@ -515,6 +536,25 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		{
 			//make sure TT move isn't included in search, because it is already searched before generating move
 			return 99999999;
+		}
+	}
+	if ((move.Type & promotionFlag) != 0)
+	{
+
+		switch (getPiecePromoting(move.Type, White))
+		{
+		case Q:
+			return 9999999;
+			break;
+		case N:
+			return 9999997;
+			break;
+		case R:
+			return 100;
+			break;
+		case B:
+			return -500;
+			break;
 		}
 	}
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
@@ -589,28 +629,28 @@ bool is_promotion(int type)
 {
 	return  (type & promotionFlag) != 0;
 }
-int getPiecePromoting(int type, int side)
-{
-	int return_piece = 0;
-	if ((type == queen_promo) || (type == queen_promo_capture))
-	{
-		return_piece = Q;
-	}
-	else if (type == rook_promo || (type == rook_promo_capture))
-	{
-		return_piece = R;
-	}
-	else if (type == bishop_promo || (type == bishop_promo_capture))
-	{
-		return_piece = B;
-	}
-	else if (type == knight_promo || (type == knight_promo_capture))
-	{
-		return_piece = N;
-	}
-
-	return get_piece(return_piece, side);
-}
+//int getPiecePromoting(int type, int side)
+//{
+//	int return_piece = 0;
+//	if ((type == queen_promo) || (type == queen_promo_capture))
+//	{
+//		return_piece = Q;
+//	}
+//	else if (type == rook_promo || (type == rook_promo_capture))
+//	{
+//		return_piece = R;
+//	}
+//	else if (type == bishop_promo || (type == bishop_promo_capture))
+//	{
+//		return_piece = B;
+//	}
+//	else if (type == knight_promo || (type == knight_promo_capture))
+//	{
+//		return_piece = N;
+//	}
+//
+//	return get_piece(return_piece, side);
+//}
 int move_estimated_value(Board& board, Move move)
 {
 	// Start with the value of the piece on the target square
