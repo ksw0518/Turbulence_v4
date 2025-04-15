@@ -857,24 +857,11 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		return Evaluate(board);
 	}
 	int score = 0;
-
-	int staticEval = Evaluate(board);
-	staticEval = adjustEvalWithCorrHist(board, staticEval, searchStack[ply - 1].move);
-
-
-	if (staticEval >= beta)
-	{
-		return staticEval;
-	}
-
-	if (staticEval > alpha)
-	{
-		alpha = staticEval;
-	}
-
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
+	bool is_ttmove_found = false;
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
+		is_ttmove_found = true;
 		if ((ttEntry.bound == ExactFlag)
 			|| (ttEntry.bound == UpperBound && ttEntry.score <= alpha)
 			|| (ttEntry.bound == LowerBound && ttEntry.score >= beta))
@@ -882,6 +869,27 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			return ttEntry.score;
 		}
 	}
+	int staticEval = Evaluate(board);
+	staticEval = adjustEvalWithCorrHist(board, staticEval, searchStack[ply - 1].move);
+	bool isInCheck = is_in_check(board);
+	int ttAdjustedEval = staticEval;
+	uint8_t Bound = ttEntry.bound;
+	if (is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
+	{
+		ttAdjustedEval = ttEntry.score;
+	}
+
+	if (ttAdjustedEval >= beta)
+	{
+		return ttAdjustedEval;
+	}
+
+	if (ttAdjustedEval > alpha)
+	{
+		alpha = ttAdjustedEval;
+	}
+
+
 
 	MoveList moveList;
 	Generate_Legal_Moves(moveList, board, true);
@@ -992,7 +1000,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	if (legal_moves == 0) // quiet position
 	{
-		return staticEval;
+		return ttAdjustedEval;
 	}
 	if (ttEntry.bound == 0)
 	{
