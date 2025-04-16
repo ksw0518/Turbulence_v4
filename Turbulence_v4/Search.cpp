@@ -888,7 +888,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		alpha = ttAdjustedEval;
 	}
-
+	 
 
 
 	MoveList moveList;
