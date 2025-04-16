@@ -1325,6 +1325,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 
 			}
+			else if (s_beta >= beta)
+			{
+				return s_beta;
+			}
 			else if (ttEntry.score >= beta)
 			{
 				extensions--;
