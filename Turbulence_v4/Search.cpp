@@ -217,7 +217,7 @@ Search_data searchStack[99];
 
 constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 1024;
-constexpr int MAX_CAPTHIST = 1024;
+constexpr int MAX_CAPTHIST = 16384;
 
 constexpr int MIN_LMR_DEPTH = 3;
 
@@ -379,7 +379,8 @@ void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat)
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 	mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
 }
-void update_capthist(int attacker, int to, int victim, int bonus)
+
+void updateCaptHist(int attacker, int to, int victim, int bonus)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_CAPTHIST, MAX_CAPTHIST);
 	CaptureHistory[attacker][to][victim] += clampedBonus - CaptureHistory[attacker][to][victim] * abs(clampedBonus) / MAX_CAPTHIST;
@@ -529,9 +530,11 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = MVVLVA[attacker][victim];
+		int score = SEEPieceValues[victim];
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		score += SEE(board, move, -100) ? 200000 : -10000000;
+		int captHistScore = CaptureHistory[move.Piece][move.To][victim];
+		score += captHistScore / 20;
 		return score;
 	}
 	else
@@ -570,13 +573,20 @@ static inline int get_move_score_capture(Move move, Board& board)
 {
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
+		int victim;
 		if (move.Type == ep_capture)
 		{
-			return MVVLVA[P][P] * 10000;
+			victim = P;
 		}
-		int victim = get_piece(board.mailbox[move.To], White);
+		else
+		{
+			victim = get_piece(board.mailbox[move.To], White);
+		}
 		int attacker = get_piece(move.Piece, White);
-		return MVVLVA[attacker][victim] * 10000;
+		int score = SEEPieceValues[victim];
+		int captHistScore = CaptureHistory[move.Piece][move.To][victim];
+		score += captHistScore / 20;
+		return score;
 	}
 	else
 	{
@@ -1186,6 +1196,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth; 
 
 	MoveList quietsList;
+	MoveList capturesList;
+	std::vector<int> victimList;
 
 	Move bestMove = Move(0, 0, 0, 0);
 	int quietMoves = 0;
@@ -1288,6 +1300,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			quietsList.add(move);
 			quietMoves++;
+		}
+		else
+		{
+			capturesList.add(move);
+			victimList.push_back(captured_piece);
 		}
 
 
@@ -1467,6 +1484,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (alpha >= beta)
 		{
 			ttFlag = LowerBound;
+			int mainHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
+			int contHistBonus = CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth;
 			if ((move.Type & capture) == 0)
 			{
 				if (!(killerMoves[0][ply] == move))
@@ -1474,8 +1493,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					killerMoves[1][ply] = killerMoves[0][ply];
 					killerMoves[0][ply] = move;
 				}
-				int mainHistBonus = HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth;
-				int contHistBonus = CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth;
+				
 				for (int i = 0; i < quietsList.count; ++i)
 				{
 					Move& move_quiet = quietsList.moves[i];
@@ -1496,9 +1514,33 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 							updateContinuationHistoryScore(move_quiet, -contHistBonus);
 						}
 					}
+					for (int i = 0; i < capturesList.count; ++i)
+					{
+						Move& move_capture = capturesList.moves[i];
+						updateCaptHist(move_capture.Piece, move_capture.To, victimList[i], -mainHistBonus);
+					}
+				}
+
+			}
+			else
+			{
+				for (int i = 0; i < capturesList.count; ++i)
+				{
+					Move& move_capture = capturesList.moves[i];
+					if (move_capture == move)
+					{
+						updateCaptHist(move_capture.Piece, move_capture.To, victimList[i], mainHistBonus);
+
+
+					}
+					else
+					{
+						updateCaptHist(move_capture.Piece, move_capture.To, victimList[i], -mainHistBonus);
+					}
 
 				}
 			}
+
 			break;
 		}
 
