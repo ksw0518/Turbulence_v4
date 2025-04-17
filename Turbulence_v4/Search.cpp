@@ -530,11 +530,12 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = SEEPieceValues[victim];
+		int score = SEEPieceValues[victim] * 5120;
 		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
-		score += SEE(board, move, -100) ? 200000 : -10000000;
 		int captHistScore = CaptureHistory[move.Piece][move.To][victim];
-		score += captHistScore / 20;
+		score += captHistScore;
+		score += SEE(board, move, -100) ? 200000 : -10000000;
+
 		return score;
 	}
 	else
@@ -583,9 +584,11 @@ static inline int get_move_score_capture(Move move, Board& board)
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = SEEPieceValues[victim];
+		int score = SEEPieceValues[victim] * 5120;
+		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
 		int captHistScore = CaptureHistory[move.Piece][move.To][victim];
-		score += captHistScore / 20;
+		score += captHistScore;
+
 		return score;
 	}
 	else
