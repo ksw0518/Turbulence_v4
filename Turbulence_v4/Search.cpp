@@ -1382,6 +1382,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
+			if (!is_quiet(ttEntry.bestMove.Type) && is_quiet(move.Type))//tt move is a capture
+			{
+				reduction++;
+			}
 		}
 
 		if (reduction < 0) reduction = 0;
