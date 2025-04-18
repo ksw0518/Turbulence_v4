@@ -1337,7 +1337,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				return s_beta;
 			}
-			else if (ttEntry.score >= beta)
+			else if (ttEntry.score >= beta || cutnode)
 			{
 				extensions--;
 			}
