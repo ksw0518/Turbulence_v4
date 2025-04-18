@@ -1349,7 +1349,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
 			reduction = lmrTable[depth][searchedMoves];
-
+			
 			if (!isPvNode && quietMoves >= 4)
 			{
 				reduction++;
@@ -1382,6 +1382,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
+			reduction -= 1;
 			if (is_ttmove_found && !is_quiet(ttEntry.bestMove.Type) && is_quiet(move.Type))//tt move is a capture
 			{
 				reduction++;
