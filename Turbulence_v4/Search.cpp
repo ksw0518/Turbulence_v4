@@ -909,11 +909,16 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
+	int futility = ttAdjustedEval + 100;
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
 		if (is_quiet(move.Type)) continue; //skip non capture moves
 
+		if (!isInCheck && futility <= alpha && !SEE(board, move, 1)) {
+			bestValue = std::max(bestValue, futility);
+			continue;
+		}
 		if (!SEE(board, move, 0))
 		{
 			continue;
