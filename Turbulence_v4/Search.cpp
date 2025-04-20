@@ -913,7 +913,12 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		Move& move = moveList.moves[i];
 		if (is_quiet(move.Type)) continue; //skip non capture moves
-
+		int futilityValue = 100 + SEEPieceValues[board.mailbox[move.To]];
+		if (futilityValue <= alpha)
+		{
+			bestValue = std::max(bestValue, futilityValue);
+			continue;
+		}
 		if (!SEE(board, move, 0))
 		{
 			continue;
