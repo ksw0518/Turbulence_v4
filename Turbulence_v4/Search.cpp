@@ -928,7 +928,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			}
 			int futilityValue = futilityBase + SEEPieceValues[captured_piece];
 			
-			if (futilityValue <= alpha)
+			if (futilityValue <= alpha && !SEE(board, move, 1))
 			{
 				bestValue = std::max(bestValue, futilityValue);
 				continue;
