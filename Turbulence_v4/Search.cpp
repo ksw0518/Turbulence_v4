@@ -1109,7 +1109,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	searchStack[ply].staticEval = staticEval;
 
-	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
+	bool improving = !isInCheck && ply > 1 && ttAdjustedEval > searchStack[ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
 	if (!isSingularSearch && depth < 5 && canPrune)//rfp
