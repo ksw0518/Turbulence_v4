@@ -909,10 +909,31 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
+	int futilityBase = staticEval + 350;
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
 		if (is_quiet(move.Type)) continue; //skip non capture moves
+
+		if ((move.Type & captureFlag) != 0)
+		{
+			int captured_piece;
+			if (move.Type == ep_capture)
+			{
+				captured_piece = P;
+			}
+			else 
+			{
+				captured_piece = get_piece(board.mailbox[move.To], White);
+			}
+			int futilityValue = futilityBase + SEEPieceValues[captured_piece];
+			
+			if (futilityValue <= alpha)
+			{
+				bestValue = std::max(bestValue, futilityValue);
+				continue;
+			}
+		}
 
 		if (!SEE(board, move, 0))
 		{
