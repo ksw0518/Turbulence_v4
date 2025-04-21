@@ -1107,6 +1107,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
+	
 	searchStack[ply].staticEval = staticEval;
 
 	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
@@ -1514,15 +1515,20 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return isSingularSearch ? alpha : 0;
 		}
 	}
+	if (!isSingularSearch)
+	{
+		if (ttFlag == UpperBound && is_ttmove_found)
+		{
+			bestMove = ttEntry.bestMove;
+		}
+	}
 	ttEntry.score = bestValue;
 	ttEntry.bound = ttFlag;
 	ttEntry.depth = depth;
 	ttEntry.zobristKey = board.zobristKey;
 	ttEntry.ttPv = tt_pv;
-	if (bestMove != Move(0, 0, 0, 0))
-	{
-		ttEntry.bestMove = bestMove;
-	}
+	ttEntry.bestMove = bestMove;
+
 
 	int bound = bestValue >= beta ? HFLOWER : alpha != orgAlpha ? HFEXACT : HFUPPER;
 	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || is_quiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
