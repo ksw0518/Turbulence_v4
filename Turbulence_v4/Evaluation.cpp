@@ -419,14 +419,14 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 }
 
 
-std::int32_t autovectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm, int bucket_offset) {
-	std::int32_t accumulator{};
-	for (int i = 0; i <  HL_SIZE; i++) {
-		accumulator += (int32_t)activation(stm->values[i]) * network->output_weights[i + bucket_offset];
-		accumulator += (int32_t)activation(nstm->values[i]) * network->output_weights[i + HL_SIZE + bucket_offset];
-	}
-	return accumulator;
-}
+//std::int32_t autovectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm, int bucket_offset) {
+//	std::int32_t accumulator{};
+//	for (int i = 0; i <  HL_SIZE; i++) {
+//		accumulator += (int32_t)activation(stm->values[i]) * network->output_weights[i + bucket_offset];
+//		accumulator += (int32_t)activation(nstm->values[i]) * network->output_weights[i + HL_SIZE + bucket_offset];
+//	}
+//	return accumulator;
+//}
 
 #if defined(__x86_64__) || defined(__amd64__) || (defined(_WIN64) && (defined(_M_X64) ||  defined(_M_AMD64)))
 #define is_x86 1
@@ -446,107 +446,107 @@ std::int32_t autovectorised_screlu(Network const * network, Accumulator const * 
 #include <immintrin.h>
 #endif
 
-//std::int32_t vectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm) {
-//#if is_x86 && has_simd
-//#if defined(__AVX512F__)
-//	using native_vector = __m512i;
-//	#define set1_epi16 _mm512_set1_epi16
-//	#define load_epi16 _mm512_load_si512
-//	#define min_epi16 _mm512_min_epi16
-//	#define max_epi16 _mm512_max_epi16
-//	#define madd_epi16 _mm512_madd_epi16
-//	#define mullo_epi16 _mm512_mullo_epi16
-//	#define add_epi32 _mm512_add_epi32
-//	#define reduce_epi32 _mm512_reduce_add_epi32 
-//#elif defined(__AVX2__)
-//	using native_vector = __m256i;
-//	#define set1_epi16 _mm256_set1_epi16
-//#define load_epi16 [](auto ptr) { return _mm256_load_si256(reinterpret_cast<native_vector const *>(ptr)); }
-//	#define min_epi16 _mm256_min_epi16
-//	#define max_epi16 _mm256_max_epi16
-//	#define madd_epi16 _mm256_madd_epi16
-//	#define mullo_epi16 _mm256_mullo_epi16
-//	#define add_epi32 _mm256_add_epi32
-//	// based on output from zig 0.14.0 for @reduce(.Add, @as(@Vector(8, i32), x)
-//	#define reduce_epi32 [](native_vector vec) {         \
-//		__m128i xmm1 = _mm256_extracti128_si256(vec, 1); \
-//		__m128i xmm0 = _mm256_castsi256_si128(vec);      \
-//		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
-//		xmm1 = _mm_shuffle_epi32(xmm0, 238);             \
-//		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
-//		xmm1 = _mm_shuffle_epi32(xmm0, 85);              \
-//		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
-//		return _mm_cvtsi128_si32(xmm0);                  \
-//	}
-//#elif defined(__SSE__)
-//	using native_vector = __m128i;
-//	#define set1_epi16 _mm_set1_epi16
-//#define load_epi16 [](auto ptr) { return _mm_load_si128(reinterpret_cast<native_vector const *>(ptr)); }
-//	#define min_epi16 _mm_min_epi16
-//	#define max_epi16 _mm_max_epi16
-//	#define madd_epi16 _mm_madd_epi16
-//	#define mullo_epi16 _mm_mullo_epi16
-//	#define add_epi32 _mm_add_epi32
-//	// based on output from zig 0.14.0 for @reduce(.Add, @as(@Vector(4, i32), x)
-//	#define reduce_epi32 [](native_vector vec) {    \
-//		__m128i xmm1 = _mm_shuffle_epi32(vec, 238); \
-//		vec = _mm_add_epi32(vec, xmm1);             \
-//		xmm1 = _mm_shuffle_epi32(vec, 85);          \
-//		vec = _mm_add_epi32(vec, xmm1);             \
-//		return _mm_cvtsi128_si32(vec);              \
-//	}
-//#endif
-//	constexpr auto VECTOR_SIZE = sizeof(native_vector) / sizeof(std::int16_t);
-//	static_assert(HL_SIZE % VECTOR_SIZE == 0, "HL_SIZE must be divisible by the native register size for this vectorization implementation to work");
-//	const native_vector VEC_QA = set1_epi16(QA);
-//	const native_vector VEC_ZERO = set1_epi16(0);
-//	
-//	constexpr auto UNROLL = 2;
-//
-//	std::array<native_vector, UNROLL> accumulator{};
-//	int i = 0;
-//	
-//	const auto one_iteration = [&](auto idx, native_vector& acc) {
-//		// load accumulator values
-//		const native_vector stm_accum_values = load_epi16(&stm->values[idx]);
-//		const native_vector nstm_accum_values = load_epi16(&nstm->values[idx]);
-//
-//		// load network weights
-//		const native_vector stm_weights = load_epi16(&network->output_weights[idx]);
-//		const native_vector nstm_weights = load_epi16(&network->output_weights[idx + HL_SIZE]);
-//		
-//		// clamp the values to [0, QA] 
-//		const native_vector stm_clamped = min_epi16(VEC_QA, max_epi16(stm_accum_values, VEC_ZERO));
-//		const native_vector nstm_clamped = min_epi16(VEC_QA, max_epi16(nstm_accum_values, VEC_ZERO));
-//		
-//		// apply lizard screlu
-//		const native_vector stm_screlud = madd_epi16(stm_clamped, mullo_epi16(stm_clamped, stm_weights));
-//		const native_vector nstm_screlud = madd_epi16(nstm_clamped, mullo_epi16(nstm_clamped, nstm_weights));
-//		
-//		acc = add_epi32(acc, stm_screlud);
-//		acc = add_epi32(acc, nstm_screlud);
-//	};
-//
-//	if constexpr (HL_SIZE >= UNROLL * VECTOR_SIZE) {
-//		for (;i < HL_SIZE; i += UNROLL * VECTOR_SIZE) {
-//			for (int j = 0; j < UNROLL; ++j) {
-//				one_iteration(i + j * VECTOR_SIZE, accumulator[j]);
-//			}
-//		}
-//	}
-//	for (;i < HL_SIZE; i += VECTOR_SIZE) {
-//		one_iteration(i, accumulator[0]);
-//	}
-//	if constexpr (HL_SIZE >= UNROLL * VECTOR_SIZE) {
-//		for (int j = 1; j < UNROLL; ++j) {
-//			accumulator[0] = add_epi32(accumulator[0], accumulator[j]);
-//		}
-//	}
-//	return reduce_epi32(accumulator[0]);
-//#else
-//	return autovectorised_screlu(network, stm, nstm);
-//#endif
-//}
+std::int32_t vectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm, int bucket_offset) {
+#if is_x86 && has_simd
+#if defined(__AVX512F__)
+	using native_vector = __m512i;
+	#define set1_epi16 _mm512_set1_epi16
+	#define load_epi16 _mm512_load_si512
+	#define min_epi16 _mm512_min_epi16
+	#define max_epi16 _mm512_max_epi16
+	#define madd_epi16 _mm512_madd_epi16
+	#define mullo_epi16 _mm512_mullo_epi16
+	#define add_epi32 _mm512_add_epi32
+	#define reduce_epi32 _mm512_reduce_add_epi32 
+#elif defined(__AVX2__)
+	using native_vector = __m256i;
+	#define set1_epi16 _mm256_set1_epi16
+#define load_epi16 [](auto ptr) { return _mm256_load_si256(reinterpret_cast<native_vector const *>(ptr)); }
+	#define min_epi16 _mm256_min_epi16
+	#define max_epi16 _mm256_max_epi16
+	#define madd_epi16 _mm256_madd_epi16
+	#define mullo_epi16 _mm256_mullo_epi16
+	#define add_epi32 _mm256_add_epi32
+	// based on output from zig 0.14.0 for @reduce(.Add, @as(@Vector(8, i32), x)
+	#define reduce_epi32 [](native_vector vec) {         \
+		__m128i xmm1 = _mm256_extracti128_si256(vec, 1); \
+		__m128i xmm0 = _mm256_castsi256_si128(vec);      \
+		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
+		xmm1 = _mm_shuffle_epi32(xmm0, 238);             \
+		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
+		xmm1 = _mm_shuffle_epi32(xmm0, 85);              \
+		xmm0 = _mm_add_epi32(xmm0, xmm1);                \
+		return _mm_cvtsi128_si32(xmm0);                  \
+	}
+#elif defined(__SSE__)
+	using native_vector = __m128i;
+	#define set1_epi16 _mm_set1_epi16
+#define load_epi16 [](auto ptr) { return _mm_load_si128(reinterpret_cast<native_vector const *>(ptr)); }
+	#define min_epi16 _mm_min_epi16
+	#define max_epi16 _mm_max_epi16
+	#define madd_epi16 _mm_madd_epi16
+	#define mullo_epi16 _mm_mullo_epi16
+	#define add_epi32 _mm_add_epi32
+	// based on output from zig 0.14.0 for @reduce(.Add, @as(@Vector(4, i32), x)
+	#define reduce_epi32 [](native_vector vec) {    \
+		__m128i xmm1 = _mm_shuffle_epi32(vec, 238); \
+		vec = _mm_add_epi32(vec, xmm1);             \
+		xmm1 = _mm_shuffle_epi32(vec, 85);          \
+		vec = _mm_add_epi32(vec, xmm1);             \
+		return _mm_cvtsi128_si32(vec);              \
+	}
+#endif
+	constexpr auto VECTOR_SIZE = sizeof(native_vector) / sizeof(std::int16_t);
+	static_assert(HL_SIZE % VECTOR_SIZE == 0, "HL_SIZE must be divisible by the native register size for this vectorization implementation to work");
+	const native_vector VEC_QA = set1_epi16(QA);
+	const native_vector VEC_ZERO = set1_epi16(0);
+	
+	constexpr auto UNROLL = 2;
+
+	std::array<native_vector, UNROLL> accumulator{};
+	int i = 0;
+	
+	const auto one_iteration = [&](auto idx, native_vector& acc) {
+		// load accumulator values
+		const native_vector stm_accum_values = load_epi16(&stm->values[idx]);
+		const native_vector nstm_accum_values = load_epi16(&nstm->values[idx]);
+
+		// load network weights
+		const native_vector stm_weights = load_epi16(&network->output_weights[idx + bucket_offset]);
+		const native_vector nstm_weights = load_epi16(&network->output_weights[idx + HL_SIZE + bucket_offset]);
+		
+		// clamp the values to [0, QA] 
+		const native_vector stm_clamped = min_epi16(VEC_QA, max_epi16(stm_accum_values, VEC_ZERO));
+		const native_vector nstm_clamped = min_epi16(VEC_QA, max_epi16(nstm_accum_values, VEC_ZERO));
+		
+		// apply lizard screlu
+		const native_vector stm_screlud = madd_epi16(stm_clamped, mullo_epi16(stm_clamped, stm_weights));
+		const native_vector nstm_screlud = madd_epi16(nstm_clamped, mullo_epi16(nstm_clamped, nstm_weights));
+		
+		acc = add_epi32(acc, stm_screlud);
+		acc = add_epi32(acc, nstm_screlud);
+	};
+
+	if constexpr (HL_SIZE >= UNROLL * VECTOR_SIZE) {
+		for (;i < HL_SIZE; i += UNROLL * VECTOR_SIZE) {
+			for (int j = 0; j < UNROLL; ++j) {
+				one_iteration(i + j * VECTOR_SIZE, accumulator[j]);
+			}
+		}
+	}
+	for (;i < HL_SIZE; i += VECTOR_SIZE) {
+		one_iteration(i, accumulator[0]);
+	}
+	if constexpr (HL_SIZE >= UNROLL * VECTOR_SIZE) {
+		for (int j = 1; j < UNROLL; ++j) {
+			accumulator[0] = add_epi32(accumulator[0], accumulator[j]);
+		}
+	}
+	return reduce_epi32(accumulator[0]);
+#else
+	return autovectorised_screlu(network, stm, nstm);
+#endif
+}
 
 // When forwarding the accumulator values, the network does not consider the color of the perspectives.
 // Rather, we are more interested in whether the accumulator is from the perspective of the side-to-move.
@@ -557,7 +557,7 @@ int32_t forward(struct Network* const network,
 {
 	int which_bucket = whichOutputBucket(board);
 	int bucket_offset = which_bucket * HL_SIZE * 2;
-	int32_t eval = autovectorised_screlu(network, stm_accumulator, nstm_accumulator, bucket_offset);
+	int32_t eval = vectorised_screlu(network, stm_accumulator, nstm_accumulator, bucket_offset);
 
 	// Uncomment the following dequantization step when using SCReLU
 	eval /= QA;
