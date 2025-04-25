@@ -231,7 +231,11 @@ int side_multiply[2]
 
 
 
-
+int whichOutputBucket(const Board &board) {
+	const int max_piece_count = 32;
+	const int divisor = (max_piece_count + BUCKET_COUNT - 1) / BUCKET_COUNT;
+	return std::min(BUCKET_COUNT - 1, (count_bits(board.occupancies[Both]) / divisor));
+}
 void LoadNetwork(const std::string& filepath)
 {
 	std::ifstream stream(filepath, std::ios::binary);
@@ -267,9 +271,12 @@ void LoadNetwork(const std::string& filepath)
 	// Load outputBias
 	sum *= 7;
 
+	for (size_t i = 0; i < BUCKET_COUNT; ++i) {
+		Eval_Network.output_bias[i] = readLittleEndian<int16_t>(stream);
+
+	}
 	
-	Eval_Network.output_bias = readLittleEndian<int16_t>(stream);
-	sum += (uint16_t)Eval_Network.output_bias;
+	//sum += (uint16_t)Eval_Network.output_bias;
 	
 	//std::cout << sum << std::endl;
 	//std::cout << (uint16_t)Eval_Network.output_bias;
@@ -545,13 +552,16 @@ std::int32_t vectorised_screlu(Network const * network, Accumulator const * stm,
 // Rather, we are more interested in whether the accumulator is from the perspective of the side-to-move.
 int32_t forward(struct Network* const network,
 	struct Accumulator* const stm_accumulator,
-	struct Accumulator* const nstm_accumulator)
+	struct Accumulator* const nstm_accumulator,
+	Board& board)
 {
 	int32_t eval = vectorised_screlu(network, stm_accumulator, nstm_accumulator);
 
 	// Uncomment the following dequantization step when using SCReLU
 	eval /= QA;
-	eval += network->output_bias;
+	int which_bucket = whichOutputBucket(board);
+	int bucket_offset = which_bucket * HL_SIZE * 2;
+	eval += network->output_bias[bucket_offset];
 
 	eval *= SCALE;
 	eval /= QA * QB;
@@ -568,9 +578,9 @@ int Evaluate(Board& board)
 	//}
 		//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
 	if (board.side == White)
-		return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+		return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black, board);
 	else
-		return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+		return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white, board);
 
 
 //

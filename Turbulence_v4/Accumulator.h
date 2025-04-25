@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 
+const int BUCKET_COUNT = 8;
 const int INPUT_SIZE = 768;
 const int HL_SIZE = 512;
 
@@ -15,8 +16,8 @@ const int QB = 64;
 struct Network {
 	alignas(64) int16_t accumulator_weights[INPUT_SIZE][HL_SIZE];
 	alignas(64) int16_t accumulator_biases[HL_SIZE];
-	alignas(64) int16_t output_weights[2 * HL_SIZE];
-	alignas(64) int16_t output_bias;
+	alignas(64) int16_t output_weights[2 * HL_SIZE * BUCKET_COUNT];
+	alignas(64) int16_t output_bias[BUCKET_COUNT];
 };
 
 struct Accumulator {
