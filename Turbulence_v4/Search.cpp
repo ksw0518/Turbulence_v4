@@ -1512,7 +1512,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		else
 		{
-			return isSingularSearch ? alpha : 0;
+			return isSingularSearch ? alpha : 0; 
 		}
 	}
 	if (!isSingularSearch)
