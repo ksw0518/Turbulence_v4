@@ -896,7 +896,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 	sort_moves_captures(moveList, board);
 
-	int bestValue = MINUS_INFINITY;
+	int bestValue = staticEval;
 	int legal_moves = 0;
 	//PrintBoards(board);
 
