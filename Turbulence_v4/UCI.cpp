@@ -364,7 +364,8 @@ void Initialize_TT(int size)
     TranspositionTable = new TranspositionEntry[TTSize]();
     
 }
-void ProcessUCI(std::string input)
+
+void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 {
     //std::cout << (input) << "\n";
     //std::string input = "This  is   a  sample string";
@@ -403,7 +404,7 @@ void ProcessUCI(std::string input)
     {
         
         Initialize_TT(16);
-        initializeLMRTable();
+        initializeLMRTable(data);
         isPrettyPrinting = false;
     }
     else if (main_command == "setoption")
@@ -434,6 +435,7 @@ void ProcessUCI(std::string input)
     }
     else if (main_command == "quit")
     {
+		//delete data_heap;
         exit(0);
     }
     else if (main_command == "position")
@@ -710,20 +712,21 @@ void ProcessUCI(std::string input)
             if (Commands.size() == 3)
             {
                 int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth, searchLimits);
+                IterativeDeepening(main_board, depth, searchLimits, data);
+
             }
         }
         else if (Commands[1] == "nodes")
         {
             int64_t node = std::stoll(Commands[2]);
 			searchLimits.HardNodeLimit = node;
-            IterativeDeepening(main_board, 99, searchLimits);
+            IterativeDeepening(main_board, 99, searchLimits, data);
         }
         else if (Commands[1] == "movetime")
         {
             int64_t movetime = std::stoll(Commands[2]);
 			searchLimits.HardTimeLimit = movetime;
-            IterativeDeepening(main_board, 99, searchLimits);
+            IterativeDeepening(main_board, 99, searchLimits, data);
         }
         else if (Commands[1] == "wtime")
         {
@@ -737,7 +740,7 @@ void ProcessUCI(std::string input)
             if (depth != 0)
             {
                 //int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth, searchLimits);
+                IterativeDeepening(main_board, depth, searchLimits, data);
                 
             }
             else
@@ -762,12 +765,12 @@ void ProcessUCI(std::string input)
                 }
 				searchLimits.HardTimeLimit = hard_bound;
 				searchLimits.SoftTimeLimit = soft_bound;
-                IterativeDeepening(main_board, 99, searchLimits, true, maxTime);
+                IterativeDeepening(main_board, 99, searchLimits, data, true, maxTime);
             }
         }
         else
         {
-            IterativeDeepening(main_board, 99, searchLimits);
+            IterativeDeepening(main_board, 99, searchLimits, data);
         }
         //else if (Commands[1] == "perft")
         //{
@@ -924,9 +927,10 @@ static void InitAll()
 }
 int main(int argc, char* argv[])
 {
+	ThreadData* heapAllocated = new ThreadData(); // Allocate safely on heap
+	ThreadData& data = *heapAllocated;
 
-    initializeLMRTable();
-    std::cout.sync_with_stdio(false);
+    initializeLMRTable(data);
     InitAll();
     
     parse_fen(start_pos, main_board);
@@ -951,7 +955,7 @@ int main(int argc, char* argv[])
         std::getline(std::cin, input);
         if (input != "")
         {
-            ProcessUCI(input);
+            ProcessUCI(input, data, heapAllocated);
         }
 
     }
