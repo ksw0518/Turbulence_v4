@@ -2091,6 +2091,7 @@ struct GameData
 	Board board;
 	int eval;
 	int result;
+	GameData(Board b, int e, int r) : board(b), eval(e), result(r) {}
 };
 bool isInsufficientMaterial(const Board& board) {
 	int pieceCount[12] = { 0 }; // Count pieces on the board
