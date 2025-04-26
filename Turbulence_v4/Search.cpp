@@ -18,9 +18,6 @@
 #include <string>
 #include <random>
 #include <utility>  // for std::pair
-#include <iostream>
-#include <vector>
-#include <chrono>
 #include <fstream>
 #ifdef _WIN32
 
@@ -42,13 +39,13 @@
 
 
 #if defined(_WIN32) || defined(_WIN64)
-	// Windows platform
+// Windows platform
 constexpr bool isOnWindow = true;
 #elif defined(__linux__)
-	// Linux platform
+// Linux platform
 constexpr bool isOnWindow = false;
 #else
-	// Unknown platform
+// Unknown platform
 constexpr bool isOnWindow = false;  // Default to false (likely macOS)
 #endif
 #define NULLMOVE Move(0,0,0,0)
@@ -160,10 +157,10 @@ int NMP_EVAL_DIVISER = 399;
 int NMP_DEPTH_DIVISER = 3;
 int MAX_NMP_EVAL_R = 3;
 
-int DEXT_MARGIN = 21; 
+int DEXT_MARGIN = 21;
 
 
-auto clockStart = std::chrono::steady_clock::now();
+std::chrono::steady_clock::time_point clockStart;
 
 int pvLengths[99];
 Move pvTable[99][99];
@@ -199,14 +196,9 @@ int twoPlyContHist[12][64][12][64];
 int pawnCorrHist[2][CORRHIST_SIZE];
 int minorCorrHist[2][CORRHIST_SIZE];
 
-/// <summary>
-/// [piece][to]
-/// </summary>
+
 int counterMoveCorrHist[12][64];
 
-/// <summary>
-/// [keySide][currentBoardSide][hash]
-/// </summary>
 int nonPawnCorrHist[2][2][CORRHIST_SIZE];
 
 size_t TTSize = 699050;
@@ -246,7 +238,7 @@ static int MVVLVA[6][6] = {
 	{101, 201, 301, 401, 501, 601},
 	{100, 200, 300, 400, 500, 600}
 };
-bool is_quiet(int type)
+bool isMoveQuiet(int type)
 {
 	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //noisy move = promotion or capture
 	{
@@ -294,7 +286,7 @@ void initializeLMRTable()
 	//{
 	//	TranspositionTable[i] = TranspositionEntry();
 	//}
-	
+
 }
 int scaledBonus(int score, int bonus)
 {
@@ -358,7 +350,7 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove)
 	const int& whiteNPEntry = nonPawnCorrHist[White][board.side][whiteNPKey % CORRHIST_SIZE];
 	uint64_t blackNPKey = board.BlackNonPawnKey;
 	const int& blackNPEntry = nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
-	
+
 	const int& contEntry = counterMoveCorrHist[prevMove.Piece][prevMove.To];
 
 	int mate_found = 49000 - 99;
@@ -440,70 +432,6 @@ void updateContinuationHistoryScore(Move& move, const int bonus)
 	updateSingleContinuationHistoryScore(move, bonus, 1);
 	updateSingleContinuationHistoryScore(move, bonus, 2);
 }
-
-void printTopCapthist(int side) {
-	std::vector<std::tuple<int, int, int>> moves; // Stores <score, from, to>
-
-	// Populate the vector with scores and moves
-	for (int from = 0; from < 64; ++from) {
-		for (int to = 0; to < 64; ++to) {
-			int score = CaptureHistory[side][from][to];
-			moves.emplace_back(score, from, to);
-		}
-	}
-
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves for history[" << side << "]:" << std::endl;
-	for (int i = 0; i < std::min(10, (int)moves.size()); ++i) {
-		auto [score, from, to] = moves[i];
-		std::cout << "from: " << CoordinatesToChessNotation(from)
-			<< " to: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< " side_to_move = " << side
-			<< std::endl;
-	}
-}
-void printTopOneplyContHist() {
-	std::vector<std::tuple<int, int, int, int, int>> moves; // Stores <score, piece_from, from, piece_to, to>
-
-	// Populate the vector with scores and moves
-	for (int piece_from = 0; piece_from < 12; ++piece_from) {
-		for (int from = 0; from < 64; ++from) {
-			for (int piece_to = 0; piece_to < 12; ++piece_to) {
-				for (int to = 0; to < 64; ++to) {
-					int score = onePlyContHist[piece_from][from][piece_to][to];
-					moves.emplace_back(score, piece_from, from, piece_to, to); // 5 values pushed
-				}
-			}
-		}
-	}
-
-	// Sort moves by score in descending order
-	std::stable_sort(moves.rbegin(), moves.rend(), [](auto& a, auto& b) {
-		return std::get<0>(a) < std::get<0>(b);
-		});
-
-	// Print the top 10 moves
-	std::cout << "Top 10 moves from Oneply_ContHist:" << std::endl;
-	for (int i = 0; i < std::min(50, (int)moves.size()); ++i) {
-		auto [score, piece_from, from, piece_to, to] = moves[i];
-
-		// Print the pieces and coordinates
-		std::cout << "PieceA: " << getCharFromPiece(piece_from)
-			<< " toA: " << CoordinatesToChessNotation(from)
-			<< " PieceB: " << getCharFromPiece(piece_to)
-			<< " toB: " << CoordinatesToChessNotation(to)
-			<< " score = " << score
-			<< std::endl;
-	}
-}
-
-
 static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entry, uint64_t opp_threat)
 {
 
@@ -747,8 +675,8 @@ int SEE(Board& pos, Move move, int threshold)
 }
 
 template<typename I, typename C>
-constexpr void insertion_sort(I first, I last, C const &&comp) {
-	if (first == last) return; 
+constexpr void insertion_sort(I first, I last, C const&& comp) {
+	if (first == last) return;
 	for (auto i = std::next(first); i != last; ++i) {
 		auto k = *i;
 		auto j = i;
@@ -769,7 +697,7 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board)
 	// Separate capture moves
 	for (int i = 0; i < moveList.count; ++i)
 	{
-		if (!is_quiet(moveList.moves[i].Type))
+		if (!isMoveQuiet(moveList.moves[i].Type))
 		{
 			captures[captureCount++] = moveList.moves[i];
 		}
@@ -790,7 +718,7 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board)
 	// Append non-captures in original order
 	for (int i = 0; i < moveList.count; ++i)
 	{
-		if (is_quiet(moveList.moves[i].Type))
+		if (isMoveQuiet(moveList.moves[i].Type))
 		{
 			moveList.moves[index++] = moveList.moves[i];
 		}
@@ -845,10 +773,10 @@ bool is_checking(Board& board)
 }
 static inline int Quiescence(Board& board, int alpha, int beta)
 {
-
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - clockStart).count();
-	if (elapsedMS > Searchtime_MS || searchNodeCount >= hardNodeBound) {
+	if (elapsedMS > Searchtime_MS || searchNodeCount >= hardNodeBound) 
+	{
 		isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
@@ -874,6 +802,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	bool isInCheck = is_in_check(board);
 	int ttAdjustedEval = staticEval;
 	uint8_t Bound = ttEntry.bound;
+
 	if (is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
 	{
 		ttAdjustedEval = ttEntry.score;
@@ -883,13 +812,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	{
 		return ttAdjustedEval;
 	}
-
 	if (ttAdjustedEval > alpha)
 	{
 		alpha = ttAdjustedEval;
 	}
-	 
-
 
 	MoveList moveList;
 	Generate_Legal_Moves(moveList, board, true);
@@ -912,13 +838,12 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
-		if (is_quiet(move.Type)) continue; //skip non capture moves
+		if (isMoveQuiet(move.Type)) continue; //skip non capture moves
 
 		if (!SEE(board, move, 1))
 		{
 			continue;
 		}
-
 
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
@@ -926,17 +851,17 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
 
-
 		ply++;
 		if (selDepth < ply)
 		{
 			selDepth = ply;
 		}
+
 		MakeMove(board, move);
-		searchStack[ply-1].move = move;
+		searchStack[ply - 1].move = move;
+
 		if (!isLegal(move, board))//isMoveValid(move, board)
 		{
-
 			ply--;
 			UnmakeMove(board, move, captured_piece);
 
@@ -954,17 +879,9 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			continue;
 		}
 
-
 		searchNodeCount++;
-
-
-
-
-
-
-
-
 		legal_moves++;
+
 		score = -Quiescence(board, -beta, -alpha);
 
 		UnmakeMove(board, move, captured_piece);
@@ -979,10 +896,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		board.MinorKey = lastMinorKey;
 		board.WhiteNonPawnKey = lastWhiteNPKey;
 		board.BlackNonPawnKey = lastBlackNPKey;
+
 		if (isSearchStop) {
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
-
 		ply--;
 		if (score > bestValue)
 		{
@@ -997,7 +914,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 			return score;
 		}
 	}
-
 	if (legal_moves == 0) // quiet position
 	{
 		return ttAdjustedEval;
@@ -1011,11 +927,6 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		ttEntry.zobristKey = board.zobristKey;
 		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
 	}
-
-
-
-
-
 	return bestValue;
 }
 
@@ -1023,6 +934,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, Move excludedMove = NULLMOVE)
 {
 	bool isPvNode = beta - alpha > 1;
+
 
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - clockStart).count();
@@ -1033,25 +945,31 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	pvLengths[ply] = ply;
 
-
+	//Return draw score if threefold repetition has occured
 	if (ply != 0 && is_threefold(board.history, board.lastIrreversiblePly))
 	{
 		return 0;
 	}
-
-	if (ply > 99 - 1) //safety reason
+	//Immediately return the static evaluation score when we reach max ply
+	if (ply > 99 - 1)
 	{
 		return Evaluate(board);
 	}
+
+	//Probe TT entry
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
+
 	int score = 0;
+	int bestValue = MINUS_INFINITY;
+
+	//Default assumption before search
 	int ttFlag = UpperBound;
 
-	int bestValue = MINUS_INFINITY;
 	bool is_ttmove_found = false;
 	bool isSingularSearch = excludedMove != NULLMOVE;
+
 	bool tt_pv = isPvNode;
-	// Only check TT for depths greater than zero (ply != 0)
+	//Checks for collisions, or empty entry
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
 		is_ttmove_found = true;
@@ -1071,53 +989,60 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				return ttEntry.score;
 			}
-
 		}
 	}
+	//Internal Iterative Reduction
+	//If no hash move was found, reduce depth
 	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (ttEntry.bestMove == NULLMOVE || !is_ttmove_found))
 	{
 		depth--;
 	}
 
+	//checks if the node has been in a pv node in the past
 	tt_pv |= ttEntry.ttPv;
 	bool isInCheck = is_in_check(board);
 
 	if (isInCheck)
 	{
+		//Increase search depth if the side to move is in check, as such positions often involve tactic
 		depth = std::max(depth + 1, 1);
 	}
 	if (depth <= 0)
 	{
+		//Enter quiescence search to evaluate only "quiet" positions and avoid horizon effects
 		return Quiescence(board, alpha, beta);
-		//return Evaluate(board);
 	}
 	if (ply + 1 <= 99)
 	{
+		// Reset killer moves for the next ply to make the killer move more local
 		killerMoves[0][ply + 1] = Move(0, 0, 0, 0);
 		killerMoves[1][ply + 1] = Move(0, 0, 0, 0);
 	}
 
 	int rawEval = Evaluate(board);
-
 	int staticEval = adjustEvalWithCorrHist(board, rawEval, searchStack[ply - 1].move);
-
 	int ttAdjustedEval = staticEval;
-	uint8_t Bound = ttEntry.bound;
-	if (!isSingularSearch && is_ttmove_found && !isInCheck && (Bound == ExactFlag || (Bound == LowerBound && ttEntry.score >= staticEval) || (Bound == UpperBound && ttEntry.score <= staticEval)))
+
+	//Adjust static evaluation with search score on TT, to get move accurate estimaton.
+	if (!isSingularSearch && is_ttmove_found && !isInCheck && (ttEntry.bound == ExactFlag || (ttEntry.bound == LowerBound && ttEntry.score >= staticEval) || (ttEntry.bound == UpperBound && ttEntry.score <= staticEval)))
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
-	
+
 	searchStack[ply].staticEval = staticEval;
 
+	//If current static evaluation is greater than static evaluation from 2 plies ago
 	bool improving = !isInCheck && ply > 1 && staticEval > searchStack[ply - 2].staticEval;
-
+	
 	int canPrune = !isInCheck && !isPvNode;
-	if (!isSingularSearch && depth < 5 && canPrune)//rfp
+	//RFP
+	//If static evaluation + margin still doesn't improve alpha, prune the node
+	if (!isSingularSearch && depth < 5 && canPrune)
 	{
 		int rfpMargin;
 		if (improving)
 		{
+			//Do more RFP when we are improving
 			rfpMargin = RFP_IMPROVING_BASE + RFP_IMPROVING_MULTIPLIER * depth;
 		}
 		else
@@ -1132,13 +1057,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 	}
 
+	//NMP
+	//Since null move is worse than all the other moves in most situations,
+	//if a reduced search on null move fails high over beta, return fail high score
 	if (!isSingularSearch && !isPvNode && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && ply && ttAdjustedEval >= beta)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
-
 				int lastep = board.enpassent;
 				uint64_t lzob = board.zobristKey;
 				ply++;
@@ -1156,41 +1083,34 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				{
 					return score > 49000 ? beta : score;
 				}
-
 			}
 		}
 	}
-
-
-
 	MoveList moveList;
-	//std::vector<Move> moveList;
 	Generate_Legal_Moves(moveList, board, false);
-
-
 	int searchedMoves = 0;
 
+	//Calculate all squares opponent is controlling
 	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
+	
+	//Sort moves from best to worst(by approximation)
 	sort_moves(moveList, board, ttEntry, oppThreats);
 
 	int orgAlpha = alpha;
-
-	int depthToSearch; 
-
+	int depthToSearch;
 	bool skipQuiets = false;
 
 	depth = std::min(depth, 98);
-	int lmpThreshold = (LMP_BASE + (LMP_MULTIPLIER) * depth * depth) / (2 - improving);
 
+	int lmpThreshold = (LMP_BASE + (LMP_MULTIPLIER)*depth * depth) / (2 - improving);
 	int quietSEEMargin = PVS_QUIET_BASE - PVS_QUIET_MULTIPLIER * depth;
 	int noisySEEMargin = PVS_NOISY_BASE - PVS_NOISY_MULTIPLIER * depth * depth;
-	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth; 
+	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth;
 
 	MoveList quietsList;
 
 	Move bestMove = Move(0, 0, 0, 0);
 	int quietMoves = 0;
-
 
 	uint64_t last_zobrist = board.zobristKey;
 	uint64_t last_pawnKey = board.PawnKey;
@@ -1198,17 +1118,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
-	/*if (ply > 0)
-	{
-		searchStack[ply].doubleExtensions = searchStack[ply - 1].doubleExtensions;
-	}*/
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
-
-		bool isQuiet = is_quiet(move.Type);
+		bool isQuiet = isMoveQuiet(move.Type);
 		if (move == excludedMove)
 		{
+			//Skip search with an excluded move
 			continue;
 		}
 		if (skipQuiets && isQuiet) //quiet move
@@ -1218,12 +1134,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
 		if (ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
 		{
+			//if Static Exchange Evaluation score is lower than certain margin, assume the move is very bad and skip the move
 			if (!SEE(board, move, seeThreshold))
 			{
 				continue;
 			}
 		}
-
 		bool isNotMated = alpha > -49000 + 99;
 
 		int main_history = mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
@@ -1231,29 +1147,22 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int historyScore = main_history + conthist;
 		if (ply != 0 && isQuiet && isNotMated)
 		{
+			//Skip late moves, as good moves are typically found among the earlier moves due to move ordering
 			if (searchedMoves >= lmpThreshold)
 			{
 				skipQuiets = true;
 			}
+			//If history score is very bad, skip the move
 			if (quietMoves > 1 && depth <= 5 && historyScore < historyPruningMargin)
 			{
 				break;
 			}
-
 		}
-
-
-
-
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
-
-
-
-
 		ply++;
 
 		if (selDepth < ply)
@@ -1265,12 +1174,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		searchNodeCount++;
 		if (!isLegal(move, board))
 		{
-
 			ply--;
 			UnmakeMove(board, move, captured_piece);
-
-
-
 			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
@@ -1290,27 +1195,22 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			quietsList.add(move);
 			quietMoves++;
 		}
-
-
-
 		searchedMoves++;
 		depthToSearch = depth - 1;
 
 		int reduction = 0;
 		bool is_reduced = false;
-
-
 		int extensions = 0;
 
+		//Singular Extension
+		//If we have a TT move, we try to verify if it's the only good move. if the move is singular, search the move with increased depth
 		if (ply > 1 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
 		{
 			ply--;
 			UnmakeMove(board, move, captured_piece);
-
 			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
-
 			board.zobristKey = last_zobrist;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
@@ -1320,19 +1220,18 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
 
-
-			int s_beta = ttEntry.score - depth * 2; 
+			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, move);
 			if (s_score < s_beta)
 			{
 				extensions++;
-				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN) 
+				//Double Extensions
+				//TT move is very singular, increase depth by 2
+				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN)
 				{
 					extensions++;
-					//searchStack[ply].doubleExtensions++;
 				}
-
 			}
 			else if (s_beta >= beta)
 			{
@@ -1349,48 +1248,56 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		searchStack[ply - 1].move = move;
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
+			//LMR
+			//Save search by reducing moves that are ordered closer to the end
 			reduction = lmrTable[depth][searchedMoves];
-
+			//reduce more if we are not in pv node
 			if (!isPvNode && quietMoves >= 4)
 			{
 				reduction++;
 			}
+			//reduce less if we the move is giving check
 			if (is_in_check(board))
 			{
 				reduction--;
 			}
+			//reduce less if the position is improving
 			if (improving)
 			{
 				reduction--;
 			}
+			//reduce more if the history score is bad
 			if (historyScore < (-HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
 			{
 				reduction++;
 			}
+			//reduce less if the move is a capture
 			if (!isQuiet)
 			{
 				reduction--;
 			}
+			//reduce less killer moves
 			if ((move == killerMoves[0][ply - 1]) || (move == killerMoves[1][ply - 1]))
 			{
 				reduction--;
 			}
+			//if the node has been in a pv node in the past, reduce less
 			if (tt_pv)
 			{
 				reduction--;
 			}
+			//reduce more cutnode
 			if (cutnode)
 			{
 				reduction++;
 			}
 		}
-
+		//Prevent from accidently extending the move
 		if (reduction < 0) reduction = 0;
 		is_reduced = reduction > 0;
 		bool isChildCutNode;
 		if (searchedMoves <= 1)
 		{
-			
 			if (isPvNode)
 			{
 				isChildCutNode = false;
@@ -1406,7 +1313,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if (is_reduced)
 			{
 				score = -Negamax(board, depthToSearch - reduction, -alpha - 1, -alpha, true, true);
-
 			}
 			else
 			{
@@ -1422,14 +1328,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 
 		}
-
-
 		board.accumulator = last_accumulator;
 		UnmakeMove(board, move, captured_piece);
-
 		board.history.pop_back();
 		board.lastIrreversiblePly = last_irreversible;
-
 		board.zobristKey = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
@@ -1439,13 +1341,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
 		ply--;
+
 		if (isSearchStop) {
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
 
 		bestValue = std::max(score, bestValue);
-
-
 		if (bestValue > alpha)
 		{
 			ttFlag = ExactFlag;
@@ -1460,10 +1361,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 				pvLengths[ply] = pvLengths[ply + 1];
 			}
-
-
-
-
 		}
 		if (alpha >= beta)
 		{
@@ -1487,7 +1384,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 						{
 							updateContinuationHistoryScore(move_quiet, contHistBonus);
 						}
-
 					}
 					else
 					{
@@ -1497,12 +1393,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 							updateContinuationHistoryScore(move_quiet, -contHistBonus);
 						}
 					}
-
 				}
 			}
 			break;
 		}
-
 	}
 	if (searchedMoves == 0)
 	{
@@ -1512,7 +1406,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		else
 		{
-			return isSingularSearch ? alpha : 0; 
+			return isSingularSearch ? alpha : 0;
 		}
 	}
 	if (!isSingularSearch)
@@ -1529,10 +1423,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	ttEntry.ttPv = tt_pv;
 	ttEntry.bestMove = bestMove;
 
-
 	int bound = bestValue >= beta ? HFLOWER : alpha != orgAlpha ? HFEXACT : HFUPPER;
-	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || is_quiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
+	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || isMoveQuiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
 	{
+		//Save difference between static eval and search score, to get more accurate static eval in the future
 		updatePawnCorrHist(board, depth, bestValue - staticEval);
 		updateMinorCorrHist(board, depth, bestValue - staticEval);
 		updateNonPawnCorrHist(board, depth, bestValue - staticEval);
@@ -1542,8 +1436,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
 	}
-
-
 	return bestValue;
 }
 int get_hashfull()
@@ -1556,7 +1448,6 @@ int get_hashfull()
 			entryCount++;
 		}
 	}
-
 	return entryCount;
 }
 
@@ -1598,9 +1489,6 @@ void bench()
 
 		nodecount += searchNodeCount;
 		totalsearchtime += std::floor(elapsedMS);
-
-
-
 	}
 	std::cout << nodecount << " nodes " << nodecount / (totalsearchtime + 1) * 1000 << " nps " << "\n";
 	for (int ply = 0; ply < 99; ply++)
@@ -1657,13 +1545,11 @@ void print_UCI(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedM
 	{
 		int mate_ply = 49000 - std::abs(score);
 		int mate_fullmove = std::ceil(static_cast<double>(mate_ply) / 2);
-
 		if (score < 0)
 		{
 			mate_fullmove *= -1;
 		}
 		std::cout << " score mate " << mate_fullmove;
-
 	}
 	else
 	{
@@ -1809,6 +1695,10 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 		{
 			std::cout << "+";
 		}
+		if (score == 0)
+		{
+			std::cout << "+";
+		}
 		std::cout << std::fixed << std::setprecision(2) << score_fullPawn;
 	}
 
@@ -1847,15 +1737,12 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 	{
 		Searchtime_MS = timeMS;
 	}
-
-
 	searchNodeCount = 0;
 	Move bestmove;
 	clockStart = std::chrono::steady_clock::now();
 
 	int score = 0;
 	int bestScore = 0;
-
 
 	memset(pvTable, 0, sizeof(pvTable));
 	memset(pvLengths, 0, sizeof(pvLengths));
@@ -1864,11 +1751,8 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 	int baseSoft = softbound;
 	for (currDepth = 1; currDepth <= depth; currDepth++)
 	{
-
 		ply = 0;
 		selDepth = 0;
-
-
 		isSearchStop = false;
 		for (int i = 0; i < 99; i++)
 		{
@@ -1919,7 +1803,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 			{
 				break;
 			}
-			 
+
 
 
 			if (delta >= ASP_WINDOW_MAX)
@@ -1931,10 +1815,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 
 
 		auto end = std::chrono::steady_clock::now();
-
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - clockStart).count();
-
-
 		float second = (elapsedMS + 1) / 1000;
 
 		double nps = searchNodeCount / second;
@@ -1947,15 +1828,14 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		{
 			bestMoveStability = 0;
 		}
-		if (currDepth >= 6 && softbound != -1 && baseTime != -1) {
+		if (currDepth >= 6 && softbound != -1 && baseTime != -1) 
+		{
 			scaleTime(softbound, bestMoveStability, baseSoft, maxTime);
 		}
-
 		if (print_info)
 		{
 			if (!isSearchStop)
 			{
-				
 				if (isPrettyPrinting && isOnWindow)
 				{
 					print_Pretty(pvTable, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val);
@@ -1964,14 +1844,8 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 				{
 					print_UCI(pvTable, bestmove, score, elapsedMS, nps);
 				}
-
 			}
-
-
-
 		}
-
-
 		if (softNodes != -1)
 		{
 			if (searchNodeCount > softNodes)
@@ -1979,14 +1853,12 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 				break;
 			}
 		}
-
 		if (softbound != -1)
 		{
 			if (elapsedMS > softbound)
 			{
 				break;
 			}
-
 		}
 		else
 		{
@@ -1997,23 +1869,19 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		}
 		bestmove = pvTable[0][0];
 		bestScore = score;
-
 	}
 	if (print_info)
 	{
 		std::cout << "bestmove ";
 		printMove(bestmove);
 		std::cout << "\n";
-		
 	}
 	return std::pair<Move, int>(bestmove, bestScore);
 }
 inline void Initialize_TT(int size)
 {
-	//std::cout <<"size" << size << "\n";
 	uint64_t bytes = static_cast<uint64_t>(size) * 1024ULL * 1024ULL;
 
-	//std::cout << bytes<<"\n";
 	TTSize = bytes / sizeof(TranspositionEntry);
 
 	if (TTSize % 2 != 0)
@@ -2025,7 +1893,6 @@ inline void Initialize_TT(int size)
 		delete[] TranspositionTable;
 
 	TranspositionTable = new TranspositionEntry[TTSize]();
-
 }
 int randBool() {
 	static std::random_device rd;
@@ -2056,7 +1923,7 @@ std::string boardToFEN(const Board& board) {
 	for (int rank = 7; rank >= 0; --rank) {  // Fix: Iterate from 7 down to 0
 		int emptyCount = 0;
 		for (int file = 0; file < 8; ++file) {
-			int square = (7-rank) * 8 + file;
+			int square = (7 - rank) * 8 + file;
 			int piece = board.mailbox[square];
 
 			if (piece == NO_PIECE) {
@@ -2105,8 +1972,6 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
-
-
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
@@ -2117,10 +1982,6 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 		if (!isLegal(move, board))
 		{
 			UnmakeMove(board, move, captured_piece);
-
-
-
-
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
 			board.zobristKey = last_zobrist;
@@ -2135,10 +1996,7 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 		}
 
 		searchedMoves++;
-
-
 		UnmakeMove(board, move, captured_piece);
-
 		board.history.pop_back();
 		board.lastIrreversiblePly = last_irreversible;
 		board.zobristKey = last_zobrist;
@@ -2149,10 +2007,8 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 		board.MinorKey = last_minorKey;
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
-
-
 	}
-	if(searchedMoves == 0)
+	if (searchedMoves == 0)
 	{
 		return true;
 	}
@@ -2177,22 +2033,15 @@ randomPos:int randomMovesNum = 8 + randBool();
 		moveList.count = 0;
 		Generate_Legal_Moves(moveList, board, false);
 		//goto randomPos;
-		if (moveList.count == 0 ||isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
+		if (moveList.count == 0 || isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
 		{
 			goto randomPos;
 		}
-		int randomN = randBetween(moveList.count) - 1;
-		int howMuchTry = 0;
+		int randomN;
 		while (true)
 		{
-			howMuchTry++;
-			/*if (howMuchTry >= 20)
-			{
-				PrintBoards(board);
-			}*/
 			randomN = randBetween(moveList.count) - 1;
 			Move move = moveList.moves[randomN];
-
 			uint64_t last_zobrist = board.zobristKey;
 			uint64_t last_pawnKey = board.PawnKey;
 			uint64_t last_minorKey = board.MinorKey;
@@ -2214,9 +2063,7 @@ randomPos:int randomMovesNum = 8 + randBool();
 			}
 			else
 			{
-
 				UnmakeMove(board, move, captured_piece);
-
 				board.history.pop_back();
 				board.lastIrreversiblePly = last_irreversible;
 				board.zobristKey = last_zobrist;
@@ -2228,31 +2075,8 @@ randomPos:int randomMovesNum = 8 + randBool();
 				board.WhiteNonPawnKey = last_whitenpKey;
 				board.BlackNonPawnKey = last_blacknpKey;
 			}
-
 		}
-
-
-		//if(moveList.moves[randomN].From == 0 && moveList.moves[randomN].To == 0)
-		//{
-		//	printMove(moveList.moves[randomN]);
-		//	std::cout << "\n";
-		//	std::cout<< randomN<<", movelist real count :"<< moveList.count<<"\n";
-		//	//PrintBoards(board);
-		//	std::cout << "error\n";
-		//	break;
-		//}
-		//printMove(moveList.moves[randomN]);
-		//std::cout << "\n";
-		//MakeMove(board, moveList.moves[randomN]);
-		//if(board.zobristKey != generate_hash_key(board))
-		//{
-		//	PrintBoards(board);
-		//	std::cout << "hash error\n";
-		//	board.zobristKey = 0;
-		//	break;
-		//}
 	}
-
 }
 bool isDecisive(int score)
 {
@@ -2331,7 +2155,7 @@ std::string convertWDL(int wdl)
 	{
 		return "1.0";
 	}
-	else if(wdl == DRAW)
+	else if (wdl == DRAW)
 	{
 		return "0.5";
 	}
@@ -2354,7 +2178,7 @@ void estimate_time_remaining(uint64_t remaining_positions, int pps) {
 
 	std::cout << "Estimated remaining time: "
 		<< hours << "h " << minutes << "m " << seconds << "s"
-		<<"\n";
+		<< "\n";
 }
 void print_progress_bar(double percentage) {
 	int barWidth = 50;  // Width of the progress bar
@@ -2386,62 +2210,6 @@ std::vector<std::string> splitByPipe(const std::string& input) {
 
 	return tokens;
 }
-void filterData(const std::string& input, const std::string& output) {
-	std::ifstream file(input);
-	if (!file.is_open()) {
-		std::cerr << "Error: Unable to open file " << input << std::endl;
-		return;
-	}
-
-	std::string line;
-	uint64_t currentLine = 0;
-	Board board;
-	int prevPieceCount = 0;
-	std::string prevLine = "";
-	while (std::getline(file, line)) {
-		//std::cout << line << std::endl;
-		std::vector<std::string> result = splitByPipe(line);
-
-		//for (const auto& part : result) {
-		//	std::cout << "[" << part << "]" << std::endl;
-		//}
-		std::string fen = result[0];
-		std::string eval = result[1];
-		std::string wdl = result[2];
-		parse_fen(fen, board);
-		int pieceCount = count_bits(board.occupancies[Both]);
-		if(pieceCount > prevPieceCount) {
-			//new game occurs
-			//std::cout << "NEWGAME------------------------------------------\n";
-;		}
-		else
-		{
-			if (pieceCount == prevPieceCount || currentLine == 0) {// previous fen was quiet positions
-				std::cout<<prevLine<<"\n";
-			}
-			else
-			{
-				std::cout << "filtered";
-			}
-			
-		}
-
-		//PrintBoards(board);
-		//std::cout << pieceCount;
-		
-		currentLine++;
-
-		if (currentLine > 100) {
-			break;
-		}
-		prevPieceCount = pieceCount;
-		prevLine = line;
-
-	}
-
-	std::cout << "Finished reading " << currentLine << " lines.\n";
-}
-
 void Datagen(int targetPos, std::string output_name) {
 	const uint64_t targetPositions = static_cast<uint64_t>(targetPos);
 	uint64_t totalPositions = 0;
@@ -2462,7 +2230,6 @@ void Datagen(int targetPos, std::string output_name) {
 		PickRandomPos(board);
 		bool isGameOver = false;
 		int result = -1;
-		int plyCount = 0;
 
 		while (!isGameOver) {
 			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
@@ -2486,7 +2253,6 @@ void Datagen(int targetPos, std::string output_name) {
 			}
 
 			MakeMove(board, bestMove);
-			plyCount++;
 
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) {
 				gameData.push_back(GameData(board, eval, -1));
