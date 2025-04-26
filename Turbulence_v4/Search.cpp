@@ -930,6 +930,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 	if (legal_moves == 0) // quiet position
 	{
+		if (isInCheck)
+		{
+			return -49000 + ply;
+		}
 		return ttAdjustedEval;
 	}
 	if (ttEntry.bound == 0)
