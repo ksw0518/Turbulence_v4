@@ -1759,9 +1759,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 	memset(pvLengths, 0, sizeof(pvLengths));
 
 	int bestMoveStability = 0;
-	int64_t baseSoft = searchLimits.SoftNodeLimit;
+	int64_t baseSoft = searchLimits.SoftTimeLimit;
 
-	int64_t softLimit = searchLimits.SoftNodeLimit;
+	int64_t softLimit = searchLimits.SoftTimeLimit;
 	for (currDepth = 1; currDepth <= depth; currDepth++)
 	{
 		ply = 0;
@@ -1787,7 +1787,6 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			{
 				if (MS > softLimit)
 				{
-					std::cout << "softbound";
 					break;
 				}
 
@@ -1796,7 +1795,6 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			{
 				if (searchLimits.HardTimeLimit != NOLIMIT && MS > searchLimits.HardTimeLimit)
 				{
-					std::cout << "hardbound";
 					break;
 				}
 			}
@@ -1865,7 +1863,6 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		{
 			if (searchNodeCount > searchLimits.SoftNodeLimit)
 			{
-				std::cout << "softnode";
 				break;
 			}
 		}
@@ -1873,9 +1870,6 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		{
 			if (elapsedMS > softLimit)
 			{
-				std::cout << elapsedMS<<"\n";
-				std::cout << softLimit;
-				std::cout << "softtime";
 				break;
 			}
 		}
@@ -1883,7 +1877,6 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		{
 			if (searchLimits.HardTimeLimit != NOLIMIT && elapsedMS > searchLimits.HardTimeLimit)
 			{
-				std::cout << "hardtime";
 				break;
 			}
 		}
