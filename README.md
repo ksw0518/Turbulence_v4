@@ -16,12 +16,16 @@ Assuming you have clang++ compiler(has to support c++20), git, and Make, you can
 # strengths
 | Version  |      [SP-CC UHO-Top15][spcc]       | [CCRL 40/15][ccrl-4015] | [CCRL Blitz][ccrl-blitz] | [CEGT 40/4][cegt-404] | [CEGT 40/20][cegt-4020] | [MCERL] | [UBC]     |
 |:--------:|:----------------------------------:|:-----------------------:|:------------------------:|:---------------------:|:-----------------------:|:-------:|:----------:
-|  [0.0.2]   |                 -                  |            -            |           -              |           -           |            -            |    -    |   -       |
-|  [0.0.3]   |                 -                  |          2271           |           2192           |           -           |            -            |    -    |   -       |
-|  [0.0.4]   |                 -                  |          2747           |           2695           |           -           |            -            |    -    |   2736    |
+|  [0.0.6]   |                 -                  |          3391           |           -              |           -           |            -            |    -    |   -       |
 |  [0.0.5]   |                 -                  |          2960           |           2971           |           -           |            -            |    -    |   2946    |
+|  [0.0.4]   |                 -                  |          2747           |           2695           |           -           |            -            |    -    |   2736    |
+|  [0.0.3]   |                 -                  |          2271           |           2192           |           -           |            -            |    -    |   -       |
+|  [0.0.2]   |                 -                  |            -            |           -              |           -           |            -            |    -    |   -       |
 
-Development Verison : 3450~3500
+
+
+
+Development Verison : 3400~3500
 
 **Versions prior to 0.0.6 use HCE(especially PeSTO and bishop pair bonus), while 0.0.6 and later use NNUE.**
 
@@ -53,3 +57,4 @@ https://programcidusunur.pythonanywhere.com/index/
 [0.0.3]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.3
 [0.0.4]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.4
 [0.0.5]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.5-release
+[0.0.6]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.6-release
