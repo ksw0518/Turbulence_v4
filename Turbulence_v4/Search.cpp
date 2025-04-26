@@ -1239,9 +1239,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else if (ttEntry.score >= beta)
 			{
-				extensions--;
+				extensions -= 2 + !isPvNode;
 			}
-
+			else if (cutnode)
+			{
+				extensions -= 2;
+			}
 			MakeMove(board, move);
 			ply++;
 		}
