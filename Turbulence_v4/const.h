@@ -164,6 +164,8 @@ const int WHITEWIN = 2;
 const int DRAW = 1;
 const int BLACKWIN = 0;
 
+
+constexpr int64_t NOLIMIT = -1;
 inline int get_piece(int piece, int col)
 {
     //std::cout << Get_Whitepiece[piece] << "\n";
