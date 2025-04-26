@@ -818,7 +818,15 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	}
 
 	MoveList moveList;
-	Generate_Legal_Moves(moveList, board, true);
+	if (isInCheck)
+	{
+		Generate_Legal_Moves(moveList, board, false);
+	}
+	else
+	{
+		Generate_Legal_Moves(moveList, board, true);
+	}
+	
 
 	sort_moves_captures(moveList, board);
 
@@ -835,10 +843,11 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
+	bool skipQuiets = !isInCheck;
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
-		if (isMoveQuiet(move.Type)) continue; //skip non capture moves
+		if (skipQuiets && isMoveQuiet(move.Type)) continue; //skip non capture moves
 
 		if (!SEE(board, move, 1))
 		{
@@ -884,6 +893,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 
 		score = -Quiescence(board, -beta, -alpha);
 
+		
 		UnmakeMove(board, move, captured_piece);
 		board.accumulator = last_accumulator;
 		board.history.pop_back();
@@ -904,6 +914,10 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 		if (score > bestValue)
 		{
 			bestValue = score;
+			if (score > -48000)
+			{
+				skipQuiets = true;
+			}
 			if (score > alpha)
 			{
 				alpha = score;
