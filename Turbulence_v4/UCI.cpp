@@ -232,7 +232,7 @@ std::string TryGetLabelledValue(const std::string& text, const std::string& labe
 
     return defaultValue;
 }
-int TryGetLabelledValueInt(const std::string& text, const std::string& label, const std::vector<std::string>& allLabels, int defaultValue = 0)
+int64_t TryGetLabelledValueInt(const std::string& text, const std::string& label, const std::vector<std::string>& allLabels, int64_t defaultValue = 0)
 {
     // Helper function TryGetLabelledValue should be implemented as shown earlier
     std::string valueString = TryGetLabelledValue(text, label, allLabels, std::to_string(defaultValue));
@@ -245,7 +245,7 @@ int TryGetLabelledValueInt(const std::string& text, const std::string& label, co
     // Try converting the extracted string to an integer
     try
     {
-        return std::stoi(firstPart);
+        return std::stoll(firstPart);
     }
     catch (const std::invalid_argument& e)
     {
@@ -337,11 +337,11 @@ static uint64_t Perft(Board& board, int depth)
     return nodes;
 }
 
-int Calculate_Hard_Bound(int time, int incre)
+int Calculate_Hard_Bound(int64_t time, int64_t incre)
 {
     return time / 2;
 }
-int Calculate_Soft_Bound(int time, int incre)
+int Calculate_Soft_Bound(int64_t time, int64_t incre)
 {
     return  0.6 * (static_cast<float>(time) / static_cast<float>(20) + static_cast<float>(incre) * static_cast<float>(3) / static_cast<float>(4));
 }
@@ -703,78 +703,71 @@ void ProcessUCI(std::string input)
         }
     else if (main_command == "go")
     {
+		SearchLimitations searchLimits;
         if (Commands[1] == "depth")
         {
             //Negamax_nodecount = 0;
             if (Commands.size() == 3)
             {
                 int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth);
-
+                IterativeDeepening(main_board, depth, searchLimits);
             }
-            else if (Commands.size() > 3)
-            {
-                if (Commands[3] == "root")
-                {
-                    int depth = std::stoi(Commands[2]);
-                    IterativeDeepening(main_board, depth, -1, true);
-                }
-            }
-
         }
         else if (Commands[1] == "nodes")
         {
-                int node = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, 99, -1, false, true, -1, -1, -1, node, node);
+            int64_t node = std::stoll(Commands[2]);
+			searchLimits.HardNodeLimit = node;
+            IterativeDeepening(main_board, 99, searchLimits);
         }
         else if (Commands[1] == "movetime")
         {
-            int movetime = std::stoi(Commands[2]);
-            IterativeDeepening(main_board, 99, movetime);
+            int64_t movetime = std::stoll(Commands[2]);
+			searchLimits.HardTimeLimit = movetime;
+            IterativeDeepening(main_board, 99, searchLimits);
         }
         else if (Commands[1] == "wtime")
         {
             int depth = TryGetLabelledValueInt(input, "depth", go_commands);
-            int wtime = TryGetLabelledValueInt(input, "wtime", go_commands);
-            int btime = TryGetLabelledValueInt(input, "btime", go_commands);
-            int winc = TryGetLabelledValueInt(input, "winc", go_commands);
-            int binc = TryGetLabelledValueInt(input, "binc", go_commands);
+            int64_t wtime = TryGetLabelledValueInt(input, "wtime", go_commands);
+			int64_t btime = TryGetLabelledValueInt(input, "btime", go_commands);
+			int64_t winc = TryGetLabelledValueInt(input, "winc", go_commands);
+			int64_t binc = TryGetLabelledValueInt(input, "binc", go_commands);
            
 
             if (depth != 0)
             {
                 //int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth);
+                IterativeDeepening(main_board, depth, searchLimits);
                 
             }
             else
             {
-                int hard_bound;
-                int soft_bound;
-                int baseTime = 0;
-                int maxTime = 0;
+                int64_t hard_bound;
+				int64_t soft_bound;
+				int64_t baseTime = 0;
+				int64_t maxTime = 0;
                 if (main_board.side == White)
                 {
                     hard_bound = Calculate_Hard_Bound(wtime, winc);
                     soft_bound = Calculate_Soft_Bound(wtime, winc);
-                    baseTime = wtime * DEF_TIME_MULTIPLIER + winc * DEF_INC_MULTIPLIER;
+                    //baseTime = wtime * DEF_TIME_MULTIPLIER + winc * DEF_INC_MULTIPLIER;
                     maxTime = std::max(1.00, wtime * MAX_TIME_MULTIPLIER);
                 }
                 else
                 {
                     hard_bound = Calculate_Hard_Bound(btime, binc);
                     soft_bound = Calculate_Soft_Bound(btime, binc);
-                    baseTime = btime * DEF_TIME_MULTIPLIER + binc * DEF_INC_MULTIPLIER;
+                    //baseTime = btime * DEF_TIME_MULTIPLIER + binc * DEF_INC_MULTIPLIER;
                     maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
                 }
-
-                IterativeDeepening(main_board, 99, hard_bound, false, true, soft_bound, baseTime, maxTime);
+				searchLimits.HardTimeLimit = hard_bound;
+				searchLimits.SoftTimeLimit = soft_bound;
+                IterativeDeepening(main_board, 99, searchLimits, true, maxTime);
             }
-           
         }
         else
         {
-            IterativeDeepening(main_board, 99);
+            IterativeDeepening(main_board, 99, searchLimits);
         }
         //else if (Commands[1] == "perft")
         //{

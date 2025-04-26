@@ -167,8 +167,8 @@ Move pvTable[99][99];
 
 
 int ply;
-int searchNodeCount;
-int Searchtime_MS;
+int64_t searchNodeCount;
+int64_t Searchtime_MS;
 int currDepth;
 bool isSearchStop;
 
@@ -775,7 +775,7 @@ static inline int Quiescence(Board& board, int alpha, int beta)
 {
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - clockStart).count();
-	if (elapsedMS > Searchtime_MS || searchNodeCount >= hardNodeBound) 
+	if (elapsedMS > Searchtime_MS || searchNodeCount > hardNodeBound) 
 	{
 		isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
@@ -938,7 +938,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - clockStart).count();
-	if (elapsedMS > Searchtime_MS || searchNodeCount >= hardNodeBound) {
+	if (elapsedMS > Searchtime_MS || searchNodeCount > hardNodeBound) {
 		isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
@@ -1458,6 +1458,7 @@ void bench()
 	Board board;
 	uint64_t nodecount = 0;
 	int totalsearchtime = 0;
+	SearchLimitations searchLimits;
 	for (int i = 0; i < 50; i++)
 	{
 		for (int ply = 0; ply < 99; ply++)
@@ -1482,7 +1483,7 @@ void bench()
 		board.history.push_back(board.zobristKey);
 
 		search_start = std::chrono::steady_clock::now();
-		IterativeDeepening(board, 11, -1, false, false);
+		IterativeDeepening(board, 11, searchLimits, false);
 		search_end = std::chrono::steady_clock::now();
 
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
@@ -1722,21 +1723,31 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 	setColor(ConsoleColor::White);
 	std::cout << "\n";
 }
-void scaleTime(int& softLimit, uint8_t bestMoveStability, int baseSoft, int maxTime) {
-	double bestMoveScale[5] = { 2.43, 1.35, 1.09, 0.88, 0.68 };
-	softLimit = std::min(static_cast<int>(baseSoft * bestMoveScale[bestMoveStability]), maxTime);
+void scaleTime(int64_t& softLimit, uint8_t bestMoveStability, int64_t baseSoft, int64_t maxTime) {
+	int bestMoveScale[5] = { 2430, 1350, 1090, 880, 680 };
+
+	softLimit = std::min((baseSoft * bestMoveScale[bestMoveStability]) / 1000, maxTime);
 }
-std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, bool PrintRootVal, bool print_info, int softbound, int baseTime, int maxTime, uint64_t softNodes, uint64_t hardNodes)
+std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitations& searchLimits, bool print_info, int64_t maxTime)
 {
-	hardNodeBound = hardNodes;
-	if (timeMS == -1)
+	if (searchLimits.HardNodeLimit == NOLIMIT)
 	{
-		Searchtime_MS = std::numeric_limits<int>::max();
+		hardNodeBound = std::numeric_limits<int64_t>::max();
 	}
 	else
 	{
-		Searchtime_MS = timeMS;
+		hardNodeBound = searchLimits.HardNodeLimit;
 	}
+
+	if (searchLimits.HardTimeLimit == NOLIMIT)
+	{
+		Searchtime_MS = std::numeric_limits<int64_t>::max();
+	}
+	else
+	{
+		Searchtime_MS = searchLimits.HardTimeLimit;
+	}
+	
 	searchNodeCount = 0;
 	Move bestmove;
 	clockStart = std::chrono::steady_clock::now();
@@ -1748,7 +1759,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 	memset(pvLengths, 0, sizeof(pvLengths));
 
 	int bestMoveStability = 0;
-	int baseSoft = softbound;
+	int64_t baseSoft = searchLimits.SoftNodeLimit;
+
+	int64_t softLimit = searchLimits.SoftNodeLimit;
 	for (currDepth = 1; currDepth <= depth; currDepth++)
 	{
 		ply = 0;
@@ -1769,23 +1782,25 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		while (true)
 		{
 			auto end = std::chrono::steady_clock::now();
-			float MS = std::chrono::duration_cast<std::chrono::milliseconds>(end - clockStart).count();
-			if (softbound != -1)
+			int64_t MS = static_cast<int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(end - clockStart).count());
+			if (softLimit != NOLIMIT)
 			{
-				if (MS > softbound)
+				if (MS > softLimit)
 				{
+					std::cout << "softbound";
 					break;
 				}
 
 			}
 			else
 			{
-				if (timeMS != -1 && MS > timeMS)
+				if (searchLimits.HardTimeLimit != NOLIMIT && MS > searchLimits.HardTimeLimit)
 				{
+					std::cout << "hardbound";
 					break;
 				}
 			}
-
+			
 			score = Negamax(board, std::max(aspirationWindowDepth, 1), alpha_val, beta_val, true, false);
 
 			delta += delta;
@@ -1815,7 +1830,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 
 
 		auto end = std::chrono::steady_clock::now();
-		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - clockStart).count();
+		float elapsedMS = static_cast<int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(end - clockStart).count());
 		float second = (elapsedMS + 1) / 1000;
 
 		double nps = searchNodeCount / second;
@@ -1828,9 +1843,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 		{
 			bestMoveStability = 0;
 		}
-		if (currDepth >= 6 && softbound != -1 && baseTime != -1) 
+		if (currDepth >= 6 && searchLimits.SoftTimeLimit != -1 && searchLimits.HardTimeLimit != -1 )
 		{
-			scaleTime(softbound, bestMoveStability, baseSoft, maxTime);
+			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime);
 		}
 		if (print_info)
 		{
@@ -1846,24 +1861,29 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS, boo
 				}
 			}
 		}
-		if (softNodes != -1)
+		if (searchLimits.SoftNodeLimit != NOLIMIT)
 		{
-			if (searchNodeCount > softNodes)
+			if (searchNodeCount > searchLimits.SoftNodeLimit)
 			{
+				std::cout << "softnode";
 				break;
 			}
 		}
-		if (softbound != -1)
+		if (softLimit != NOLIMIT)
 		{
-			if (elapsedMS > softbound)
+			if (elapsedMS > softLimit)
 			{
+				std::cout << elapsedMS<<"\n";
+				std::cout << softLimit;
+				std::cout << "softtime";
 				break;
 			}
 		}
 		else
 		{
-			if (timeMS != -1 && elapsedMS > timeMS)
+			if (searchLimits.HardTimeLimit != NOLIMIT && elapsedMS > searchLimits.HardTimeLimit)
 			{
+				std::cout << "hardtime";
 				break;
 			}
 		}
@@ -2224,7 +2244,9 @@ void Datagen(int targetPos, std::string output_name) {
 	}
 
 	auto start_time = std::chrono::high_resolution_clock::now();
-
+	SearchLimitations searchLimits;
+	searchLimits.SoftNodeLimit = 5000;
+	searchLimits.HardNodeLimit = 10000;
 	while (totalPositions < targetPositions) {
 		gameData.clear();
 		Board board;
@@ -2233,7 +2255,7 @@ void Datagen(int targetPos, std::string output_name) {
 		int result = -1;
 
 		while (!isGameOver) {
-			auto searchResult = IterativeDeepening(board, 99, -1, false, false, -1, -1, -1, 5000, 10000);
+			auto searchResult = IterativeDeepening(board, 99, searchLimits, false);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
 			if (board.side == Black) eval = -eval;

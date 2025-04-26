@@ -65,11 +65,24 @@ struct Search_data
 {
 	Move move;
 	int staticEval;
-	int doubleExtensions = 0;
+};
+
+struct SearchLimitations
+{
+	int64_t HardTimeLimit = -1;
+	int64_t SoftTimeLimit = -1;
+	int64_t SoftNodeLimit = -1;
+	int64_t HardNodeLimit = -1;
+	SearchLimitations(int hardTime = -1, int softTime = -1, int64_t softNode = -1, int64_t hardNode = -1)
+		: HardTimeLimit(hardTime),
+		SoftTimeLimit(softTime),
+		SoftNodeLimit(softNode),
+		HardNodeLimit(hardNode)
+	{}
 };
 void initializeLMRTable();
 extern TranspositionEntry* TranspositionTable;
-std::pair<Move, int> IterativeDeepening(Board& board, int depth, int timeMS = -1, bool PrintRootVal = false, bool print_info = true, int softbound = -1, int = -1, int = -1, uint64_t softNodes = -1, uint64_t = -1);
+std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitations& searchLimits, bool print_info = true, int64_t maxTime = -1);
 int SEE(Board& pos, Move move, int threshold);
 
 void bench();
