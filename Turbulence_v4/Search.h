@@ -95,4 +95,3 @@ inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversi
 	return false;
 } 
 void Datagen(int targetPos, std::string output_name);
-void filterData(const std::string& input, const std::string& output);

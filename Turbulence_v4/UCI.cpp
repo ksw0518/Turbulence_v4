@@ -399,15 +399,6 @@ void ProcessUCI(std::string input)
         
         Datagen(pos, file);
     }
-    else if (main_command == "filter")
-    {
-        //std::cout << "fuck";
-        //std::cout << input;
-        std::string input_file = TryGetLabelledValue(input, "input", filter_commands);
-        std::string output_file = TryGetLabelledValue(input, "output", filter_commands);
-        //std::cout << "data processed";
-        filterData(input_file, output_file);
-    }
     else if (main_command == "ucinewgame")
     {
         
@@ -697,12 +688,12 @@ void ProcessUCI(std::string input)
             uint64_t nodes = Perft(main_board, perft_depth);
             auto end = std::chrono::high_resolution_clock::now();
 
-            std::chrono::duration<double, std::milli> elapsedMS = end - start;
+            //std::chrono::duration<double, std::milli> elapsedMS = end - start;
             //std::chrono::duration<double, std::milli> elapsedS = end - start;
 
-            float second = elapsedMS.count() / 1000;
+            //float second = elapsedMS.count() / 1000;
 
-            double nps = nodes / second;
+            //double nps = nodes / second;
 
             std::cout << (nodes);
             std::cout << "\n";
@@ -951,8 +942,6 @@ int main(int argc, char* argv[])
 
     Initialize_TT(16);
 
-    uint64_t hash_key = 0ULL;
-    //Datagen();
     if (argc > 1) {
         std::string command = argv[1]; // First argument (after program name)
 
