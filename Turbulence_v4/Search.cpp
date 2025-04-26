@@ -159,36 +159,14 @@ int MAX_NMP_EVAL_R = 3;
 
 int DEXT_MARGIN = 21;
 
-
-
 int pvLengths[99];
 Move pvTable[99][99];
-
-
-
-
-
-
-
-
-
-
 
 int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
 static Move lastBestMoves[99];
 
-
-
-
-
-
-
-
 size_t TTSize = 699050;
 TranspositionEntry* TranspositionTable = nullptr;
-
-
-
 
 constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 1024;
@@ -211,8 +189,8 @@ double MAX_TIME_MULTIPLIER = 0.76;
 double HARD_LIMIT_MULTIPLIER = 3.04;
 double SOFT_LIMIT_MULTIPLIER = 0.76;
 
-
 uint64_t hardNodeBound;
+
 static int MVVLVA[6][6] = {
 	{105, 205, 305, 405, 505, 605},
 	{104, 204, 304, 404, 504, 604},
@@ -269,7 +247,7 @@ void initializeLMRTable(ThreadData& data)
 	//{
 	//	TranspositionTable[i] = TranspositionEntry();
 	//}
-	
+
 }
 int scaledBonus(int score, int bonus)
 {
@@ -751,7 +729,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 {
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - data.clockStart).count();
-	if (elapsedMS > data.Searchtime_MS || data.searchNodeCount > hardNodeBound) 
+	if (elapsedMS > data.Searchtime_MS || data.searchNodeCount > hardNodeBound)
 	{
 		data.isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
@@ -1009,7 +987,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//If current static evaluation is greater than static evaluation from 2 plies ago
 	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
-	
+
 	int canPrune = !isInCheck && !isPvNode;
 	//RFP
 	//If static evaluation + margin still doesn't improve alpha, prune the node
@@ -1068,7 +1046,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//Calculate all squares opponent is controlling
 	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
-	
+
 	//Sort moves from best to worst(by approximation)
 	sort_moves(moveList, board, ttEntry, oppThreats, data);
 
@@ -1712,7 +1690,7 @@ void scaleTime(int64_t& softLimit, uint8_t bestMoveStability, int64_t baseSoft, 
 std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitations& searchLimits, ThreadData& data, bool print_info, int64_t maxTime)
 {
 	//std::cout << "id"<<std::flush;
-	
+
 	if (searchLimits.HardNodeLimit == NOLIMIT)
 	{
 		hardNodeBound = std::numeric_limits<int64_t>::max();
@@ -1730,7 +1708,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 	{
 		data.Searchtime_MS = searchLimits.HardTimeLimit;
 	}
-	
+
 	data.searchNodeCount = 0;
 	Move bestmove;
 	data.clockStart = std::chrono::steady_clock::now();
@@ -1781,7 +1759,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 					break;
 				}
 			}
-			
+
 			score = Negamax(board, std::max(aspirationWindowDepth, 1), alpha_val, beta_val, true, false, data);
 
 			delta += delta;
@@ -1824,7 +1802,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		{
 			bestMoveStability = 0;
 		}
-		if (data.currDepth >= 6 && searchLimits.SoftTimeLimit != -1 && searchLimits.HardTimeLimit != -1 )
+		if (data.currDepth >= 6 && searchLimits.SoftTimeLimit != -1 && searchLimits.HardTimeLimit != -1)
 		{
 			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime);
 		}
@@ -2207,7 +2185,7 @@ std::vector<std::string> splitByPipe(const std::string& input) {
 
 	return tokens;
 }
-void Datagen(int targetPos, std::string output_name) 
+void Datagen(int targetPos, std::string output_name)
 {
 	ThreadData* heapAllocated = new ThreadData(); // Allocate safely on heap
 	ThreadData& data = *heapAllocated;

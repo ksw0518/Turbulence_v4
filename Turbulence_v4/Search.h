@@ -62,7 +62,7 @@ struct TranspositionEntry
 	int32_t score;
 	Move bestMove;
 	uint8_t depth;
-	
+
 	uint8_t bound;
 	bool ttPv;
 };
@@ -114,7 +114,7 @@ struct SearchLimitations
 		HardNodeLimit(hardNode)
 	{}
 };
-void initializeLMRTable(ThreadData &data);
+void initializeLMRTable(ThreadData& data);
 extern TranspositionEntry* TranspositionTable;
 std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitations& searchLimits, ThreadData& data, bool print_info = true, int64_t maxTime = -1);
 int SEE(Board& pos, Move move, int threshold);
@@ -140,5 +140,5 @@ inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversi
 		}
 	}
 	return false;
-} 
+}
 void Datagen(int targetPos, std::string output_name);
