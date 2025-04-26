@@ -169,7 +169,7 @@ size_t TTSize = 699050;
 TranspositionEntry* TranspositionTable = nullptr;
 
 constexpr int MAX_HISTORY = 16384;
-constexpr int MAX_CONTHIST = 1024;
+constexpr int MAX_CONTHIST = 16384;
 constexpr int MAX_CAPTHIST = 1024;
 
 constexpr int MIN_LMR_DEPTH = 3;
@@ -431,7 +431,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		else
 		{
 			// Return history score for non-capture and non-killer moves
-			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)] / 32;
+			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)] * 2;
 			int contHistScore = getContinuationHistoryScore(move, data);
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
@@ -1096,8 +1096,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		bool isNotMated = alpha > -49000 + 99;
 
-		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move, data) * 32;
+		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)] * 2;
+		int conthist = getContinuationHistoryScore(move, data);
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
