@@ -789,6 +789,8 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
 	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
+
+	int futilityScore = staticEval + 100;
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
@@ -798,6 +800,12 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		{
 			continue;
 		}
+		if (!isInCheck && futilityScore <= alpha)
+		{
+			bestValue = std::max(bestValue, futilityScore);
+			continue;
+		}
+
 
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
