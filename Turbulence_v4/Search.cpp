@@ -443,8 +443,6 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			{
 				return historyTotal;
 			}
-
-
 		}
 	}
 
@@ -1096,8 +1094,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		bool isNotMated = alpha > -49000 + 99;
 
-		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)] / 32;
-		int conthist = getContinuationHistoryScore(move, data) / 16;
+		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
+		int conthist = getContinuationHistoryScore(move, data) * 2;
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
