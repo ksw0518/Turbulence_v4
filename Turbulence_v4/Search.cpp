@@ -149,10 +149,10 @@ int NONPAWN_CORRHIST_MULTIPLIER = 183;// divide by 5 later
 int COUNTERMOVE_CORRHIST_MULTIPLIER = 150;// divide by 5 later
 
 int QS_SEE_PRUNING_MARGIN = -2;
-int HISTORY_PRUNING_MULTIPLIER = 1320 * 32;
-int HISTORY_PRUNING_BASE = 62 * 32;
-int HISTORY_LMR_MULTIPLIER = 772 * 32;
-int HISTORY_LMR_BASE = 86 * 32;
+int HISTORY_PRUNING_MULTIPLIER = 1320;
+int HISTORY_PRUNING_BASE = 62;
+int HISTORY_LMR_MULTIPLIER = 772;
+int HISTORY_LMR_BASE = 86;
 int NMP_EVAL_DIVISER = 399;
 int NMP_DEPTH_DIVISER = 3;
 int MAX_NMP_EVAL_R = 3;
@@ -431,8 +431,8 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		else
 		{
 			// Return history score for non-capture and non-killer moves
-			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)] * 2;
-			int contHistScore = getContinuationHistoryScore(move, data);
+			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
+			int contHistScore = getContinuationHistoryScore(move, data) * 2;
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
@@ -1096,8 +1096,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		bool isNotMated = alpha > -49000 + 99;
 
-		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move, data) * 2;
+		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)] / 32;
+		int conthist = getContinuationHistoryScore(move, data) / 16;
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
