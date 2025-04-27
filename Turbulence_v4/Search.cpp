@@ -137,8 +137,8 @@ int PVS_NOISY_MULTIPLIER = 19;
 
 int HISTORY_BASE = 130;
 int HISTORY_MULTIPLIER = 87;
-int CONTHIST_BASE = 4;
-int CONTHIST_MULTIPLIER = 3;
+int CONTHIST_BASE = 130;
+int CONTHIST_MULTIPLIER = 87;
 
 int ASP_WINDOW_INITIAL = 25;
 int ASP_WINDOW_MAX = 306;
@@ -1097,7 +1097,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool isNotMated = alpha > -49000 + 99;
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move, data)/2;
+		int conthist = getContinuationHistoryScore(move, data) * 2;
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
