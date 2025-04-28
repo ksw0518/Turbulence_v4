@@ -1003,7 +1003,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 		int rfpThreshold = rfpMargin;
 
-		if (ttAdjustedEval - rfpThreshold >= beta)
+		bool no_tthit_cutnode = !is_ttmove_found && cutnode;
+		if (ttAdjustedEval - rfpThreshold + 20 * no_tthit_cutnode >= beta)
 		{
 			return (ttAdjustedEval + beta) / 2;
 		}
