@@ -54,7 +54,7 @@ extern double SOFT_LIMIT_MULTIPLIER;
 
 constexpr int CORRHIST_WEIGHT_SCALE = 256;
 constexpr int CORRHIST_GRAIN = 256;
-constexpr int CORRHIST_SIZE = 16384;
+constexpr int CORRHIST_SIZE = 32768;
 constexpr int CORRHIST_MAX = 16384;
 struct TranspositionEntry
 {
