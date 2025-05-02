@@ -774,7 +774,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 
 	sort_moves_captures(moveList, board);
 
-	int bestValue = MINUS_INFINITY;
+	int bestValue = ttAdjustedEval;
 	int legal_moves = 0;
 	//PrintBoards(board);
 
