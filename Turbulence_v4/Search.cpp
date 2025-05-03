@@ -175,7 +175,7 @@ constexpr int MAX_CAPTHIST = 1024;
 constexpr int MIN_LMR_DEPTH = 3;
 
 constexpr int MAX_PVS_SEE_DEPTH = 8;
-int lmrTable[99][256];
+int lmrTable[2][99][256];
 
 constexpr int HFLOWER = 0;
 constexpr int HFEXACT = 1;
@@ -217,7 +217,10 @@ void initializeLMRTable(ThreadData& data)
 	{
 		for (int move = 1; move < 256; move++)
 		{
-			lmrTable[depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
+			//quiet
+			lmrTable[1][depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
+			//noisy
+			lmrTable[0][depth][move] = std::floor(0.20 + log(move) * log(depth) / 3.35);
 		}
 	}
 	for (int ply = 0; ply < 99; ply++)
@@ -1202,7 +1205,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			//LMR
 			//Save search by reducing moves that are ordered closer to the end
-			reduction = lmrTable[depth][searchedMoves];
+			reduction = lmrTable[isQuiet][depth][searchedMoves];
 			//reduce more if we are not in pv node
 			if (!isPvNode && quietMoves >= 4)
 			{
@@ -1222,11 +1225,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if (historyScore < (-HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
 			{
 				reduction++;
-			}
-			//reduce less if the move is a capture
-			if (!isQuiet)
-			{
-				reduction--;
 			}
 			//reduce less killer moves
 			if ((move == data.killerMoves[0][data.ply - 1]) || (move == data.killerMoves[1][data.ply - 1]))
