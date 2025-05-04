@@ -1114,7 +1114,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//If history score is very bad, skip the move
 			if (quietMoves > 1 && depth <= 5 && historyScore < historyPruningMargin)
 			{
-				break;
+				continue;
 			}
 		}
 		int lastEp = board.enpassent;
