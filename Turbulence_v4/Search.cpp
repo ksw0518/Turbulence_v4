@@ -1021,7 +1021,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//if a reduced search on null move fails high over beta, return fail high score
 	if (!isSingularSearch && !isPvNode && doNMP)
 	{
-		if (!isInCheck && depth >= 2 && data.ply && ttAdjustedEval >= beta)
+		if (!isInCheck && depth >= 2 && data.ply && ttAdjustedEval >= beta && !(ttEntry.bound == UpperBound && ttEntry.score < beta))
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
