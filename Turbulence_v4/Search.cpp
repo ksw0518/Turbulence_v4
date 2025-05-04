@@ -1111,6 +1111,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				skipQuiets = true;
 			}
+			if (depth <= 8 && std::abs(alpha) < 2000 && staticEval + 250 + depth * 65 <= alpha)
+			{
+				skipQuiets = true;
+				continue;
+			}
 			//If history score is very bad, skip the move
 			if (quietMoves > 1 && depth <= 5 && historyScore < historyPruningMargin)
 			{
