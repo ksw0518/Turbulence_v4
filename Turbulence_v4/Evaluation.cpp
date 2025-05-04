@@ -567,12 +567,16 @@ int Evaluate(Board& board)
 	//	std::cout<< eval_accumulator.white.values[i]<<" ";
 	//}
 		//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	int NN_score;
 	if (board.side == White)
-		return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+		NN_score = forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
 	else
-		return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+		NN_score = forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
 
+	float multiplier = ((float)750 + (float)count_bits(board.occupancies[Both]) / 25) / 1024;
+	NN_score *= multiplier;
 
+	return NN_score;
 //
 //	if (board.side == White)
 //		std::cout<< forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
