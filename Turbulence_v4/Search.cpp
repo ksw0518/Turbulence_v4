@@ -1272,6 +1272,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			if (score > alpha)
 			{
+				if (score != alpha + 1)
+				{
+					depthToSearch += (score > (bestValue + 60 + depthToSearch * 2));
+					depthToSearch -= (score < bestValue + depthToSearch && data.ply != 1);
+				}
 				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode, data);
 			}
 			if (score > alpha && score < beta)
