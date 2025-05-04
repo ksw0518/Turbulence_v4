@@ -558,7 +558,15 @@ int32_t forward(struct Network* const network,
 
 	return eval;
 }
+int16_t total_mat(const Board& board) {
+	int m = (count_bits(board.bitboards[P]) + count_bits(board.bitboards[p])) * 100 +
+		(count_bits(board.bitboards[B]) + count_bits(board.bitboards[b])) * 300 +
+		(count_bits(board.bitboards[N]) + count_bits(board.bitboards[n])) * 300 +
+		(count_bits(board.bitboards[R]) + count_bits(board.bitboards[r])) * 500 +
+		(count_bits(board.bitboards[Q]) + count_bits(board.bitboards[q])) * 900;
 
+	return m;
+}
 int Evaluate(Board& board)
 {
 
@@ -573,7 +581,7 @@ int Evaluate(Board& board)
 	else
 		NN_score = forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
 
-	float multiplier = ((float)750 + (float)count_bits(board.occupancies[Both]) / 25) / 1024;
+	float multiplier = ((float)750 + (float)total_mat(board) / 25) / 1024;
 	NN_score *= multiplier;
 
 	return NN_score;
