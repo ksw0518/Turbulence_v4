@@ -917,14 +917,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//Default assumption before search
 	int ttFlag = UpperBound;
 
-	bool is_ttmove_found = false;
+	bool tt_hit = false;
 	bool isSingularSearch = excludedMove != NULLMOVE;
 
 	bool tt_pv = isPvNode;
 	//Checks for collisions, or empty entry
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
-		is_ttmove_found = true;
+		tt_hit = true;
 		// Valid TT entry found
 		if (!isPvNode && !isSingularSearch && data.ply != 0 && ttEntry.depth >= depth)
 		{
@@ -945,7 +945,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	//Internal Iterative Reduction
 	//If no hash move was found, reduce depth
-	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (!is_ttmove_found))
+	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (!tt_hit))
 	{
 		depth--;
 	}
@@ -976,7 +976,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int ttAdjustedEval = staticEval;
 
 	//Adjust static evaluation with search score on TT, to get move accurate estimaton.
-	if (!isSingularSearch && is_ttmove_found && !isInCheck && (ttEntry.bound == ExactFlag || (ttEntry.bound == LowerBound && ttEntry.score >= staticEval) || (ttEntry.bound == UpperBound && ttEntry.score <= staticEval)))
+	if (!isSingularSearch && tt_hit && !isInCheck && (ttEntry.bound == ExactFlag || (ttEntry.bound == LowerBound && ttEntry.score >= staticEval) || (ttEntry.bound == UpperBound && ttEntry.score <= staticEval)))
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
@@ -1250,6 +1250,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
+			if (tt_hit && ttEntry.depth >= depth)
+			{
+				reduction--;
+			}
 		}
 		//Prevent from accidently extending the move
 		if (reduction < 0) reduction = 0;
@@ -1375,7 +1379,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (!isSingularSearch)
 	{
-		if (ttFlag == UpperBound && is_ttmove_found)
+		if (ttFlag == UpperBound && tt_hit)
 		{
 			bestMove = ttEntry.bestMove;
 		}
