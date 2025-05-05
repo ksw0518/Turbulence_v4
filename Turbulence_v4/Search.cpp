@@ -2078,47 +2078,45 @@ struct GameData
 	GameData(Board b, int e, int r) : board(b), eval(e), result(r) {}
 };
 bool isInsufficientMaterial(const Board& board) {
-	int pieceCount[12] = { 0 }; // Count pieces on the board
 
-	// Count each piece type
-	for (int i = 0; i < 64; ++i) {
-		int piece = board.mailbox[i];
-		if (piece != NO_PIECE) {
-			pieceCount[piece]++;
+	int whiteBishops = count_bits(board.bitboards[B]);
+	int blackBishops = count_bits(board.bitboards[b]);
+	int whiteKnights = count_bits(board.bitboards[N]);
+	int blackKnights = count_bits(board.bitboards[n]);
+	int whiteRooks = count_bits(board.bitboards[R]);
+	int blackRooks = count_bits(board.bitboards[r]);
+	int whiteQueens = count_bits(board.bitboards[Q]);
+	int blackQueens = count_bits(board.bitboards[q]);
+	int whitePawns = count_bits(board.bitboards[P]);
+	int blackPawns = count_bits(board.bitboards[p]);
+	if (whiteQueens == 0 && blackQueens == 0 && whiteRooks == 0 && blackRooks == 0 && whitePawns == 0 && blackPawns == 0)
+	{
+		if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
 		}
+		else if (whiteBishops == 1 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 1 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 1)
+		{
+			return true;
+		}
+		else if (whiteBishops == 1 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		return false;
 	}
-
-	int totalPieces = 0;
-	int bishops = 0, knights = 0;
-	int whiteBishops = 0, blackBishops = 0;
-	int whiteMinor = 0, blackMinor = 0;
-
-	// Classify pieces
-	for (int i = 1; i <= 5; ++i) { // White pieces (1 to 5)
-		totalPieces += pieceCount[i];
-		if (i == 2) knights += pieceCount[i]; // Knights
-		if (i == 3) { bishops += pieceCount[i]; whiteBishops += pieceCount[i]; } // Bishops
-		if (i == 2 || i == 3) whiteMinor += pieceCount[i]; // Minor pieces
-	}
-	for (int i = 7; i <= 11; ++i) { // Black pieces (7 to 11)
-		totalPieces += pieceCount[i];
-		if (i == 8) knights += pieceCount[i]; // Knights
-		if (i == 9) { bishops += pieceCount[i]; blackBishops += pieceCount[i]; } // Bishops
-		if (i == 8 || i == 9) blackMinor += pieceCount[i]; // Minor pieces
-	}
-
-	// 1. King vs King
-	if (totalPieces == 0) return true;
-
-	// 2. King + single minor piece (Knight or Bishop) vs King
-	if (totalPieces == 1 && (knights == 1 || bishops == 1)) return true;
-
-	// 3. King + Bishop vs King + Bishop (same color bishops)
-	if (totalPieces == 2 && bishops == 2) {
-		// If all bishops are on the same color, it's insufficient material
-		return (whiteBishops == blackBishops);
-	}
-
 	return false;
 }
 int flipResult(int res) {
@@ -2222,6 +2220,7 @@ void Datagen(int targetPos, std::string output_name)
 		bool isGameOver = false;
 		int result = -1;
 
+		int moves = 0;
 		while (!isGameOver) {
 			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
 			Move bestMove = searchResult.first;
@@ -2235,7 +2234,7 @@ void Datagen(int targetPos, std::string output_name)
 				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
 				break;
 			}
-			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board)) {
+			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.history.size() - board.lastIrreversiblePly >= 100) {
 				result = DRAW;
 				break;
 			}
@@ -2244,11 +2243,13 @@ void Datagen(int targetPos, std::string output_name)
 			}
 
 			MakeMove(board, bestMove);
-
+			moves++;
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) {
 				gameData.push_back(GameData(board, eval, -1));
 				totalPositions++;
 			}
+			//std::cout << moves << "\n";
+
 		}
 
 		// **Batch write game data to file instead of writing each line separately**
