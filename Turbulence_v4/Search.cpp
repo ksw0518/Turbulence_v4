@@ -2264,9 +2264,17 @@ void Datagen(int targetPos, std::string output_name)
 		double positions_per_second = totalPositions / elapsed_seconds;
 		double percentage = (static_cast<double>(totalPositions) / targetPos) * 100;
 
-		std::cout << "Positions per second: " << std::fixed << std::setprecision(2) << positions_per_second
-			<< " | Total Positions: " << totalPositions
-			<< " | Progress: " << std::fixed << std::setprecision(5) << percentage << "% ";
+		setColor(ConsoleColor::BrightGreen);
+		std::cout << "Positions/s: " << std::fixed << std::setprecision(2) << positions_per_second;
+
+		setColor(ConsoleColor::BrightCyan);
+		std::cout << " | Total: " << totalPositions << " ("
+			<< std::fixed << std::setprecision(2) << (totalPositions / 1'000'000.0) << "M)";
+
+		setColor(ConsoleColor::BrightYellow);
+		std::cout << " | Progress: " << std::fixed << std::setprecision(4) << percentage << "% ";
+
+		setColor(ConsoleColor::White); // Reset to default
 		estimate_time_remaining(targetPositions - totalPositions, positions_per_second);
 		print_progress_bar(percentage);
 		std::cout << "\n\n" << std::flush;
