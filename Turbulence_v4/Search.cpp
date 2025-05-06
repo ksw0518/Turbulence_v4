@@ -1019,7 +1019,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//NMP
 	//Since null move is worse than all the other moves in most situations,
 	//if a reduced search on null move fails high over beta, return fail high score
-	if (!isSingularSearch && !isPvNode && doNMP)
+	if (cutnode && !isSingularSearch && !isPvNode && doNMP)
 	{
 		if (!isInCheck && depth >= 2 && data.ply && ttAdjustedEval >= beta)
 		{
