@@ -882,7 +882,20 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	return bestValue;
 }
 
+int squaredCorrectionTerms(ThreadData& data, Board& board)
+{
+	Search_data previousData = data.searchStack[data.ply - 1];
+	int pawn = data.pawnCorrHist[board.side][board.PawnKey % CORRHIST_SIZE];
+	int minor = data.pawnCorrHist[board.side][board.MinorKey % CORRHIST_SIZE];
+	int whiteNonPawn = data.nonPawnCorrHist[White][board.side][board.WhiteNonPawnKey % CORRHIST_SIZE];
+	int blackNonPawn = data.nonPawnCorrHist[White][board.side][board.BlackNonPawnKey % CORRHIST_SIZE];
+	
+	int counter = data.counterMoveCorrHist[previousData.move.Piece][previousData.move.To];
 
+
+	return pawn * pawn + minor * minor + whiteNonPawn * whiteNonPawn + blackNonPawn * blackNonPawn + counter * counter;
+
+}
 static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, ThreadData& data, Move excludedMove = NULLMOVE)
 {
 	bool isPvNode = beta - alpha > 1;
@@ -1077,6 +1090,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
+	int squaredCorrhist = squaredCorrectionTerms(data, board);
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
@@ -1205,6 +1219,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			data.ply++;
 		}
 		data.searchStack[data.ply - 1].move = move;
+		
+
 		if (depth > MIN_LMR_DEPTH && searchedMoves > 1)
 		{
 			//LMR
@@ -1250,6 +1266,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
+			const int64_t scale = 3686;
+			reduction -= (scale * squaredCorrhist) / 4294967296;
+			std::cout << (scale * squaredCorrhist) / 4294967296 << "\n";
 		}
 		//Prevent from accidently extending the move
 		if (reduction < 0) reduction = 0;
