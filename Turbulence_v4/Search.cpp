@@ -1190,6 +1190,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN)
 				{
 					extensions++;
+					if (isQuiet && s_score < s_beta - 125)
+					{
+						extensions++;
+					}
 				}
 			}
 			else if (s_beta >= beta)
