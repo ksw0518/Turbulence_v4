@@ -987,7 +987,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
-	//RFP
+	//RFP 
 	//If static evaluation + margin still doesn't improve alpha, prune the node
 	if (!isSingularSearch && depth < 5 && canPrune)
 	{
