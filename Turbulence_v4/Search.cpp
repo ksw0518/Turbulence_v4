@@ -223,7 +223,6 @@ void initializeLMRTable(ThreadData& data)
 	for (int ply = 0; ply < 99; ply++)
 	{
 		data.killerMoves[0][ply] = Move();
-		data.killerMoves[1][ply] = Move();
 	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
@@ -238,7 +237,6 @@ void initializeLMRTable(ThreadData& data)
 	for (int ply = 0; ply < 99; ply++)
 	{
 		data.killerMoves[0][ply] = Move();
-		data.killerMoves[1][ply] = Move();
 	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 
@@ -423,10 +421,6 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		if (data.killerMoves[0][data.ply] == move)
 		{
 			return 150000;
-		}
-		else if (data.killerMoves[1][data.ply] == move)
-		{
-			return 100000;
 		}
 		else
 		{
@@ -968,7 +962,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		// Reset killer moves for the next ply to make the killer move more local
 		data.killerMoves[0][data.ply + 1] = Move(0, 0, 0, 0);
-		data.killerMoves[1][data.ply + 1] = Move(0, 0, 0, 0);
 	}
 
 	int rawEval = Evaluate(board);
@@ -1236,7 +1229,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				reduction--;
 			}
 			//reduce less killer moves
-			if ((move == data.killerMoves[0][data.ply - 1]) || (move == data.killerMoves[1][data.ply - 1]))
+			if ((move == data.killerMoves[0][data.ply - 1]))
 			{
 				reduction--;
 			}
@@ -1331,11 +1324,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = LowerBound;
 			if ((move.Type & capture) == 0)
 			{
-				if (!(data.killerMoves[0][data.ply] == move))
-				{
-					data.killerMoves[1][data.ply] = data.killerMoves[0][data.ply];
-					data.killerMoves[0][data.ply] = move;
-				}
+				data.killerMoves[0][data.ply] = move;
 				int mainHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
 				int contHistBonus = std::min(2400, CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth);
 				for (int i = 0; i < quietsList.count; ++i)
@@ -1430,7 +1419,6 @@ void bench()
 		for (int ply = 0; ply < 99; ply++)
 		{
 			data.killerMoves[0][ply] = Move();
-			data.killerMoves[1][ply] = Move();
 		}
 		memset(data.mainHistory, 0, sizeof(data.mainHistory));
 		for (size_t i = 0; i < TTSize; i++)
@@ -1461,7 +1449,6 @@ void bench()
 	for (int ply = 0; ply < 99; ply++)
 	{
 		data.killerMoves[0][ply] = Move();
-		data.killerMoves[1][ply] = Move();
 	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	for (size_t i = 0; i < TTSize; i++)
