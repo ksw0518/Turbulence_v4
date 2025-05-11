@@ -1325,6 +1325,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 				pvLengths[data.ply] = pvLengths[data.ply + 1];
 			}
+
+			if (depth > 2 && depth < 12 && abs(score) < 40000) {
+				depth--;
+			}
 		}
 		if (alpha >= beta)
 		{
