@@ -1584,12 +1584,13 @@ void MakeMove(Board& board, Move move)
 	bool flipFileWhite = false;
 	bool flipFileBlack = false;
 
-	bool flipPrevWhite = false;
-	bool flipPrevBlack = false;
+	bool flipPrevWhite = true;
+	bool flipPrevBlack = true;
 
 	int stmKingFile = getFile(get_ls1b(board.bitboards[get_piece(K, board.side)]));
 	int nstmKingFile = getFile(get_ls1b(board.bitboards[get_piece(K, 1 - board.side)]));
 
+	int stmKingFileAfterMake = getFile(move.To);
 
 	int fromFile = getFile(move.From);
 	//int toFile = getFile(move.To);
@@ -1597,18 +1598,26 @@ void MakeMove(Board& board, Move move)
 	{
 		if (board.side == White)
 		{
-			flipFileWhite = true;
-			if (fromFile >= 4)
+			if (stmKingFileAfterMake >= 4)
 			{
-				flipPrevWhite = true;
+				flipFileWhite = true;
+			}
+			
+			if (move.Piece == K && fromFile <= 3)
+			{
+				flipPrevWhite = false;
 			}
 		}
 		else
 		{
-			flipFileBlack = true;
-			if (fromFile >= 4)
+			if (stmKingFileAfterMake >= 4)
 			{
-				flipPrevBlack = true;
+				flipFileBlack = true;
+			}
+
+			if (move.Piece == k && fromFile <= 3)
+			{
+				flipPrevBlack = false;
 			}
 		}
 	}
@@ -1623,8 +1632,14 @@ void MakeMove(Board& board, Move move)
 			flipFileWhite = true;
 		}
 	}
+
+	std::cout << "whiteflip" << flipFileWhite;
+	std::cout << "blackflip" << flipFileBlack;
+	std::cout << "whiteprevflip" << flipPrevWhite;
+	std::cout << "blackprevflip" << flipPrevBlack;
     if (board.enpassent != no_sq)
-    {
+    {	
+
         board.zobristKey ^= enpassant_keys[board.enpassent];
         board.enpassent = no_sq;
     }
