@@ -311,7 +311,31 @@ void parse_fen(std::string fen, Board& board)
 	board.WhiteNonPawnKey = generate_WhiteNP_Hash(board);
 	board.BlackNonPawnKey = generate_BlackNP_Hash(board);
 	//board.accumulator = new AccumulatorPair();
+
+	
 	resetAccumulators(board, board.accumulator);
+
+	int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
+	if (whiteKingFile >= 4)//king is on right now, have to flip
+	{
+		resetWhiteAccumulator(board, board.accumulator, true);
+	}
+	if (whiteKingFile <= 3)//king is on left now, have to flip
+	{
+		resetWhiteAccumulator(board, board.accumulator, false);
+	}
+
+
+
+	int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
+	if (blackKingFile >= 4)//king is on right now, have to flip
+	{
+		resetBlackAccumulator(board, board.accumulator, true);
+	}
+	if (blackKingFile <= 3)//king is on left now, have to flip
+	{
+		resetBlackAccumulator(board, board.accumulator, false);
+	}
 }
 void PrintLegalMoves(std::vector<Move> moveList)
 {

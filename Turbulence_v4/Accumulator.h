@@ -19,6 +19,8 @@ struct Network {
 	alignas(64) int16_t output_bias;
 };
 
+
+
 struct Accumulator {
 	alignas(64) int16_t values[HL_SIZE];
 };

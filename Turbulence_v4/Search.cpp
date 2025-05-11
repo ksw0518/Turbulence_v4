@@ -885,7 +885,18 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	return bestValue;
 }
 
-
+bool operator==(AccumulatorPair& a, AccumulatorPair& b) {
+	for (int i = 0; i < HL_SIZE; ++i) {
+		if (a.white.values[i] != b.white.values[i])
+			return false;
+		if (a.black.values[i] != b.black.values[i])
+			return false;
+	}
+	return true;
+}
+bool operator!=(AccumulatorPair& a, AccumulatorPair& b) {
+	return !(a == b);
+}
 static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, ThreadData& data, Move excludedMove = NULLMOVE)
 {
 	bool isPvNode = beta - alpha > 1;
@@ -1080,6 +1091,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
+
+	
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
@@ -1169,7 +1182,37 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 
 		MakeMove(board, move);
+		AccumulatorPair ue_accumulator = board.accumulator;
 
+		resetAccumulators(board, board.accumulator);
+
+		int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
+		if (whiteKingFile >= 4)//king is on right now, have to flip
+		{
+			resetWhiteAccumulator(board, board.accumulator, true);
+		}
+		if (whiteKingFile <= 3)//king is on left now, have to flip
+		{
+			resetWhiteAccumulator(board, board.accumulator, false);
+		}
+
+
+
+		int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
+		if (blackKingFile >= 4)//king is on right now, have to flip
+		{
+			resetBlackAccumulator(board, board.accumulator, true);
+		}
+		if (blackKingFile <= 3)//king is on left now, have to flip
+		{
+			resetBlackAccumulator(board, board.accumulator, false);
+		}
+
+		if (ue_accumulator != board.accumulator)
+		{
+			PrintBoards(board);
+			printMove(move);
+		}
 		data.searchNodeCount++;
 		if (!isLegal(move, board))
 		{

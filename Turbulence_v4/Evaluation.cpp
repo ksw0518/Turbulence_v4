@@ -638,7 +638,7 @@ int Evaluate(Board& board)
 		NN_score = forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
 
 	float multiplier = ((float)750 + (float)total_mat(board) / 25) / 1024;
-	NN_score *= multiplier;
+	//NN_score *= multiplier;
 
 	return NN_score;
 //
