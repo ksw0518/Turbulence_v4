@@ -945,7 +945,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	//Internal Iterative Reduction
 	//If no hash move was found, reduce depth
-	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (!is_ttmove_found))
+	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (!is_ttmove_found || ttEntry.depth < 4))
 	{
 		depth--;
 	}
