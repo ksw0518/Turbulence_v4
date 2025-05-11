@@ -1250,7 +1250,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction++;
 			}
-			if (tt_hit && ttEntry.depth >= depth)
+			if (tt_hit && ttEntry.depth >= depth) 
 			{
 				reduction--;
 			}
