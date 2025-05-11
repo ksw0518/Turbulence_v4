@@ -381,9 +381,9 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 	while (whitePieces) {
 		int sq = get_ls1b(whitePieces);
 
-		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), White);
+		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), White, false);
 		//std::cout << whiteInputFeature<<" ";
-		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), White);
+		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), White, false);
 	    //std::cout << blackInputFeature << " ";
 		for (size_t i = 0; i < HL_SIZE; i++) {
 			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
@@ -395,9 +395,9 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 	while (blackPieces) {
 		int sq = get_ls1b(blackPieces);
 
-		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), Black);
+		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), Black, false);
 		//std::cout << whiteInputFeature << " ";
-		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), Black);
+		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), Black, false);
 		//std::cout << blackInputFeature << " ";
 		for (size_t i = 0; i < HL_SIZE; i++) {
 			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
@@ -410,8 +410,63 @@ void resetAccumulators(const Board& board, AccumulatorPair& accumulator) {
 	//	std::cout<<accumulator.white.values[i]<<" ";
 	//}
 }
+void resetWhiteAccumulator(const Board& board, AccumulatorPair& accumulator, bool flipFile) {
+	uint64_t whitePieces = board.occupancies[White];
+	uint64_t blackPieces = board.occupancies[Black];
 
 
+	memcpy(accumulator.white.values, Eval_Network.accumulator_biases, sizeof(Eval_Network.accumulator_biases));
+
+	while (whitePieces) {
+		int sq = get_ls1b(whitePieces);
+
+		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), White, flipFile);
+		for (size_t i = 0; i < HL_SIZE; i++) {
+			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
+		}
+
+		Pop_bit(whitePieces, sq);
+	}
+	while (blackPieces) {
+		int sq = get_ls1b(blackPieces);
+
+		uint16_t whiteInputFeature = calculateIndex(White, sq, get_piece(board.mailbox[sq], White), Black, flipFile);
+		for (size_t i = 0; i < HL_SIZE; i++) {
+			accumulator.white.values[i] += Eval_Network.accumulator_weights[whiteInputFeature][i];
+		}
+		Pop_bit(blackPieces, sq);
+	}
+	//for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout<<accumulator.white.values[i]<<" ";
+	//}
+}
+void resetBlackAccumulator(const Board& board, AccumulatorPair& accumulator, bool flipFile) {
+	uint64_t whitePieces = board.occupancies[White];
+	uint64_t blackPieces = board.occupancies[Black];
+	memcpy(accumulator.black.values, Eval_Network.accumulator_biases, sizeof(Eval_Network.accumulator_biases));
+	//for (int i = 0; i < 16; i++)
+	//{
+	//	std::cout << accumulator.white.values[i] << " ";
+	//}
+
+	while (whitePieces) {
+		int sq = get_ls1b(whitePieces);
+		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), White, flipFile);
+		for (size_t i = 0; i < HL_SIZE; i++) {
+			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
+		}
+		Pop_bit(whitePieces, sq);
+	}
+	while (blackPieces) {
+		int sq = get_ls1b(blackPieces);
+		uint16_t blackInputFeature = calculateIndex(Black, sq, get_piece(board.mailbox[sq], White), Black, flipFile);
+		for (size_t i = 0; i < HL_SIZE; i++) {
+			accumulator.black.values[i] += Eval_Network.accumulator_weights[blackInputFeature][i];
+		}
+		Pop_bit(blackPieces, sq);
+	}
+}
 std::int32_t autovectorised_screlu(Network const * network, Accumulator const * stm, Accumulator const *nstm) {
 	std::int32_t accumulator{};
 	for (int i = 0; i < HL_SIZE; i++) {
@@ -575,6 +630,7 @@ int Evaluate(Board& board)
 	//	std::cout<< eval_accumulator.white.values[i]<<" ";
 	//}
 		//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+	
 	int NN_score;
 	if (board.side == White)
 		NN_score = forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);

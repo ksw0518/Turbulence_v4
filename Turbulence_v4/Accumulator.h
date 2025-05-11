@@ -31,12 +31,20 @@ inline int flipSquare(int square)//flip square so a1 = 0
 {
 	return square ^ 56;
 }
-inline int calculateIndex(int perspective, int square, int pieceType, int side)
+inline int mirrorLeftRight(int square)
+{
+	return square ^ 7;
+}
+inline int calculateIndex(int perspective, int square, int pieceType, int side, bool flipFile)
 {
 
 	square ^= 56;
 	if (perspective == 1) {
 		square = flipSquare(square);
+	}
+	if (flipFile)
+	{
+		square = mirrorLeftRight(square);
 	}
 	return 6 * 64 * (side != perspective) + 64 * pieceType + square;
 

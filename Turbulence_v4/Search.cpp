@@ -68,7 +68,10 @@ enum class ConsoleColor {
 	BrightYellow = 14,
 	BrightWhite = 15
 };
-
+inline int getSide(int piece)
+{
+	return (piece > 5) ? Black : White;
+};
 std::string benchFens[] = { // fens from alexandria, ultimately from bitgenie
 	"r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
 	"4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
@@ -1128,6 +1131,43 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			data.selDepth = data.ply;
 		}
+
+		if (get_piece(move.Piece, White) == K) // king has moved
+		{
+			int prevKingFile = getFile(move.From);
+			int currKingFile = getFile(move.To);
+			if (prevKingFile <= 3)//king was on left previously
+			{
+				if (currKingFile >= 4)//king is on right now, have to flip
+				{
+					if (getSide(move.Piece) == White)//white king moved
+					{
+						resetWhiteAccumulator(board, board.accumulator, true);
+					}
+					else
+					{
+						resetBlackAccumulator(board, board.accumulator, true);
+					}
+					
+				}
+			}
+			else //king was on right previously
+			{
+				if (currKingFile <= 3)//king is on left now, have to flip
+				{
+					if (getSide(move.Piece) == White)//white king moved
+					{
+						resetWhiteAccumulator(board, board.accumulator, false);
+					}
+					else
+					{
+						resetBlackAccumulator(board, board.accumulator, false);
+					}
+
+				}
+			}
+		}
+
 		MakeMove(board, move);
 
 		data.searchNodeCount++;
