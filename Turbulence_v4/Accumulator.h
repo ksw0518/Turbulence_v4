@@ -2,7 +2,9 @@
 //#include "const.h"
 #include <cstdint>
 #include <cstddef>
+#include <iostream>
 
+#include<string>
 const int INPUT_SIZE = 768;
 const int HL_SIZE = 768;
 
@@ -37,6 +39,22 @@ inline int mirrorLeftRight(int square)
 {
 	return square ^ 7;
 }
+
+inline std::string CoordinatesToChessNotation(int square)
+{
+	int rawFile = square % 8;
+	int rawRank = square == 0 ? 8 : 8 - square / 8;
+	char File = (char)('a' + rawFile); // Convert column index to letter ('a' to 'h')
+	int row = rawRank; // Row number (1 to 8)
+
+	// Validate row
+	//if (row < 0 || row > 8)
+	//{
+	//    throw new ArgumentException("Invalid chess square.");
+	//}
+	std::string str(1, File);
+	return str + std::to_string(row);
+}
 inline int calculateIndex(int perspective, int square, int pieceType, int side, bool flipFile)
 {
 
@@ -46,7 +64,19 @@ inline int calculateIndex(int perspective, int square, int pieceType, int side, 
 	}
 	if (flipFile)
 	{
+		if (square == 51 && pieceType == 5)
+		{
+			std::cout << "beforeflip ";
+			std::cout << CoordinatesToChessNotation(square);
+		}
+		
+
 		square = mirrorLeftRight(square);
+		if (mirrorLeftRight(square) == 51 && pieceType == 5)
+		{
+			std::cout << "afterflip ";
+			std::cout << CoordinatesToChessNotation(square);
+		}
 	}
 	return 6 * 64 * (side != perspective) + 64 * pieceType + square;
 

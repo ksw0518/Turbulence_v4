@@ -1593,50 +1593,78 @@ void MakeMove(Board& board, Move move)
 	int stmKingFileAfterMake = getFile(move.To);
 
 	int fromFile = getFile(move.From);
-	//int toFile = getFile(move.To);
-	if (stmKingFile >= 4)//king is on right now, have to flip
-	{
-		if (board.side == White)
-		{
-			if (stmKingFileAfterMake >= 4)
-			{
-				flipFileWhite = true;
-			}
-			
-			if (move.Piece == K && fromFile <= 3)
-			{
-				flipPrevWhite = false;
-			}
-		}
-		else
-		{
-			if (stmKingFileAfterMake >= 4)
-			{
-				flipFileBlack = true;
-			}
 
-			if (move.Piece == k && fromFile <= 3)
-			{
-				flipPrevBlack = false;
-			}
-		}
-	}
-	if (nstmKingFile >= 4)//king is on right now, have to flip
+	if (move.Piece == K)
 	{
-		if (board.side == White)
-		{
-			flipFileBlack = true;
-		}
-		else
+		if (stmKingFileAfterMake >= 4)
 		{
 			flipFileWhite = true;
 		}
 	}
+	else if (move.Piece == k)
+	{
+		if (stmKingFileAfterMake >= 4)
+		{
+			flipFileBlack = true;
+		}
+	}
+	else
+	{
+		if (board.side == White)
+		{
+			if (stmKingFile >= 4)
+			{
+				flipFileWhite = true;
+			}
+	
+		}
+		else
+		{
+			if (stmKingFile >= 4)
+			{
+				flipFileBlack = true;
+			}
+		}
+	}
+	if (board.side == White)
+	{
+		if (nstmKingFile >= 4)
+		{
+			flipPrevBlack = true;
+			flipFileBlack = true;
+		}
+		else
+		{
+			flipPrevBlack = false;
+			flipFileBlack = false;
+		}
+	}
+	else
+	{
+		if (nstmKingFile >= 4)
+		{
+			flipPrevWhite = true;
+			flipFileWhite = true;
+		}
+		else
+		{
+			flipPrevWhite = false;
+			flipFileWhite = false;
+		}
+	}
+	flipPrevBlack = flipFileBlack;
+	flipPrevWhite = flipFileWhite;
 
-	std::cout << "whiteflip" << flipFileWhite;
-	std::cout << "blackflip" << flipFileBlack;
-	std::cout << "whiteprevflip" << flipPrevWhite;
-	std::cout << "blackprevflip" << flipPrevBlack;
+	
+	if (move.From == e1 && move.To == d2)
+	{
+		std::cout << "whiteflip " << flipFileWhite;
+		std::cout << "blackflip " << flipFileBlack;
+		std::cout << "whiteprevflip " << flipPrevWhite;
+		std::cout << "blackprevflip " << flipPrevBlack;
+		std::cout << "\n";
+	}
+
     if (board.enpassent != no_sq)
     {	
 
@@ -1782,8 +1810,11 @@ void MakeMove(Board& board, Move move)
 
 		board.mailbox[move.From] = NO_PIECE;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
-		accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side, flipPrevWhite));
-		accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side, flipPrevBlack));
+
+			accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side, flipPrevWhite));
+			accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side, flipPrevBlack));
+		
+		
 		if (move.Piece == P || move.Piece == p)//pawn
 		{
 			board.PawnKey ^= piece_keys[move.Piece][move.From];
@@ -1810,8 +1841,13 @@ void MakeMove(Board& board, Move move)
 		
 		board.mailbox[move.To] = move.Piece;
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
-		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side, flipFileWhite));
-		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side, flipFileBlack));
+
+
+
+
+			accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side, flipFileWhite));
+			accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side, flipFileBlack));
+		
 		//update enpassent square
 		//if (move.Type == double_pawn_push)
 		//{

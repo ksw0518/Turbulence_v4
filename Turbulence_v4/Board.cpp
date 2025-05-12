@@ -74,22 +74,22 @@ char getCharFromPiece(int piece) {
     default: return -1; // Default or error value
     }
 }
-
-std::string CoordinatesToChessNotation(int square)
-{
-    int rawFile = square % 8;
-    int rawRank = square == 0 ? 8 : 8 - square / 8;
-    char File = (char)('a' + rawFile); // Convert column index to letter ('a' to 'h')
-    int row = rawRank; // Row number (1 to 8)
-
-    // Validate row
-    //if (row < 0 || row > 8)
-    //{
-    //    throw new ArgumentException("Invalid chess square.");
-    //}
-    std::string str(1, File);
-    return str + std::to_string(row);
-}
+//
+//std::string CoordinatesToChessNotation(int square)
+//{
+//    int rawFile = square % 8;
+//    int rawRank = square == 0 ? 8 : 8 - square / 8;
+//    char File = (char)('a' + rawFile); // Convert column index to letter ('a' to 'h')
+//    int row = rawRank; // Row number (1 to 8)
+//
+//    // Validate row
+//    //if (row < 0 || row > 8)
+//    //{
+//    //    throw new ArgumentException("Invalid chess square.");
+//    //}
+//    std::string str(1, File);
+//    return str + std::to_string(row);
+//}
 static inline int get_castle(uint64_t castle)
 {
     int number = 0;
