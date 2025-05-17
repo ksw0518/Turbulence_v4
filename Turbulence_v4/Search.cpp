@@ -1140,7 +1140,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
 			continue;
-		}
+		} 
 
 		if (isQuiet)
 		{
