@@ -1109,6 +1109,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				continue;
 			}
+			int fp_margin = depth * 80 + 100;
+			if (depth < 6 && staticEval + fp_margin < alpha)
+			{
+				skipQuiets = true;
+				continue;
+			}
 		}
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
