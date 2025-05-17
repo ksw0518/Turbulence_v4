@@ -1656,14 +1656,14 @@ void MakeMove(Board& board, Move move)
 	flipPrevWhite = flipFileWhite;
 
 	
-	if (move.From == e1 && move.To == d2)
-	{
-		std::cout << "whiteflip " << flipFileWhite;
-		std::cout << "blackflip " << flipFileBlack;
-		std::cout << "whiteprevflip " << flipPrevWhite;
-		std::cout << "blackprevflip " << flipPrevBlack;
-		std::cout << "\n";
-	}
+	//if (move.From == e1 && move.To == d2)
+	//{
+	//	std::cout << "whiteflip " << flipFileWhite;
+	//	std::cout << "blackflip " << flipFileBlack;
+	//	std::cout << "whiteprevflip " << flipPrevWhite;
+	//	std::cout << "blackprevflip " << flipPrevBlack;
+	//	std::cout << "\n";
+	//}
 
     if (board.enpassent != no_sq)
     {	

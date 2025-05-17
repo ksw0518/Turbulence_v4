@@ -64,19 +64,8 @@ inline int calculateIndex(int perspective, int square, int pieceType, int side, 
 	}
 	if (flipFile)
 	{
-		if (square == 51 && pieceType == 5)
-		{
-			std::cout << "beforeflip ";
-			std::cout << CoordinatesToChessNotation(square);
-		}
-		
-
 		square = mirrorLeftRight(square);
-		if (mirrorLeftRight(square) == 51 && pieceType == 5)
-		{
-			std::cout << "afterflip ";
-			std::cout << CoordinatesToChessNotation(square);
-		}
+
 	}
 	return 6 * 64 * (side != perspective) + 64 * pieceType + square;
 
