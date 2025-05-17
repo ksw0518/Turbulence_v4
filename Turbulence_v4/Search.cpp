@@ -220,10 +220,6 @@ void initializeLMRTable(ThreadData& data)
 			lmrTable[depth][move] = std::floor(0.77 + log(move) * log(depth) / 2.36);
 		}
 	}
-	for (int ply = 0; ply < 99; ply++)
-	{
-		data.killerMoves[0][ply] = Move();
-	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
 	memset(data.twoPlyContHist, 0, sizeof(data.twoPlyContHist));
@@ -234,10 +230,6 @@ void initializeLMRTable(ThreadData& data)
 	memset(data.counterMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
 
 	isPrettyPrinting = true;
-	for (int ply = 0; ply < 99; ply++)
-	{
-		data.killerMoves[0][ply] = Move();
-	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 
 	LoadNetwork(EVALFILE);
@@ -418,12 +410,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 	}
 	else
 	{
-		if (data.killerMoves[0][data.ply] == move)
-		{
-			return 150000;
-		}
-		else
-		{
+
 			// Return history score for non-capture and non-killer moves
 			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
 			int contHistScore = getContinuationHistoryScore(move, data) * 2;
@@ -437,7 +424,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			{
 				return historyTotal;
 			}
-		}
+		
 	}
 
 	return 0;
@@ -958,11 +945,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		//Enter quiescence search to evaluate only "quiet" positions and avoid horizon effects
 		return Quiescence(board, alpha, beta, data);
 	}
-	if (data.ply + 1 <= 99)
-	{
-		// Reset killer moves for the next ply to make the killer move more local
-		data.killerMoves[0][data.ply + 1] = Move(0, 0, 0, 0);
-	}
+
 
 	int rawEval = Evaluate(board);
 	int staticEval = adjustEvalWithCorrHist(board, rawEval, data.searchStack[data.ply - 1].move, data);
@@ -1232,11 +1215,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction--;
 			}
-			//reduce less killer moves
-			if ((move == data.killerMoves[0][data.ply - 1]))
-			{
-				reduction--;
-			}
 			//if the node has been in a pv node in the past, reduce less
 			if (tt_pv)
 			{
@@ -1332,7 +1310,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = LowerBound;
 			if ((move.Type & capture) == 0)
 			{
-				data.killerMoves[0][data.ply] = move;
 				int mainHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
 				int contHistBonus = std::min(2400, CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth);
 				for (int i = 0; i < quietsList.count; ++i)
@@ -1424,10 +1401,6 @@ void bench()
 	SearchLimitations searchLimits;
 	for (int i = 0; i < 50; i++)
 	{
-		for (int ply = 0; ply < 99; ply++)
-		{
-			data.killerMoves[0][ply] = Move();
-		}
 		memset(data.mainHistory, 0, sizeof(data.mainHistory));
 		for (size_t i = 0; i < TTSize; i++)
 		{
@@ -1454,10 +1427,6 @@ void bench()
 		totalsearchtime += std::floor(elapsedMS);
 	}
 	std::cout << nodecount << " nodes " << nodecount / (totalsearchtime + 1) * 1000 << " nps " << "\n";
-	for (int ply = 0; ply < 99; ply++)
-	{
-		data.killerMoves[0][ply] = Move();
-	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	for (size_t i = 0; i < TTSize; i++)
 	{

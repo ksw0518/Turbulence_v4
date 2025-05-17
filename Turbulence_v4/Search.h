@@ -82,7 +82,6 @@ struct ThreadData
 	int currDepth;
 	bool isSearchStop;
 	int selDepth = 0;
-	Move killerMoves[1][99];
 
 	int mainHistory[2][64][64][2][2];
 
