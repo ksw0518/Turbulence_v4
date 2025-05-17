@@ -756,7 +756,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 
 	if (ttAdjustedEval >= beta)
 	{
-		return ttAdjustedEval;
+		return  (ttAdjustedEval + beta) / 2;
 	}
 	if (ttAdjustedEval > alpha)
 	{
