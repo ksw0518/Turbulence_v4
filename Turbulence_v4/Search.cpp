@@ -974,10 +974,29 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		ttAdjustedEval = ttEntry.score;
 	}
 
-	data.searchStack[data.ply].staticEval = staticEval;
+	if(!isInCheck)
+	{
+		data.searchStack[data.ply].staticEval = staticEval;
+	}
+	else
+	{
+		data.searchStack[data.ply].staticEval = PLUS_INFINITY;
+	}
+		
 
-	//If current static evaluation is greater than static evaluation from 2 plies ago
-	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
+	//If current static evaluation is greater than static evaluation before
+	bool improving = false;
+	if (data.ply > 1)
+	{
+		int prevEval = data.searchStack[data.ply - 2].staticEval;
+		if (prevEval == PLUS_INFINITY && data.ply >= 4)
+		{
+			prevEval = data.searchStack[data.ply - 4].staticEval;
+		}
+		improving = !isInCheck && staticEval > prevEval;
+	}
+
+	
 
 	int canPrune = !isInCheck && !isPvNode;
 	//RFP 
