@@ -137,8 +137,8 @@ int PVS_NOISY_MULTIPLIER = 19;
 
 int HISTORY_BASE = 130;
 int HISTORY_MULTIPLIER = 87;
-int CONTHIST_BASE = 4;
-int CONTHIST_MULTIPLIER = 3;
+int CONTHIST_BASE = 64; 
+int CONTHIST_MULTIPLIER = 48;
 
 int ASP_WINDOW_INITIAL = 25;
 int ASP_WINDOW_MAX = 306;
@@ -169,7 +169,7 @@ size_t TTSize = 699050;
 TranspositionEntry* TranspositionTable = nullptr;
 
 constexpr int MAX_HISTORY = 16384;
-constexpr int MAX_CONTHIST = 1024;
+constexpr int MAX_CONTHIST = 16384;
 constexpr int MAX_CAPTHIST = 1024;
 
 constexpr int MIN_LMR_DEPTH = 3;
@@ -223,7 +223,6 @@ void initializeLMRTable(ThreadData& data)
 	for (int ply = 0; ply < 99; ply++)
 	{
 		data.killerMoves[0][ply] = Move();
-		data.killerMoves[1][ply] = Move();
 	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
@@ -238,7 +237,6 @@ void initializeLMRTable(ThreadData& data)
 	for (int ply = 0; ply < 99; ply++)
 	{
 		data.killerMoves[0][ply] = Move();
-		data.killerMoves[1][ply] = Move();
 	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 
@@ -424,15 +422,11 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		{
 			return 150000;
 		}
-		else if (data.killerMoves[1][data.ply] == move)
-		{
-			return 100000;
-		}
 		else
 		{
 			// Return history score for non-capture and non-killer moves
-			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)] / 32;
-			int contHistScore = getContinuationHistoryScore(move, data);
+			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
+			int contHistScore = getContinuationHistoryScore(move, data) * 2;
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
@@ -443,8 +437,6 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			{
 				return historyTotal;
 			}
-
-
 		}
 	}
 
@@ -919,14 +911,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//Default assumption before search
 	int ttFlag = UpperBound;
 
-	bool is_ttmove_found = false;
+	bool tt_hit = false;
 	bool isSingularSearch = excludedMove != NULLMOVE;
 
 	bool tt_pv = isPvNode;
 	//Checks for collisions, or empty entry
 	if (ttEntry.zobristKey == board.zobristKey && ttEntry.bound != 0)
 	{
-		is_ttmove_found = true;
+		tt_hit = true;
 		// Valid TT entry found
 		if (!isPvNode && !isSingularSearch && data.ply != 0 && ttEntry.depth >= depth)
 		{
@@ -947,7 +939,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	//Internal Iterative Reduction
 	//If no hash move was found, reduce depth
-	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (ttEntry.bestMove == NULLMOVE || !is_ttmove_found))
+	if (!isSingularSearch && depth >= 4 && (isPvNode || cutnode) && (!tt_hit))
 	{
 		depth--;
 	}
@@ -970,7 +962,6 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		// Reset killer moves for the next ply to make the killer move more local
 		data.killerMoves[0][data.ply + 1] = Move(0, 0, 0, 0);
-		data.killerMoves[1][data.ply + 1] = Move(0, 0, 0, 0);
 	}
 
 	int rawEval = Evaluate(board);
@@ -978,7 +969,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int ttAdjustedEval = staticEval;
 
 	//Adjust static evaluation with search score on TT, to get move accurate estimaton.
-	if (!isSingularSearch && is_ttmove_found && !isInCheck && (ttEntry.bound == ExactFlag || (ttEntry.bound == LowerBound && ttEntry.score >= staticEval) || (ttEntry.bound == UpperBound && ttEntry.score <= staticEval)))
+	if (!isSingularSearch && tt_hit && !isInCheck && (ttEntry.bound == ExactFlag || (ttEntry.bound == LowerBound && ttEntry.score >= staticEval) || (ttEntry.bound == UpperBound && ttEntry.score <= staticEval)))
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
@@ -989,7 +980,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
 
 	int canPrune = !isInCheck && !isPvNode;
-	//RFP
+	//RFP 
 	//If static evaluation + margin still doesn't improve alpha, prune the node
 	if (!isSingularSearch && depth < 5 && canPrune)
 	{
@@ -1010,7 +1001,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-
+	if (depth <= 3 && ttAdjustedEval + 200 * depth <= alpha)
+	{
+		int razor_score = Quiescence(board, alpha, alpha + 1, data);
+		if (razor_score <= alpha)
+		{
+			return razor_score;
+		}
+	}
 	//NMP
 	//Since null move is worse than all the other moves in most situations,
 	//if a reduced search on null move fails high over beta, return fail high score
@@ -1097,7 +1095,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool isNotMated = alpha > -49000 + 99;
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move, data) * 32;
+		int conthist = getContinuationHistoryScore(move, data) * 2;
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
@@ -1109,7 +1107,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//If history score is very bad, skip the move
 			if (quietMoves > 1 && depth <= 5 && historyScore < historyPruningMargin)
 			{
-				break;
+				continue;
 			}
 		}
 		int lastEp = board.enpassent;
@@ -1142,7 +1140,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
 			continue;
-		}
+		} 
 
 		if (isQuiet)
 		{
@@ -1195,6 +1193,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				extensions--;
 			}
+			else if (cutnode)
+			{
+				extensions -= 2;
+			}
 
 			MakeMove(board, move);
 			data.ply++;
@@ -1231,7 +1233,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				reduction--;
 			}
 			//reduce less killer moves
-			if ((move == data.killerMoves[0][data.ply - 1]) || (move == data.killerMoves[1][data.ply - 1]))
+			if ((move == data.killerMoves[0][data.ply - 1]))
 			{
 				reduction--;
 			}
@@ -1244,6 +1246,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if (cutnode)
 			{
 				reduction++;
+			}
+			if (tt_hit && ttEntry.depth >= depth) 
+			{
+				reduction--;
 			}
 		}
 		//Prevent from accidently extending the move
@@ -1275,6 +1281,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			if (score > alpha)
 			{
+				if (score != alpha + 1)
+				{
+					depthToSearch += (score > (bestValue + 60 + depthToSearch * 2)); 
+					depthToSearch -= (score < bestValue + depthToSearch && data.ply != 1);
+				}
 				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode, data);
 			}
 			if (score > alpha && score < beta)
@@ -1328,11 +1339,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			ttFlag = LowerBound;
 			if ((move.Type & capture) == 0)
 			{
-				if (!(data.killerMoves[0][data.ply] == move))
-				{
-					data.killerMoves[1][data.ply] = data.killerMoves[0][data.ply];
-					data.killerMoves[0][data.ply] = move;
-				}
+				data.killerMoves[0][data.ply] = move;
 				int mainHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
 				int contHistBonus = std::min(2400, CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth);
 				for (int i = 0; i < quietsList.count; ++i)
@@ -1372,7 +1379,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 	if (!isSingularSearch)
 	{
-		if (ttFlag == UpperBound && is_ttmove_found)
+		if (ttFlag == UpperBound && tt_hit)
 		{
 			bestMove = ttEntry.bestMove;
 		}
@@ -1427,7 +1434,6 @@ void bench()
 		for (int ply = 0; ply < 99; ply++)
 		{
 			data.killerMoves[0][ply] = Move();
-			data.killerMoves[1][ply] = Move();
 		}
 		memset(data.mainHistory, 0, sizeof(data.mainHistory));
 		for (size_t i = 0; i < TTSize; i++)
@@ -1458,7 +1464,6 @@ void bench()
 	for (int ply = 0; ply < 99; ply++)
 	{
 		data.killerMoves[0][ply] = Move();
-		data.killerMoves[1][ply] = Move();
 	}
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	for (size_t i = 0; i < TTSize; i++)
@@ -2082,47 +2087,45 @@ struct GameData
 	GameData(Board b, int e, int r) : board(b), eval(e), result(r) {}
 };
 bool isInsufficientMaterial(const Board& board) {
-	int pieceCount[12] = { 0 }; // Count pieces on the board
 
-	// Count each piece type
-	for (int i = 0; i < 64; ++i) {
-		int piece = board.mailbox[i];
-		if (piece != NO_PIECE) {
-			pieceCount[piece]++;
+	int whiteBishops = count_bits(board.bitboards[B]);
+	int blackBishops = count_bits(board.bitboards[b]);
+	int whiteKnights = count_bits(board.bitboards[N]);
+	int blackKnights = count_bits(board.bitboards[n]);
+	int whiteRooks = count_bits(board.bitboards[R]);
+	int blackRooks = count_bits(board.bitboards[r]);
+	int whiteQueens = count_bits(board.bitboards[Q]);
+	int blackQueens = count_bits(board.bitboards[q]);
+	int whitePawns = count_bits(board.bitboards[P]);
+	int blackPawns = count_bits(board.bitboards[p]);
+	if (whiteQueens == 0 && blackQueens == 0 && whiteRooks == 0 && blackRooks == 0 && whitePawns == 0 && blackPawns == 0)
+	{
+		if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
 		}
+		else if (whiteBishops == 1 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 1 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 1)
+		{
+			return true;
+		}
+		else if (whiteBishops == 1 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		return false;
 	}
-
-	int totalPieces = 0;
-	int bishops = 0, knights = 0;
-	int whiteBishops = 0, blackBishops = 0;
-	int whiteMinor = 0, blackMinor = 0;
-
-	// Classify pieces
-	for (int i = 1; i <= 5; ++i) { // White pieces (1 to 5)
-		totalPieces += pieceCount[i];
-		if (i == 2) knights += pieceCount[i]; // Knights
-		if (i == 3) { bishops += pieceCount[i]; whiteBishops += pieceCount[i]; } // Bishops
-		if (i == 2 || i == 3) whiteMinor += pieceCount[i]; // Minor pieces
-	}
-	for (int i = 7; i <= 11; ++i) { // Black pieces (7 to 11)
-		totalPieces += pieceCount[i];
-		if (i == 8) knights += pieceCount[i]; // Knights
-		if (i == 9) { bishops += pieceCount[i]; blackBishops += pieceCount[i]; } // Bishops
-		if (i == 8 || i == 9) blackMinor += pieceCount[i]; // Minor pieces
-	}
-
-	// 1. King vs King
-	if (totalPieces == 0) return true;
-
-	// 2. King + single minor piece (Knight or Bishop) vs King
-	if (totalPieces == 1 && (knights == 1 || bishops == 1)) return true;
-
-	// 3. King + Bishop vs King + Bishop (same color bishops)
-	if (totalPieces == 2 && bishops == 2) {
-		// If all bishops are on the same color, it's insufficient material
-		return (whiteBishops == blackBishops);
-	}
-
 	return false;
 }
 int flipResult(int res) {
@@ -2226,6 +2229,7 @@ void Datagen(int targetPos, std::string output_name)
 		bool isGameOver = false;
 		int result = -1;
 
+		int moves = 0;
 		while (!isGameOver) {
 			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
 			Move bestMove = searchResult.first;
@@ -2239,7 +2243,7 @@ void Datagen(int targetPos, std::string output_name)
 				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
 				break;
 			}
-			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board)) {
+			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.history.size() - board.lastIrreversiblePly >= 100) {
 				result = DRAW;
 				break;
 			}
@@ -2248,11 +2252,13 @@ void Datagen(int targetPos, std::string output_name)
 			}
 
 			MakeMove(board, bestMove);
-
+			moves++;
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) {
 				gameData.push_back(GameData(board, eval, -1));
 				totalPositions++;
 			}
+			//std::cout << moves << "\n";
+
 		}
 
 		// **Batch write game data to file instead of writing each line separately**
@@ -2268,9 +2274,17 @@ void Datagen(int targetPos, std::string output_name)
 		double positions_per_second = totalPositions / elapsed_seconds;
 		double percentage = (static_cast<double>(totalPositions) / targetPos) * 100;
 
-		std::cout << "Positions per second: " << std::fixed << std::setprecision(2) << positions_per_second
-			<< " | Total Positions: " << totalPositions
-			<< " | Progress: " << std::fixed << std::setprecision(5) << percentage << "% ";
+		setColor(ConsoleColor::BrightGreen);
+		std::cout << "Positions/s: " << std::fixed << std::setprecision(2) << positions_per_second;
+
+		setColor(ConsoleColor::BrightCyan);
+		std::cout << " | Total: " << totalPositions << " ("
+			<< std::fixed << std::setprecision(2) << (totalPositions / 1'000'000.0) << "M)";
+
+		setColor(ConsoleColor::BrightYellow);
+		std::cout << " | Progress: " << std::fixed << std::setprecision(4) << percentage << "% ";
+
+		setColor(ConsoleColor::White); // Reset to default
 		estimate_time_remaining(targetPositions - totalPositions, positions_per_second);
 		print_progress_bar(percentage);
 		std::cout << "\n\n" << std::flush;
