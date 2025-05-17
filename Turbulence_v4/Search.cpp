@@ -1821,7 +1821,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		}
 		if (data.currDepth >= 6 && searchLimits.SoftTimeLimit != -1 && searchLimits.HardTimeLimit != -1)
 		{
-			nodesTmScale = (1.6328125 - ((double)data.node_count[bestmove.From][bestmove.To] / data.searchNodeCount)) * 0.79296875;
+			nodesTmScale = (1.5 - ((double)data.node_count[bestmove.From][bestmove.To] / data.searchNodeCount)) * 1.35;
 			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime); 
 		}
 
