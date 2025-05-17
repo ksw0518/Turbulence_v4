@@ -1256,6 +1256,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (reduction < 0) reduction = 0;
 		is_reduced = reduction > 0;
 		bool isChildCutNode;
+		uint64_t nodesBefore = data.searchNodeCount;
 		if (searchedMoves <= 1)
 		{
 			if (isPvNode)
@@ -1293,6 +1294,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 
 		}
+		uint64_t nodesAfter = data.searchNodeCount;
+		
 		board.accumulator = last_accumulator;
 		UnmakeMove(board, move, captured_piece);
 		board.history.pop_back();
@@ -1307,6 +1310,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.BlackNonPawnKey = last_blacknpKey;
 		data.ply--;
 
+		if (data.ply == 0)
+		{
+			data.node_count[move.From][move.To] += nodesAfter - nodesBefore;
+		}
 		if (data.isSearchStop) {
 			return 0; // Return a neutral score if time is exceeded during recursive calls
 		}
@@ -1714,12 +1721,16 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		data.Searchtime_MS = searchLimits.HardTimeLimit;
 	}
 
+	
 	data.searchNodeCount = 0;
 	Move bestmove;
 	data.clockStart = std::chrono::steady_clock::now();
 
 	int score = 0;
 	int bestScore = 0;
+
+	memset(data.node_count, 0, sizeof(data.node_count));
+	double nodesTmScale = 1.0;
 
 	memset(pvTable, 0, sizeof(pvTable));
 	memset(pvLengths, 0, sizeof(pvLengths));
@@ -1728,6 +1739,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 	int64_t baseSoft = searchLimits.SoftTimeLimit;
 
 	int64_t softLimit = searchLimits.SoftTimeLimit;
+	
 	for (data.currDepth = 1; data.currDepth <= depth; data.currDepth++)
 	{
 		data.ply = 0;
@@ -1751,7 +1763,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			int64_t MS = static_cast<int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(end - data.clockStart).count());
 			if (softLimit != NOLIMIT)
 			{
-				if (MS > softLimit)
+				if (MS > softLimit * nodesTmScale)
 				{
 					break;
 				}
@@ -1809,8 +1821,10 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		}
 		if (data.currDepth >= 6 && searchLimits.SoftTimeLimit != -1 && searchLimits.HardTimeLimit != -1)
 		{
-			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime);
+			nodesTmScale = (1.5 - ((double)data.node_count[bestmove.From][bestmove.To] / data.searchNodeCount)) * 1.35;
+			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime); 
 		}
+
 		if (print_info)
 		{
 			if (!data.isSearchStop)
@@ -1834,7 +1848,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		}
 		if (softLimit != NOLIMIT)
 		{
-			if (elapsedMS > softLimit)
+			if (elapsedMS > softLimit * nodesTmScale)
 			{
 				break;
 			}

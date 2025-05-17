@@ -100,6 +100,8 @@ struct ThreadData
 	int nonPawnCorrHist[2][2][CORRHIST_SIZE];
 
 	Search_data searchStack[99];
+
+	uint64_t node_count[64][64];
 };
 struct SearchLimitations
 {
