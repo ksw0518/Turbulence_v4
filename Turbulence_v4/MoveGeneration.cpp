@@ -10,6 +10,23 @@
 #include <vector>
 #include <string>
 #include <iostream>
+bool same_single(Accumulator& a, Accumulator& b)
+{
+	for (int i = 0; i < HL_SIZE; ++i) {
+		if (a.values[i] != b.values[i])
+			return false;
+	}
+	return true;
+}
+bool same(AccumulatorPair& a, AccumulatorPair& b) {
+	for (int i = 0; i < HL_SIZE; ++i) {
+		if (a.white.values[i] != b.white.values[i])
+			return false;
+		if (a.black.values[i] != b.black.values[i])
+			return false;
+	}
+	return true;
+}
 
 
 constexpr uint64_t NotAFile = 18374403900871474942ULL;
@@ -1570,6 +1587,9 @@ inline bool isMinor(int Piece)
 		return false;
 	}
 }
+
+
+
 void MakeMove(Board& board, Move move)
 {
     //Console.WriteLine(board.side);
@@ -1584,8 +1604,8 @@ void MakeMove(Board& board, Move move)
 	bool flipFileWhite = false;
 	bool flipFileBlack = false;
 
-	bool flipPrevWhite = true;
-	bool flipPrevBlack = true;
+	bool flipPrevWhite;
+	bool flipPrevBlack;
 
 	int stmKingFile = getFile(get_ls1b(board.bitboards[get_piece(K, board.side)]));
 	int nstmKingFile = getFile(get_ls1b(board.bitboards[get_piece(K, 1 - board.side)]));
@@ -1594,11 +1614,39 @@ void MakeMove(Board& board, Move move)
 
 	int fromFile = getFile(move.From);
 
+
+	if (board.side == White)
+	{
+		if (stmKingFile >= 4)
+		{
+			flipFileWhite = true;
+		}
+		if (nstmKingFile >= 4)
+		{
+			flipFileBlack = true;
+		}
+	}
+	else
+	{
+		if (stmKingFile >= 4)
+		{
+			flipFileBlack = true;
+		}
+		if (nstmKingFile >= 4)
+		{
+			flipFileWhite = true;
+		}
+	}
+
 	if (move.Piece == K)
 	{
 		if (stmKingFileAfterMake >= 4)
 		{
 			flipFileWhite = true;
+		}
+		if (stmKingFileAfterMake <= 3)
+		{
+			flipFileWhite = false;
 		}
 	}
 	else if (move.Piece == k)
@@ -1607,51 +1655,12 @@ void MakeMove(Board& board, Move move)
 		{
 			flipFileBlack = true;
 		}
-	}
-	else
-	{
-		if (board.side == White)
+		if (stmKingFileAfterMake <= 3)
 		{
-			if (stmKingFile >= 4)
-			{
-				flipFileWhite = true;
-			}
-	
-		}
-		else
-		{
-			if (stmKingFile >= 4)
-			{
-				flipFileBlack = true;
-			}
-		}
-	}
-	if (board.side == White)
-	{
-		if (nstmKingFile >= 4)
-		{
-			flipPrevBlack = true;
-			flipFileBlack = true;
-		}
-		else
-		{
-			flipPrevBlack = false;
 			flipFileBlack = false;
 		}
 	}
-	else
-	{
-		if (nstmKingFile >= 4)
-		{
-			flipPrevWhite = true;
-			flipFileWhite = true;
-		}
-		else
-		{
-			flipPrevWhite = false;
-			flipFileWhite = false;
-		}
-	}
+
 	flipPrevBlack = flipFileBlack;
 	flipPrevWhite = flipFileWhite;
 
@@ -1660,8 +1669,6 @@ void MakeMove(Board& board, Move move)
 	//{
 	//	std::cout << "whiteflip " << flipFileWhite;
 	//	std::cout << "blackflip " << flipFileBlack;
-	//	std::cout << "whiteprevflip " << flipPrevWhite;
-	//	std::cout << "blackprevflip " << flipPrevBlack;
 	//	std::cout << "\n";
 	//}
 
@@ -1673,6 +1680,42 @@ void MakeMove(Board& board, Move move)
     }
    
     int side = board.side;
+
+	AccumulatorPair debugAccumulator;
+	int whiteKingFilea = getFile(get_ls1b(board.bitboards[K]));
+
+	if (whiteKingFilea >= 4)//king is on right now, have to flip
+	{
+		resetWhiteAccumulator(board, debugAccumulator, true);
+	}
+	if (whiteKingFilea <= 3)//king is on left now, have to flip
+	{
+		resetWhiteAccumulator(board, debugAccumulator, false);
+	}
+
+
+
+	int blackKingFilea = getFile(get_ls1b(board.bitboards[k]));
+	if (blackKingFilea >= 4)//king is on right now, have to flip
+	{
+		resetBlackAccumulator(board, debugAccumulator, true);
+	}
+	if (blackKingFilea <= 3)//king is on left now, have to flip
+	{
+		resetBlackAccumulator(board, debugAccumulator, false);
+	}
+	if (!(same(debugAccumulator, board.accumulator)))
+	{
+		if (!(same_single(debugAccumulator.white, board.accumulator.white)))
+		{
+			std::cout << "original white also different";
+		}
+		if (!(same_single(debugAccumulator.black, board.accumulator.black)))
+		{
+			std::cout << "original black also different";
+		}
+
+	}
     // change castling flag
     if (get_piece(move.Piece, White) == K) //if king moved
     {
@@ -1809,11 +1852,48 @@ void MakeMove(Board& board, Move move)
 		//update mailbox
 
 		board.mailbox[move.From] = NO_PIECE;
+		board.mailbox[move.To] = move.Piece;
 		board.zobristKey ^= piece_keys[move.Piece][move.From];
 
+
+		whiteKingFilea = getFile(get_ls1b(board.bitboards[K]));
+
+		
+		if (whiteKingFilea >= 4)//king is on right now, have to flip
+		{
+			resetWhiteAccumulator(board, debugAccumulator, true);
+		}
+		if (whiteKingFilea <= 3)//king is on left now, have to flip
+		{
+			resetWhiteAccumulator(board, debugAccumulator, false);
+		}
+
+
+
+		blackKingFilea = getFile(get_ls1b(board.bitboards[k]));
+		if (blackKingFilea >= 4)//king is on right now, have to flip
+		{
+			resetBlackAccumulator(board, debugAccumulator, true);
+		}
+		if (blackKingFilea <= 3)//king is on left now, have to flip
+		{
+			resetBlackAccumulator(board, debugAccumulator, false);
+		}
 			accumulatorSub(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.From, get_piece(move.Piece, White), board.side, flipPrevWhite));
 			accumulatorSub(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.From, get_piece(move.Piece, White), board.side, flipPrevBlack));
 		
+			if (!(same(debugAccumulator, board.accumulator)))
+			{
+				if (!(same_single(debugAccumulator.white, board.accumulator.white)))
+				{
+					std::cout << "deleting white also different";
+				}
+				if (!(same_single(debugAccumulator.black, board.accumulator.black)))
+				{
+					std::cout << "deleting black also different";
+				}
+				
+			}
 		
 		if (move.Piece == P || move.Piece == p)//pawn
 		{
@@ -1839,14 +1919,11 @@ void MakeMove(Board& board, Move move)
 			board.MinorKey ^= piece_keys[move.Piece][move.To];
 		}
 		
-		board.mailbox[move.To] = move.Piece;
+		
 		board.zobristKey ^= piece_keys[move.Piece][move.To];
 
-
-
-
-			accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side, flipFileWhite));
-			accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side, flipFileBlack));
+		accumulatorAdd(&Eval_Network, &board.accumulator.white, calculateIndex(White, move.To, get_piece(move.Piece, White), board.side, flipFileWhite));
+		accumulatorAdd(&Eval_Network, &board.accumulator.black, calculateIndex(Black, move.To, get_piece(move.Piece, White), board.side, flipFileBlack));
 		
 		//update enpassent square
 		//if (move.Type == double_pawn_push)

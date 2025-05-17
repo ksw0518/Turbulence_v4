@@ -65,7 +65,6 @@ inline int calculateIndex(int perspective, int square, int pieceType, int side, 
 	if (flipFile)
 	{
 		square = mirrorLeftRight(square);
-
 	}
 	return 6 * 64 * (side != perspective) + 64 * pieceType + square;
 

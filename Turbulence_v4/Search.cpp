@@ -1193,30 +1193,28 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 
 		int whiteKingFilea = getFile(get_ls1b(board.bitboards[K]));
-		//if (move.Piece == K || move.Piece == k)
-		//{
-		//	if (whiteKingFilea >= 4)//king is on right now, have to flip
-		//	{
 
-		//		resetWhiteAccumulator(board, board.accumulator, true);
-		//	}
-		//	if (whiteKingFilea <= 3)//king is on left now, have to flip
-		//	{
-		//		resetWhiteAccumulator(board, board.accumulator, false);
-		//	}
+		if (whiteKingFilea >= 4)//king is on right now, have to flip
+		{
+			resetWhiteAccumulator(board, board.accumulator, true);
+		}
+		if (whiteKingFilea <= 3)//king is on left now, have to flip
+		{
+			resetWhiteAccumulator(board, board.accumulator, false);
+		}
 
 
 
-		//	int blackKingFilea = getFile(get_ls1b(board.bitboards[k]));
-		//	if (blackKingFilea >= 4)//king is on right now, have to flip
-		//	{
-		//		resetBlackAccumulator(board, board.accumulator, true);
-		//	}
-		//	if (blackKingFilea <= 3)//king is on left now, have to flip
-		//	{
-		//		resetBlackAccumulator(board, board.accumulator, false);
-		//	}
-		//}
+		int blackKingFilea = getFile(get_ls1b(board.bitboards[k]));
+		if (blackKingFilea >= 4)//king is on right now, have to flip
+		{
+			resetBlackAccumulator(board, board.accumulator, true);
+		}
+		if (blackKingFilea <= 3)//king is on left now, have to flip
+		{
+			resetBlackAccumulator(board, board.accumulator, false);
+		}
+
 
 
 
@@ -1261,76 +1259,76 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		AccumulatorPair before_acc = board.accumulator;
 		MakeMove(board, move);
 		
-		if (get_piece(move.Piece, White) == K) // king has moved
-		{
-			/*int prevKingFile = getFile(move.From);
-			int currKingFile = getFile(move.To);*/
-			int white_king = getFile(get_ls1b(board.bitboards[K]));
-			int black_king = getFile(get_ls1b(board.bitboards[k]));
-			if (prevKingFile <= 3)//king was on left previously
-			{
-				if (currKingFile >= 4)//king is on right now, have to flip
-				{
-					if (getSide(move.Piece) == White)//white king moved
-					{
-						resetWhiteAccumulator(board, board.accumulator, true);
-						//resetBlackAccumulator(board, board.accumulator, (black_king >= 4));
-					}
-					else
-					{
-						resetBlackAccumulator(board, board.accumulator, true);
-						//resetWhiteAccumulator(board, board.accumulator, (white_king >= 4));
-					}
+		//if (get_piece(move.Piece, White) == K) // king has moved
+		//{
+		//	/*int prevKingFile = getFile(move.From);
+		//	int currKingFile = getFile(move.To);*/
+		//	int white_king = getFile(get_ls1b(board.bitboards[K]));
+		//	int black_king = getFile(get_ls1b(board.bitboards[k]));
+		//	if (prevKingFile <= 3)//king was on left previously
+		//	{
+		//		if (currKingFile >= 4)//king is on right now, have to flip
+		//		{
+		//			if (getSide(move.Piece) == White)//white king moved
+		//			{
+		//				resetWhiteAccumulator(board, board.accumulator, true);
+		//				//resetBlackAccumulator(board, board.accumulator, (black_king >= 4));
+		//			}
+		//			else
+		//			{
+		//				resetBlackAccumulator(board, board.accumulator, true);
+		//				//resetWhiteAccumulator(board, board.accumulator, (white_king >= 4));
+		//			}
 
-				}
-			}
-			else //king was on right previously
-			{
-				if (currKingFile <= 3)//king is on left now, have to flip
-				{
-					if (getSide(move.Piece) == White)//white king moved
-					{
-						resetWhiteAccumulator(board, board.accumulator, false);
-						//resetBlackAccumulator(board, board.accumulator, (black_king >= 4));
-					}
-					else
-					{
-						resetBlackAccumulator(board, board.accumulator, false);
-						//resetWhiteAccumulator(board, board.accumulator, (white_king >= 4));
-					}
+		//		}
+		//	}
+		//	else //king was on right previously
+		//	{
+		//		if (currKingFile <= 3)//king is on left now, have to flip
+		//		{
+		//			if (getSide(move.Piece) == White)//white king moved
+		//			{
+		//				resetWhiteAccumulator(board, board.accumulator, false);
+		//				//resetBlackAccumulator(board, board.accumulator, (black_king >= 4));
+		//			}
+		//			else
+		//			{
+		//				resetBlackAccumulator(board, board.accumulator, false);
+		//				//resetWhiteAccumulator(board, board.accumulator, (white_king >= 4));
+		//			}
 
-				}
-			}
-		}
-		if (get_piece(move.Piece, White) == K && ((getFile(move.From) >= 4) != ((getFile(move.To) >= 4))))
-		{
-			if (board.side == White)
-			{
-				int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
-				if (whiteKingFile >= 4)//king is on right now, have to flip
-				{
+		//		}
+		//	}
+		//}
+		//if (get_piece(move.Piece, White) == K && ((getFile(move.From) >= 4) != ((getFile(move.To) >= 4))))
+		//{
+		//	if (board.side == White)
+		//	{
+		//		int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
+		//		if (whiteKingFile >= 4)//king is on right now, have to flip
+		//		{
 
-					resetWhiteAccumulator(board, board.accumulator, true);
-				}
-				if (whiteKingFile <= 3)//king is on left now, have to flip
-				{
-					resetWhiteAccumulator(board, board.accumulator, false);
-				}
+		//			resetWhiteAccumulator(board, board.accumulator, true);
+		//		}
+		//		if (whiteKingFile <= 3)//king is on left now, have to flip
+		//		{
+		//			resetWhiteAccumulator(board, board.accumulator, false);
+		//		}
 
-			}
-			else
-			{
-				int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
-				if (blackKingFile >= 4)//king is on right now, have to flip
-				{
-					resetBlackAccumulator(board, board.accumulator, true);
-				}
-				if (blackKingFile <= 3)//king is on left now, have to flip
-				{
-					resetBlackAccumulator(board, board.accumulator, false);
-				}
-			}
-		}
+		//	}
+		//	else
+		//	{
+		//		int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
+		//		if (blackKingFile >= 4)//king is on right now, have to flip
+		//		{
+		//			resetBlackAccumulator(board, board.accumulator, true);
+		//		}
+		//		if (blackKingFile <= 3)//king is on left now, have to flip
+		//		{
+		//			resetBlackAccumulator(board, board.accumulator, false);
+		//		}
+		//	}
+		//}
 
 		AccumulatorPair ue_accumulator = board.accumulator;
 		resetAccumulators(board, board.accumulator);
