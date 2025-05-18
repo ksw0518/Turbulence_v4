@@ -1184,7 +1184,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			
 			if (s_score < s_beta)
 			{
-				extensions += 1024 + diff * 128;
+				extensions += 1024 + diff * 256;
 				//Double Extensions
 				//TT move is very singular, increase depth by 2
 				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN)
