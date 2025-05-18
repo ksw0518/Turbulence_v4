@@ -1208,7 +1208,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//Save search by reducing moves that are ordered closer to the end
 			reduction = lmrTable[depth][searchedMoves];
 			//reduce more if we are not in pv node
-			if (!isPvNode && quietMoves >= 4)
+			if (!isPvNode)
 			{
 				reduction++;
 			}
