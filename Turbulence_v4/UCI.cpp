@@ -487,7 +487,39 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
                             if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
                             {
 
-
+								if (get_piece(move_to_play.Piece, White) == K)//king has moved
+								{
+									if (move_to_play.From <= 3)//king was left before
+									{
+										if (move_to_play.To >= 4)//king moved to right 
+										{
+											//fully refresh the stm accumulator, and change that to start mirroring
+											if (main_board.side == White)
+											{
+												resetWhiteAccumulator(main_board, main_board.accumulator, true);
+											}
+											else
+											{
+												resetBlackAccumulator(main_board, main_board.accumulator, true);
+											}
+										}
+									}
+									else//king was right before
+									{
+										if (move_to_play.To <= 3)//king moved to left 
+										{
+											//fully refresh the stm accumulator, and change that to stop mirroring
+											if (main_board.side == White)
+											{
+												resetWhiteAccumulator(main_board, main_board.accumulator, false);
+											}
+											else
+											{
+												resetBlackAccumulator(main_board, main_board.accumulator, false);
+											}
+										}
+									}
+								}
 
                                 if ((moveList.moves[j].Type & knight_promo) != 0) // promo
                                 {
@@ -608,6 +640,39 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 
 
 
+								if (get_piece(move_to_play.Piece, White) == K)//king has moved
+								{
+									if (move_to_play.From <= 3)//king was left before
+									{
+										if (move_to_play.To >= 4)//king moved to right 
+										{
+											//fully refresh the stm accumulator, and change that to start mirroring
+											if (main_board.side == White)
+											{
+												resetWhiteAccumulator(main_board, main_board.accumulator, true);
+											}
+											else
+											{
+												resetBlackAccumulator(main_board, main_board.accumulator, true);
+											}
+										}
+									}
+									else//king was right before
+									{
+										if (move_to_play.To <= 3)//king moved to left 
+										{
+											//fully refresh the stm accumulator, and change that to stop mirroring
+											if (main_board.side == White)
+											{
+												resetWhiteAccumulator(main_board, main_board.accumulator, false);
+											}
+											else
+											{
+												resetBlackAccumulator(main_board, main_board.accumulator, false);
+											}
+										}
+									}
+								}
                                 if ((moveList.moves[j].Type & knight_promo) != 0) // promo
                                 {
                                     if (promo == "q")
