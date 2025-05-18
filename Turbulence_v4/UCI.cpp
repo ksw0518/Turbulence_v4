@@ -364,7 +364,23 @@ void Initialize_TT(int size)
     TranspositionTable = new TranspositionEntry[TTSize]();
     
 }
+inline int get_ls1b(uint64_t bitboard) {
+	return std::countr_zero(bitboard); // or return -1;
+}
 
+bool operator==(AccumulatorPair& a, AccumulatorPair& b) {
+	for (int i = 0; i < HL_SIZE; ++i) {
+		if (a.white.values[i] != b.white.values[i])
+			return false;
+		if (a.black.values[i] != b.black.values[i])
+			return false;
+	}
+	return true;
+}
+//inline int getFile(int square)
+//{
+//	return (square) % 8;
+//}
 void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 {
     //std::cout << (input) << "\n";
@@ -486,12 +502,12 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 
                             if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
                             {
-
+								move_to_play = moveList.moves[j];
 								if (get_piece(move_to_play.Piece, White) == K)//king has moved
 								{
-									if (move_to_play.From <= 3)//king was left before
+									if (getFile(move_to_play.From) <= 3)//king was left before
 									{
-										if (move_to_play.To >= 4)//king moved to right 
+										if (getFile(move_to_play.To) >= 4)//king moved to right 
 										{
 											//fully refresh the stm accumulator, and change that to start mirroring
 											if (main_board.side == White)
@@ -506,7 +522,7 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 									}
 									else//king was right before
 									{
-										if (move_to_play.To <= 3)//king moved to left 
+										if (getFile(move_to_play.To) <= 3)//king moved to left 
 										{
 											//fully refresh the stm accumulator, and change that to stop mirroring
 											if (main_board.side == White)
@@ -638,13 +654,13 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
                             if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
                             {
 
-
+								move_to_play = moveList.moves[j];
 
 								if (get_piece(move_to_play.Piece, White) == K)//king has moved
 								{
-									if (move_to_play.From <= 3)//king was left before
+									if (getFile(move_to_play.From) <= 3)//king was left before
 									{
-										if (move_to_play.To >= 4)//king moved to right 
+										if (getFile(move_to_play.To) >= 4)//king moved to right 
 										{
 											//fully refresh the stm accumulator, and change that to start mirroring
 											if (main_board.side == White)
@@ -659,7 +675,7 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 									}
 									else//king was right before
 									{
-										if (move_to_play.To <= 3)//king moved to left 
+										if (getFile(move_to_play.To) <= 3)//king moved to left 
 										{
 											//fully refresh the stm accumulator, and change that to stop mirroring
 											if (main_board.side == White)
@@ -893,9 +909,47 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 
             if ((move_to_play.From == moveList.moves[j].From) && (move_to_play.To == moveList.moves[j].To)) //found same move
             {
+				move_to_play = moveList.moves[j];
 
+				if (get_piece(move_to_play.Piece, White) == K)//king has moved
+				{
+					std::cout << "king move";
+					if (getFile(move_to_play.From) <= 3)//king was left before
+					{
+						if (getFile(move_to_play.To) >= 4)//king moved to right 
+						{
+							//fully refresh the stm accumulator, and change that to start mirroring
+							if (main_board.side == White)
+							{
+								resetWhiteAccumulator(main_board, main_board.accumulator, true);
+								std::cout << "mirror white";
+							}
+							else
+							{
+								resetBlackAccumulator(main_board, main_board.accumulator, true);
+								std::cout << "mirror black";
+							}
+						}
+					}
+					else//king was right before
+					{
+						if (getFile(move_to_play.To) <= 3)//king moved to left 
+						{
+							//fully refresh the stm accumulator, and change that to stop mirroring
+							if (main_board.side == White)
+							{
+								resetWhiteAccumulator(main_board, main_board.accumulator, false);
+								std::cout << "unmirror white";
+							}
+							else
+							{
+								resetBlackAccumulator(main_board, main_board.accumulator, false);
+								std::cout << "unmirror black";
 
-
+							}
+						}
+					}
+				}
                 if ((moveList.moves[j].Type & knight_promo) != 0) // promo
                 {
                     if (promo == "q")
@@ -962,6 +1016,32 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
             }
         }
 
+		AccumulatorPair correctacc;
+		int whiteKingFile = getFile(get_ls1b(main_board.bitboards[K]));
+		if (whiteKingFile >= 4)//king is on right now, have to flip
+		{
+			resetWhiteAccumulator(main_board, correctacc, true);
+		}
+		if (whiteKingFile <= 3)//king is on left now, have to flip
+		{
+			resetWhiteAccumulator(main_board, correctacc, false);
+		}
+
+
+
+		int blackKingFile = getFile(get_ls1b(main_board.bitboards[k]));
+		if (blackKingFile >= 4)//king is on right now, have to flip
+		{
+			resetBlackAccumulator(main_board, correctacc, true);
+		}
+		if (blackKingFile <= 3)//king is on left now, have to flip
+		{
+			resetBlackAccumulator(main_board, correctacc, false);
+		}
+		if (correctacc != main_board.accumulator)
+		{
+			std::cout << "accumulator doesn't match";
+		}
         //main_board.history.push_back(main_board.)
 
         uint64_t hash_debug = generate_hash_key(main_board);

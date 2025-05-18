@@ -1636,13 +1636,13 @@ void MakeMove(Board& board, Move move)
 			flipWhite = false;
 		}
 	}
-
+	
 
 	if (get_piece(move.Piece, White) == K)
 	{
-		if (move.From <= 3)//king was left before
+		if (getFile(move.From) <= 3)//king was left before
 		{
-			if (move.To >= 4)//king moved to right 
+			if (getFile(move.To) >= 4)//king moved to right 
 			{
 				//fully refresh the stm accumulator, and change that to start mirroring
 				if (board.side == White)
@@ -1657,7 +1657,7 @@ void MakeMove(Board& board, Move move)
 		}
 		else//king was right before
 		{
-			if (move.To <= 3)//king moved to left 
+			if (getFile(move.To) <= 3)//king moved to left 
 			{
 				//fully refresh the stm accumulator, and change that to stop mirroring
 				if (board.side == White)
@@ -1671,7 +1671,7 @@ void MakeMove(Board& board, Move move)
 			}
 		}
 	}
-
+	//std::cout << "flipwhite" << flipWhite;
     //K k B b N n minor piece
     
     if (board.enpassent != no_sq)
