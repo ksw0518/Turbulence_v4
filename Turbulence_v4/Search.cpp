@@ -802,7 +802,39 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		{
 			data.selDepth = data.ply;
 		}
-
+		if (get_piece(move.Piece, White) == K)//king has moved
+		{
+			if (move.From <= 3)//king was left before
+			{
+				if (move.To >= 4)//king moved to right 
+				{
+					//fully refresh the stm accumulator, and change that to start mirroring
+					if (board.side == White)
+					{
+						resetWhiteAccumulator(board, board.accumulator, true);
+					}
+					else
+					{
+						resetBlackAccumulator(board, board.accumulator, true);
+					}
+				}
+			}
+			else//king was right before
+			{
+				if (move.To <= 3)//king moved to left 
+				{
+					//fully refresh the stm accumulator, and change that to stop mirroring
+					if (board.side == White)
+					{
+						resetWhiteAccumulator(board, board.accumulator, false);
+					}
+					else
+					{
+						resetBlackAccumulator(board, board.accumulator, false);
+					}
+				}
+			}
+		}
 		MakeMove(board, move);
 		data.searchStack[data.ply - 1].move = move;
 
@@ -1121,6 +1153,41 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			data.selDepth = data.ply;
 		}
+
+		if (get_piece(move.Piece, White) == K)//king has moved
+		{
+			if (move.From <= 3)//king was left before
+			{
+				if (move.To >= 4)//king moved to right 
+				{
+					//fully refresh the stm accumulator, and change that to start mirroring
+					if (board.side == White)
+					{
+						resetWhiteAccumulator(board, board.accumulator, true);
+					}
+					else
+					{
+						resetBlackAccumulator(board, board.accumulator, true);
+					}
+				}
+			}
+			else//king was right before
+			{
+				if (move.To <= 3)//king moved to left 
+				{
+					//fully refresh the stm accumulator, and change that to stop mirroring
+					if (board.side == White)
+					{
+						resetWhiteAccumulator(board, board.accumulator, false);
+					}
+					else
+					{
+						resetBlackAccumulator(board, board.accumulator, false);
+					}
+				}
+			}
+		}
+
 		MakeMove(board, move);
 
 		data.searchNodeCount++;
