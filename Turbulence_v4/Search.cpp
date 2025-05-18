@@ -1055,8 +1055,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	depth = std::min(depth, 98);
 
 	int lmpThreshold = (LMP_BASE + (LMP_MULTIPLIER)*depth * depth) / (2 - improving);
-	int quietSEEMargin = PVS_QUIET_BASE - PVS_QUIET_MULTIPLIER * depth;
-	int noisySEEMargin = PVS_NOISY_BASE - PVS_NOISY_MULTIPLIER * depth * depth;
+
 	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth;
 
 	MoveList quietsList;
@@ -1083,8 +1082,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			continue;
 		}
+		 
+		
+		int lmrRed = lmrTable[depth][searchedMoves];
+		int lmrDepth = std::max(1, depth - lmrRed);
+
+		int quietSEEMargin = PVS_QUIET_BASE - PVS_QUIET_MULTIPLIER * lmrDepth;
+		int noisySEEMargin = PVS_NOISY_BASE - PVS_NOISY_MULTIPLIER * lmrDepth * lmrDepth;
 		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
-		if (data.ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
+		if (data.ply != 0 && lmrDepth <= MAX_PVS_SEE_DEPTH)
 		{
 			//if Static Exchange Evaluation score is lower than certain margin, assume the move is very bad and skip the move
 			if (!SEE(board, move, seeThreshold))
