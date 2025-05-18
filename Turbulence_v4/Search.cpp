@@ -1154,6 +1154,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool is_reduced = false;
 		int extensions = 0;
 
+
+
 		//Singular Extension
 		//If we have a TT move, we try to verify if it's the only good move. if the move is singular, search the move with increased depth
 		if (data.ply > 1 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
@@ -1175,14 +1177,19 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
 			int s_score = Negamax(board, s_depth, s_beta - 1, s_beta, true, cutnode, data, move);
+			
+			int baseDepth = depth - 3;
+			int diff = baseDepth - ttEntry.depth;
+		
+			
 			if (s_score < s_beta)
 			{
-				extensions++;
+				extensions += 1024 + diff * 128;
 				//Double Extensions
 				//TT move is very singular, increase depth by 2
 				if (!isPvNode && s_score <= s_beta - DEXT_MARGIN)
 				{
-					extensions++;
+					extensions += 1024;
 				}
 			}
 			else if (s_beta >= beta)
@@ -1191,13 +1198,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else if (ttEntry.score >= beta)
 			{
-				extensions--;
+				extensions -= 1024;
 			}
 			else if (cutnode)
 			{
-				extensions -= 2;
+				extensions -= 2048;
 			}
-
+			extensions /= 1024;
 			MakeMove(board, move);
 			data.ply++;
 		}
