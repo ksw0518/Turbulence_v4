@@ -1156,7 +1156,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		//Singular Extension
 		//If we have a TT move, we try to verify if it's the only good move. if the move is singular, search the move with increased depth
-		if (data.ply > 1 && depth >= 7 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
+		if (data.ply > 1 && depth >= 6 && move == ttEntry.bestMove && excludedMove == NULLMOVE && ttEntry.depth >= depth - 3 && ttEntry.bound != UpperBound && std::abs(ttEntry.score) < 50000)
 		{
 			data.ply--;
 			UnmakeMove(board, move, captured_piece);
