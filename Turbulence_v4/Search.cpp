@@ -19,6 +19,8 @@
 #include <random>
 #include <utility>  // for std::pair
 #include <fstream>
+
+#include <bit>
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN
