@@ -834,13 +834,13 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 				{
 					hard_bound = Calculate_Hard_Bound(wtime, winc);
 					soft_bound = Calculate_Soft_Bound(wtime, winc);
-					maxTime = std::max(1LL, static_cast<int64_t>(wtime * MAX_TIME_MULTIPLIER));
+					maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
 				}
 				else
 				{
 					hard_bound = Calculate_Hard_Bound(btime, binc);
 					soft_bound = Calculate_Soft_Bound(btime, binc);
-					maxTime = std::max(1LL, static_cast<int64_t>(btime * MAX_TIME_MULTIPLIER));
+					maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
 				}
 
 				searchLimits.HardTimeLimit = hard_bound;
