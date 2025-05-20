@@ -52,6 +52,7 @@ constexpr bool isOnWindow = false;  // Default to false (likely macOS)
 #endif
 #define NULLMOVE Move(0,0,0,0)
 
+bool stop_search = false;
 enum class ConsoleColor {
 	Black = 0,
 	Blue = 1,
@@ -922,7 +923,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		data.isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
-
+	if (stop_search)
+	{
+		data.isSearchStop = true;
+		return 0;
+	}
 	pvLengths[data.ply] = data.ply;
 
 	//Return draw score if threefold repetition has occured
@@ -1803,6 +1808,7 @@ void scaleTime(int64_t& softLimit, uint8_t bestMoveStability, int64_t baseSoft, 
 }
 std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitations& searchLimits, ThreadData& data, bool print_info, int64_t maxTime)
 {
+	stop_search = false;
 	//std::cout << "id"<<std::flush;
 
 	if (searchLimits.HardNodeLimit == NOLIMIT)
@@ -1940,6 +1946,10 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 					print_UCI(pvTable, bestmove, score, elapsedMS, nps, data);
 				}
 			}
+		}
+		if (stop_search)
+		{
+			break;
 		}
 		if (searchLimits.SoftNodeLimit != NOLIMIT)
 		{

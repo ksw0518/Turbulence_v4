@@ -12,6 +12,10 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstdlib>
+#include <thread>
+#include <atomic>
+
+std::thread search_thread;
 
 std::vector<std::string> option_name = {
     "RFP_MULTIPLIER",
@@ -99,7 +103,7 @@ std::vector<int> option_min = {
 };
 
 std::vector<int> option_max = {
-	180,    // RFP_MULTIPLIER          (89 + 10% = ~98 ¡æ min 10 ¡æ 180)
+	180,    // RFP_MULTIPLIER          
 	150,    // RFP_IMPROVING_MULTIPLIER
 	100,    // RFP_BASE
 	100,    // RFP_IMPROVING_BASE
@@ -381,6 +385,11 @@ bool operator==(AccumulatorPair& a, AccumulatorPair& b) {
 //{
 //	return (square) % 8;
 //}
+
+void search_thread_func(Board& board, int depth, SearchLimitations& searchLimits, ThreadData& data, bool print_info = true, int64_t maxTime = -1)
+{
+	IterativeDeepening(board, depth, searchLimits, data, print_info, maxTime);
+}
 void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 {
     //std::cout << (input) << "\n";
@@ -784,80 +793,77 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 
         }
         }
-    else if (main_command == "go")
-    {
-		SearchLimitations searchLimits;
-        if (Commands[1] == "depth")
-        {
-            //Negamax_nodecount = 0;
-            if (Commands.size() == 3)
-            {
-                int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth, searchLimits, data);
+	else if (main_command == "go")
+	{
+		if (search_thread.joinable()) search_thread.join(); // Always join before launching
 
-            }
-        }
-        else if (Commands[1] == "nodes")
-        {
-            int64_t node = std::stoll(Commands[2]);
-			searchLimits.HardNodeLimit = node;
-            IterativeDeepening(main_board, 99, searchLimits, data);
-        }
-        else if (Commands[1] == "movetime")
-        {
-            int64_t movetime = std::stoll(Commands[2]);
-			searchLimits.HardTimeLimit = movetime;
-            IterativeDeepening(main_board, 99, searchLimits, data);
-        }
-        else if (Commands[1] == "wtime")
-        {
-            int depth = TryGetLabelledValueInt(input, "depth", go_commands);
-            int64_t wtime = TryGetLabelledValueInt(input, "wtime", go_commands);
+		SearchLimitations searchLimits;
+		int depth = 99;
+		int64_t maxTime = -1;
+		bool print_info = true;
+
+		if (Commands[1] == "depth" && Commands.size() == 3)
+		{
+			depth = std::stoi(Commands[2]);
+		}
+		else if (Commands[1] == "nodes")
+		{
+			searchLimits.HardNodeLimit = std::stoll(Commands[2]);
+		}
+		else if (Commands[1] == "movetime")
+		{
+			searchLimits.HardTimeLimit = std::stoll(Commands[2]);
+		}
+		else if (Commands[1] == "wtime")
+		{
+			int user_depth = TryGetLabelledValueInt(input, "depth", go_commands);
+			int64_t wtime = TryGetLabelledValueInt(input, "wtime", go_commands);
 			int64_t btime = TryGetLabelledValueInt(input, "btime", go_commands);
 			int64_t winc = TryGetLabelledValueInt(input, "winc", go_commands);
 			int64_t binc = TryGetLabelledValueInt(input, "binc", go_commands);
-           
 
-            if (depth != 0)
-            {
-                //int depth = std::stoi(Commands[2]);
-                IterativeDeepening(main_board, depth, searchLimits, data);
-                
-            }
-            else
-            {
-                int64_t hard_bound;
-				int64_t soft_bound;
-				int64_t baseTime = 0;
-				int64_t maxTime = 0;
-                if (main_board.side == White)
-                {
-                    hard_bound = Calculate_Hard_Bound(wtime, winc);
-                    soft_bound = Calculate_Soft_Bound(wtime, winc);
-                    //baseTime = wtime * DEF_TIME_MULTIPLIER + winc * DEF_INC_MULTIPLIER;
-                    maxTime = std::max(1.00, wtime * MAX_TIME_MULTIPLIER);
-                }
-                else
-                {
-                    hard_bound = Calculate_Hard_Bound(btime, binc);
-                    soft_bound = Calculate_Soft_Bound(btime, binc);
-                    //baseTime = btime * DEF_TIME_MULTIPLIER + binc * DEF_INC_MULTIPLIER;
-                    maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
-                }
+			if (user_depth != 0)
+			{
+				depth = user_depth;
+			}
+			else
+			{
+				int64_t hard_bound = 0, soft_bound = 0;
+
+				if (main_board.side == White)
+				{
+					hard_bound = Calculate_Hard_Bound(wtime, winc);
+					soft_bound = Calculate_Soft_Bound(wtime, winc);
+					maxTime = std::max(1LL, static_cast<int64_t>(wtime * MAX_TIME_MULTIPLIER));
+				}
+				else
+				{
+					hard_bound = Calculate_Hard_Bound(btime, binc);
+					soft_bound = Calculate_Soft_Bound(btime, binc);
+					maxTime = std::max(1LL, static_cast<int64_t>(btime * MAX_TIME_MULTIPLIER));
+				}
+
 				searchLimits.HardTimeLimit = hard_bound;
 				searchLimits.SoftTimeLimit = soft_bound;
-                IterativeDeepening(main_board, 99, searchLimits, data, true, maxTime);
-            }
-        }
-        else
-        {
-            IterativeDeepening(main_board, 99, searchLimits, data);
-        }
-        //else if (Commands[1] == "perft")
-        //{
+			}
+		}
 
-        //}
-    }
+		// Default catch-all (e.g. just "go")
+		search_thread = std::thread(
+			search_thread_func,
+			std::ref(main_board),
+			depth,
+			std::ref(searchLimits),
+			std::ref(data),
+			print_info,
+			maxTime
+		);
+}
+
+	else if (main_command == "stop")
+	{
+		stop_search = true;
+	}
     else if (main_command == "show")
     {
         PrintBoards(main_board);
