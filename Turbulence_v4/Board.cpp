@@ -6,9 +6,8 @@
 #include "const.h"
 #include <cstdint>
 #include <cctype>
+#include <string>
 #include <iostream>
-
-
 Board::Board()
     : side(0), enpassent((no_sq)), castle(0), halfmove(0) , zobristKey(0), PawnKey(0), MinorKey(0){
     // Initialize arrays
@@ -294,6 +293,27 @@ void parse_fen(std::string fen, Board& board)
         //Console.WriteLine(fen[index]);
         board.enpassent = no_sq;
     }
+
+	if (index + 2 >= fen.length())
+	{
+		board.halfmove = 0;
+	}
+	else
+	{
+		std::string halfmoves_str = "";
+		index += 2;
+		halfmoves_str += fen[index];
+		if (fen[index + 1] != ' ')
+		{
+			halfmoves_str += fen[index + 1];
+		}
+
+		int halfmoves = std::stoi(halfmoves_str);
+		board.halfmove = halfmoves;
+		//std::cout << halfmoves;
+	}
+
+
     for (int piece = P; piece <= K; piece++)
     {
         board.occupancies[White] |= board.bitboards[piece];

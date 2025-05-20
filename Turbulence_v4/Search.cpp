@@ -798,6 +798,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
+		int last_halfmove = board.halfmove;
 
 		data.ply++;
 		if (data.selDepth < data.ply)
@@ -856,6 +857,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 			board.MinorKey = lastMinorKey;
 			board.WhiteNonPawnKey = lastWhiteNPKey;
 			board.BlackNonPawnKey = lastBlackNPKey;
+			board.halfmove = last_halfmove;
 			continue;
 		}
 
@@ -876,6 +878,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		board.MinorKey = lastMinorKey;
 		board.WhiteNonPawnKey = lastWhiteNPKey;
 		board.BlackNonPawnKey = lastBlackNPKey;
+		board.halfmove = last_halfmove;
 
 		if (data.isSearchStop) {
 			return 0; // Return a neutral score if time is exceeded during recursive calls
@@ -926,16 +929,23 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	pvLengths[data.ply] = data.ply;
 
 	//Return draw score if threefold repetition has occured
-	if (data.ply != 0 && is_threefold(board.history, board.lastIrreversiblePly))
+	if (data.ply != 0)
 	{
-		return 0;
+		if (is_threefold(board.history, board.lastIrreversiblePly))
+		{
+			return 0;
+		}
+		if (board.halfmove >= 100)
+		{
+			return 0;
+		}
 	}
 	//Immediately return the static evaluation score when we reach max ply
 	if (data.ply > 99 - 1)
 	{
 		return Evaluate(board);
 	}
-
+	
 	//Probe TT entry
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
 
@@ -1149,6 +1159,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
+		int last_halfmove = board.halfmove;
 		data.ply++;
 
 		if (data.selDepth < data.ply)
@@ -1208,6 +1219,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.MinorKey = last_minorKey;
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
+			board.halfmove = last_halfmove;
 			continue;
 		} 
 
@@ -1240,6 +1252,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.MinorKey = last_minorKey;
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
+			board.halfmove = last_halfmove;
 
 			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
@@ -1410,6 +1423,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.MinorKey = last_minorKey;
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
+		board.halfmove = last_halfmove;
 		data.ply--;
 
 		if (data.ply == 0)
