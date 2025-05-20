@@ -386,7 +386,7 @@ bool operator==(AccumulatorPair& a, AccumulatorPair& b) {
 //	return (square) % 8;
 //}
 
-void search_thread_func(Board& board, int depth, SearchLimitations& searchLimits, ThreadData& data, bool print_info = true, int64_t maxTime = -1)
+void search_thread_func(Board& board, int depth, SearchLimitations& searchLimits, ThreadData& data, bool print_info, int64_t maxTime)
 {
 	IterativeDeepening(board, depth, searchLimits, data, print_info, maxTime);
 }
@@ -795,70 +795,125 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
         }
 	else if (main_command == "go")
 	{
-		if (search_thread.joinable()) search_thread.join(); // Always join before launching
+		stop_search = true; // stop any ongoing search
+		if (search_thread.joinable())
+			search_thread.join();
+
+		stop_search = false; // reset for new search
 
 		SearchLimitations searchLimits;
-		int depth = 99;
-		int64_t maxTime = -1;
-		bool print_info = true;
 
-		if (Commands[1] == "depth" && Commands.size() == 3)
+		if (Commands[1] == "depth")
 		{
-			depth = std::stoi(Commands[2]);
+			if (Commands.size() == 3)
+			{
+				int depth = std::stoi(Commands[2]);
+				search_thread = std::thread(
+					search_thread_func,
+					std::ref(main_board),
+					depth,
+					std::ref(searchLimits),
+					std::ref(data),
+					true,
+					-1
+				);
+			}
 		}
 		else if (Commands[1] == "nodes")
 		{
-			searchLimits.HardNodeLimit = std::stoll(Commands[2]);
+			int64_t node = std::stoll(Commands[2]);
+			searchLimits.HardNodeLimit = node;
+			search_thread = std::thread(
+				search_thread_func,
+				std::ref(main_board),
+				99,
+				std::ref(searchLimits),
+				std::ref(data),
+				true,
+				-1
+			);
 		}
 		else if (Commands[1] == "movetime")
 		{
-			searchLimits.HardTimeLimit = std::stoll(Commands[2]);
+			int64_t movetime = std::stoll(Commands[2]);
+			searchLimits.HardTimeLimit = movetime;
+			search_thread = std::thread(
+				search_thread_func,
+				std::ref(main_board),
+				99,
+				std::ref(searchLimits),
+				std::ref(data),
+				true,
+				-1
+			);
 		}
 		else if (Commands[1] == "wtime")
 		{
-			int user_depth = TryGetLabelledValueInt(input, "depth", go_commands);
+			int depth = TryGetLabelledValueInt(input, "depth", go_commands);
 			int64_t wtime = TryGetLabelledValueInt(input, "wtime", go_commands);
 			int64_t btime = TryGetLabelledValueInt(input, "btime", go_commands);
 			int64_t winc = TryGetLabelledValueInt(input, "winc", go_commands);
 			int64_t binc = TryGetLabelledValueInt(input, "binc", go_commands);
 
-			if (user_depth != 0)
+			if (depth != 0)
 			{
-				depth = user_depth;
+				search_thread = std::thread(
+					search_thread_func,
+					std::ref(main_board),
+					depth,
+					std::ref(searchLimits),
+					std::ref(data),
+					true,
+					-1
+				);
 			}
 			else
 			{
-				int64_t hard_bound = 0, soft_bound = 0;
+				int64_t hard_bound;
+				int64_t soft_bound;
+				int64_t maxTime = 0;
 
 				if (main_board.side == White)
 				{
 					hard_bound = Calculate_Hard_Bound(wtime, winc);
 					soft_bound = Calculate_Soft_Bound(wtime, winc);
-					maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
+					maxTime = std::max<int64_t>(1, wtime * MAX_TIME_MULTIPLIER);
 				}
 				else
 				{
 					hard_bound = Calculate_Hard_Bound(btime, binc);
 					soft_bound = Calculate_Soft_Bound(btime, binc);
-					maxTime = std::max(1.00, btime * MAX_TIME_MULTIPLIER);
+					maxTime = std::max<int64_t>(1, btime * MAX_TIME_MULTIPLIER);
 				}
 
 				searchLimits.HardTimeLimit = hard_bound;
 				searchLimits.SoftTimeLimit = soft_bound;
+
+				search_thread = std::thread(
+					search_thread_func,
+					std::ref(main_board),
+					99,
+					std::ref(searchLimits),
+					std::ref(data),
+					true,
+					maxTime
+				);
 			}
 		}
+		else
+		{
+			search_thread = std::thread(
+				search_thread_func,
+				std::ref(main_board),
+				99,
+				std::ref(searchLimits),
+				std::ref(data),
+				true,
+				-1
+			);
+		}
+		}
 
-		// Default catch-all (e.g. just "go")
-		search_thread = std::thread(
-			search_thread_func,
-			std::ref(main_board),
-			depth,
-			std::ref(searchLimits),
-			std::ref(data),
-			print_info,
-			maxTime
-		);
-}
 
 	else if (main_command == "stop")
 	{
