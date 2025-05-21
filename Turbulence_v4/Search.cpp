@@ -1009,10 +1009,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 	data.searchStack[data.ply].staticEval = staticEval;
+	data.searchStack[data.ply].inCheck = isInCheck;
 
 	//If current static evaluation is greater than static evaluation from 2 plies ago
-	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
-
+	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval && !data.searchStack[data.ply - 2].inCheck;
 	int canPrune = !isInCheck && !isPvNode;
 	//RFP 
 	//If static evaluation + margin still doesn't improve alpha, prune the node
@@ -1189,7 +1189,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 			}
 		}
-		AccumulatorPair ueacc = board.accumulator;
+		//AccumulatorPair ueacc = board.accumulator;
 		MakeMove(board, move);
 
 		data.searchNodeCount++;

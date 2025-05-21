@@ -71,6 +71,7 @@ struct Search_data
 {
 	Move move;
 	int staticEval;
+	bool inCheck;
 };
 struct ThreadData
 {
