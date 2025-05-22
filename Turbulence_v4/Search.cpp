@@ -1173,7 +1173,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			continue;
 		}
-		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
+		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin; 
 		if (data.ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
 		{
 			//if Static Exchange Evaluation score is lower than certain margin, assume the move is very bad and skip the move
