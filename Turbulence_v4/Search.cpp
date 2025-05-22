@@ -1117,6 +1117,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			continue;
 		}
+		bool isNotMated = alpha > -49000 + 99;
+		if (isQuiet && depth <= 7 && !isPvNode && staticEval + 200 * depth <= alpha && isNotMated)
+		{
+			continue;
+		}
 		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
 		if (data.ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
 		{
@@ -1126,7 +1131,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				continue;
 			}
 		}
-		bool isNotMated = alpha > -49000 + 99;
+		
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
 		int conthist = getContinuationHistoryScore(move, data) * 2;
