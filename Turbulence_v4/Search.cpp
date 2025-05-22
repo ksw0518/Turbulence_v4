@@ -388,6 +388,48 @@ void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& dat
 	updateSingleContinuationHistoryScore(move, bonus, 1, data);
 	updateSingleContinuationHistoryScore(move, bonus, 2, data);
 }
+bool isInsufficientMaterial(const Board& board) {
+
+	int whiteBishops = count_bits(board.bitboards[B]);
+	int blackBishops = count_bits(board.bitboards[b]);
+	int whiteKnights = count_bits(board.bitboards[N]);
+	int blackKnights = count_bits(board.bitboards[n]);
+	int whiteRooks = count_bits(board.bitboards[R]);
+	int blackRooks = count_bits(board.bitboards[r]);
+	int whiteQueens = count_bits(board.bitboards[Q]);
+	int blackQueens = count_bits(board.bitboards[q]);
+	int whitePawns = count_bits(board.bitboards[P]);
+	int blackPawns = count_bits(board.bitboards[p]);
+	if (whiteQueens == 0 && blackQueens == 0 && whiteRooks == 0 && blackRooks == 0 && whitePawns == 0 && blackPawns == 0)
+	{
+		if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 1 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 1 && blackKnights == 0)
+		{
+			return true;
+		}
+		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 1)
+		{
+			return true;
+		}
+		else if (whiteBishops == 1 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
+		{
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
 static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entry, uint64_t opp_threat, ThreadData& data)
 {
 
@@ -798,6 +840,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
+		int last_halfmove = board.halfmove;
 
 		data.ply++;
 		if (data.selDepth < data.ply)
@@ -856,6 +899,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 			board.MinorKey = lastMinorKey;
 			board.WhiteNonPawnKey = lastWhiteNPKey;
 			board.BlackNonPawnKey = lastBlackNPKey;
+			board.halfmove = last_halfmove;
 			continue;
 		}
 
@@ -876,6 +920,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		board.MinorKey = lastMinorKey;
 		board.WhiteNonPawnKey = lastWhiteNPKey;
 		board.BlackNonPawnKey = lastBlackNPKey;
+		board.halfmove = last_halfmove;
 
 		if (data.isSearchStop) {
 			return 0; // Return a neutral score if time is exceeded during recursive calls
@@ -926,16 +971,27 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	pvLengths[data.ply] = data.ply;
 
 	//Return draw score if threefold repetition has occured
-	if (data.ply != 0 && is_threefold(board.history, board.lastIrreversiblePly))
+	if (data.ply != 0)
 	{
-		return 0;
+		if (is_threefold(board.history, board.lastIrreversiblePly))
+		{
+			return 0;
+		}
+		if (board.halfmove >= 100)
+		{
+			return 0;
+		}
+		if (isInsufficientMaterial(board))
+		{
+			return 0;
+		}
 	}
 	//Immediately return the static evaluation score when we reach max ply
 	if (data.ply > 99 - 1)
 	{
 		return Evaluate(board);
 	}
-
+	
 	//Probe TT entry
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
 
@@ -1149,6 +1205,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
+		int last_halfmove = board.halfmove;
 		data.ply++;
 
 		if (data.selDepth < data.ply)
@@ -1208,6 +1265,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.MinorKey = last_minorKey;
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
+			board.halfmove = last_halfmove;
 			continue;
 		} 
 
@@ -1240,6 +1298,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.MinorKey = last_minorKey;
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
+			board.halfmove = last_halfmove;
 
 			int s_beta = ttEntry.score - depth * 2;
 			int s_depth = (depth - 1) / 2;
@@ -1410,6 +1469,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		board.MinorKey = last_minorKey;
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
+		board.halfmove = last_halfmove;
 		data.ply--;
 
 		if (data.ply == 0)
@@ -2188,48 +2248,7 @@ struct GameData
 	int result;
 	GameData(Board b, int e, int r) : board(b), eval(e), result(r) {}
 };
-bool isInsufficientMaterial(const Board& board) {
 
-	int whiteBishops = count_bits(board.bitboards[B]);
-	int blackBishops = count_bits(board.bitboards[b]);
-	int whiteKnights = count_bits(board.bitboards[N]);
-	int blackKnights = count_bits(board.bitboards[n]);
-	int whiteRooks = count_bits(board.bitboards[R]);
-	int blackRooks = count_bits(board.bitboards[r]);
-	int whiteQueens = count_bits(board.bitboards[Q]);
-	int blackQueens = count_bits(board.bitboards[q]);
-	int whitePawns = count_bits(board.bitboards[P]);
-	int blackPawns = count_bits(board.bitboards[p]);
-	if (whiteQueens == 0 && blackQueens == 0 && whiteRooks == 0 && blackRooks == 0 && whitePawns == 0 && blackPawns == 0)
-	{
-		if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
-		{
-			return true;
-		}
-		else if (whiteBishops == 1 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 0)
-		{
-			return true;
-		}
-		else if (whiteBishops == 0 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
-		{
-			return true;
-		}
-		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 1 && blackKnights == 0)
-		{
-			return true;
-		}
-		else if (whiteBishops == 0 && blackBishops == 0 && whiteKnights == 0 && blackKnights == 1)
-		{
-			return true;
-		}
-		else if (whiteBishops == 1 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
-		{
-			return true;
-		}
-		return false;
-	}
-	return false;
-}
 int flipResult(int res) {
 	return 2 - res;
 }

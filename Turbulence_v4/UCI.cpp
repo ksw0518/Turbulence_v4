@@ -12,7 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstdlib>
-
+#include <bit>
 std::vector<std::string> option_name = {
     "RFP_MULTIPLIER",
     "RFP_IMPROVING_MULTIPLIER",
@@ -585,7 +585,7 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 
                                     MakeMove(main_board, moveList.moves[j]);
 
-                                    main_board.halfmove++;
+                                    
 
 
                                     break;
@@ -1005,7 +1005,7 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
                     //    main_board.halfmove = 0;
                     //}
                     //Repetition_table.Add(main_Zobrist);
-                    main_board.halfmove++;
+                   
 
 
                     break;
