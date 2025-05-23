@@ -56,6 +56,9 @@ constexpr int CORRHIST_WEIGHT_SCALE = 256;
 constexpr int CORRHIST_GRAIN = 256;
 constexpr int CORRHIST_SIZE = 16384;
 constexpr int CORRHIST_MAX = 16384;
+
+
+extern bool stop_search;
 struct TranspositionEntry
 {
 	uint64_t zobristKey;
