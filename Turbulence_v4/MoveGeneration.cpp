@@ -1743,6 +1743,8 @@ void MakeMove(Board& board, Move move)
         }
     }
 
+
+	board.halfmove++;
 	switch (move.Type)
 	{
 	case double_pawn_push:
@@ -1797,6 +1799,7 @@ void MakeMove(Board& board, Move move)
 
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -1869,6 +1872,7 @@ void MakeMove(Board& board, Move move)
 
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2022,6 +2026,7 @@ void MakeMove(Board& board, Move move)
 		board.zobristKey ^= side_key;
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2141,6 +2146,7 @@ void MakeMove(Board& board, Move move)
 		board.zobristKey ^= side_key;
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2246,6 +2252,7 @@ void MakeMove(Board& board, Move move)
 
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2289,6 +2296,7 @@ void MakeMove(Board& board, Move move)
 		board.zobristKey ^= side_key;
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2331,6 +2339,7 @@ void MakeMove(Board& board, Move move)
 		board.zobristKey ^= side_key;
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2374,6 +2383,7 @@ void MakeMove(Board& board, Move move)
 		board.zobristKey ^= side_key;
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2418,6 +2428,7 @@ void MakeMove(Board& board, Move move)
 
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2536,6 +2547,7 @@ void MakeMove(Board& board, Move move)
 		board.zobristKey ^= side_key;
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2655,6 +2667,7 @@ void MakeMove(Board& board, Move move)
 
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2896,6 +2909,7 @@ void MakeMove(Board& board, Move move)
 
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -2961,6 +2975,7 @@ void MakeMove(Board& board, Move move)
 		//Zobrist ^= PIECES[captured_piece][capture_square];
 		if (is_move_irreversible(move))
 		{
+			board.halfmove = 0;
 			board.lastIrreversiblePly = board.history.size();
 		}
 		board.history.push_back(board.zobristKey);
@@ -3248,16 +3263,6 @@ void UnmakeMove(Board& board, Move move, int captured_piece)
         //update mailbox
         board.mailbox[move.To] = captured_piece;
         board.mailbox[move.From] = move.Piece;
-
-
-
-
-
-
-
-
-
-
     }
     else if (move.Type == rook_promo_capture)
     {
