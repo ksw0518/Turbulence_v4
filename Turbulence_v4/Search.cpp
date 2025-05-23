@@ -390,7 +390,7 @@ void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& dat
 }
 bool isInsufficientMaterial(const Board& board) {
 
-	int whiteBishops = count_bits(board.bitboards[B]);
+	int whiteBishops = count_bits(board.bitboards[B]); 
 	int blackBishops = count_bits(board.bitboards[b]);
 	int whiteKnights = count_bits(board.bitboards[N]);
 	int blackKnights = count_bits(board.bitboards[n]);
