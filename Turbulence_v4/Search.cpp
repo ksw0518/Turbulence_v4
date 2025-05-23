@@ -1174,7 +1174,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			continue;
 		}
 		bool isNotMated = alpha > -49000 + 99;
-		if (isQuiet && depth <= 4 && !isPvNode && staticEval + 200 * depth <= alpha && isNotMated)
+		if (isQuiet && depth <= 4 && !isPvNode && staticEval + 247 * depth + 115 <= alpha && isNotMated)
 		{
 			continue;
 		}
