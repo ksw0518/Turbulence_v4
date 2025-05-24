@@ -229,6 +229,7 @@ void initializeLMRTable(ThreadData& data)
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
 	memset(data.twoPlyContHist, 0, sizeof(data.twoPlyContHist));
+	memset(data.fourPlyContHist, 0, sizeof(data.fourPlyContHist));
 	memset(data.CaptureHistory, 0, sizeof(data.CaptureHistory));
 	memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
 	memset(data.nonPawnCorrHist, 0, sizeof(data.nonPawnCorrHist));
@@ -346,7 +347,10 @@ int getSingleContinuationHistoryScore(Move move, const int offSet, ThreadData& d
 		{
 			return data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
-
+		else if (offSet == 4)
+		{
+			return data.fourPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
+		}
 	}
 	return 0;
 }
@@ -356,9 +360,10 @@ int getContinuationHistoryScore(Move& move, ThreadData& data)
 	{
 		int onePly = getSingleContinuationHistoryScore(move, 1, data);
 		int twoPly = getSingleContinuationHistoryScore(move, 2, data);
+		int fourPly = getSingleContinuationHistoryScore(move, 4, data);
 
 
-		int finalScore = onePly + twoPly;
+		int finalScore = onePly + twoPly + fourPly;
 		return finalScore;
 	}
 	return 0;
@@ -380,13 +385,17 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		{
 			data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
-
+		else if (offSet == 4)
+		{
+			data.fourPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
+		}
 	}
 }
 void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& data)
 {
 	updateSingleContinuationHistoryScore(move, bonus, 1, data);
 	updateSingleContinuationHistoryScore(move, bonus, 2, data);
+	updateSingleContinuationHistoryScore(move, bonus, 4, data);
 }
 bool isInsufficientMaterial(const Board& board) {
 
@@ -470,7 +479,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		{
 			// Return history score for non-capture and non-killer moves
 			int mainHistScore = data.mainHistory[board.side][move.From][move.To][Get_bit(opp_threat, move.From)][Get_bit(opp_threat, move.To)];
-			int contHistScore = getContinuationHistoryScore(move, data) * 2;
+			int contHistScore = getContinuationHistoryScore(move, data) * 2 * (2/3);
 			int historyTotal = mainHistScore + contHistScore - 100000;
 
 			if (historyTotal >= 80000)
@@ -1185,7 +1194,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		bool isNotMated = alpha > -49000 + 99;
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move, data) * 2;
+		int conthist = getContinuationHistoryScore(move, data) * 2 * (2/3);
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
@@ -1604,6 +1613,7 @@ void bench()
 		}
 		memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
 		memset(data.twoPlyContHist, 0, sizeof(data.twoPlyContHist));
+		memset(data.fourPlyContHist, 0, sizeof(data.fourPlyContHist));
 		memset(data.CaptureHistory, 0, sizeof(data.CaptureHistory));
 		memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
 		memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
@@ -1633,6 +1643,8 @@ void bench()
 		TranspositionTable[i] = TranspositionEntry();
 	}
 	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
+	memset(data.twoPlyContHist, 0, sizeof(data.twoPlyContHist));
+	memset(data.fourPlyContHist, 0, sizeof(data.fourPlyContHist));
 	memset(data.CaptureHistory, 0, sizeof(data.CaptureHistory));
 	memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
 	memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));

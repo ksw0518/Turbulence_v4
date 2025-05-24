@@ -90,6 +90,7 @@ struct ThreadData
 
 	int onePlyContHist[12][64][12][64];
 	int twoPlyContHist[12][64][12][64];
+	int fourPlyContHist[12][64][12][64];
 
 	int pawnCorrHist[2][CORRHIST_SIZE];
 	int minorCorrHist[2][CORRHIST_SIZE];
