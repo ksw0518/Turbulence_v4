@@ -327,6 +327,11 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove, Threa
 
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
+void updateCaptureHistory(int piece_attacking, int to, int piece_captured, int bonus, ThreadData& data)
+{
+	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+	data.CaptureHistory[piece_attacking][to][piece_captured] += clampedBonus - data.CaptureHistory[piece_attacking][to][piece_captured] * abs(clampedBonus) / MAX_HISTORY;
+}
 void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat, ThreadData& data)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
@@ -455,8 +460,9 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 			victim = get_piece(board.mailbox[move.To], White);
 		}
 		int attacker = get_piece(move.Piece, White);
-		int score = MVVLVA[attacker][victim];
-		//score += CaptureHistory[move.Piece][move.To][board.mailbox[move.To]] / 10;
+		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
+		//int score = MVVLVA[attacker][victim];
+		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		score += SEE(board, move, -100) ? 200000 : -10000000;
 		return score;
 	}
@@ -1150,6 +1156,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth;
 
 	MoveList quietsList;
+	MoveList noisyList;
+	std::vector<int> capturedPiece;
 
 	Move bestMove = Move(0, 0, 0, 0);
 	int quietMoves = 0;
@@ -1246,7 +1254,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				}
 			}
 		}
-		AccumulatorPair ueacc = board.accumulator;
+		//AccumulatorPair ueacc = board.accumulator;
 		MakeMove(board, move);
 
 		data.searchNodeCount++;
@@ -1273,6 +1281,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			quietsList.add(move);
 			quietMoves++;
+		}
+		else
+		{
+			noisyList.add(move);
+			capturedPiece.push_back(captured_piece);
 		}
 		searchedMoves++;
 		depthToSearch = depth - 1;
@@ -1522,6 +1535,28 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 						{
 							updateContinuationHistoryScore(move_quiet, -contHistBonus, data);
 						}
+					}
+				}
+				int captHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
+				for (int i = 0; i < noisyList.count; ++i)
+				{
+					Move& move_noisy = noisyList.moves[i];
+					updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, data);
+				}
+			}
+			else
+			{
+				int captHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
+				for (int i = 0; i < noisyList.count; ++i)
+				{
+					Move& move_noisy = noisyList.moves[i];
+					if (move_noisy == move)
+					{
+						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], captHistBonus, data);
+					}
+					else
+					{
+						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, data);
 					}
 				}
 			}
