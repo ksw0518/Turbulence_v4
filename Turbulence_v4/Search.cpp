@@ -439,7 +439,6 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		// If the best move from TT matches the current move, return a high score
 		if (entry.bestMove == move)
 		{
-			//make sure TT move isn't included in search, because it is already searched before generating move
 			return 99999999;
 		}
 	}
@@ -486,8 +485,16 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 
 	return 0;
 }
-static inline int get_move_score_capture(Move move, Board& board)
+static inline int get_move_score_capture(Move move, Board& board, TranspositionEntry entry)
 {
+	if (entry.bound != 0 && entry.zobristKey == board.zobristKey)
+	{
+		// If the best move from TT matches the current move, return a high score
+		if (entry.bestMove == move)
+		{
+			return 99999999;
+		}
+	}
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
 		if (move.Type == ep_capture)
@@ -678,7 +685,7 @@ constexpr void insertion_sort(I first, I last, C const&& comp) {
 	}
 }
 
-static inline void sort_moves_captures(MoveList& moveList, Board& board)
+static inline void sort_moves_captures(MoveList& moveList, Board& board, TranspositionEntry& tt_entry)
 {
 	// Temporary array for captures
 	Move captures[256];
@@ -694,8 +701,8 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board)
 	}
 
 	// Sort only the capture moves
-	insertion_sort(captures, captures + captureCount, [&board](const Move& move1, const Move& move2) {
-		return get_move_score_capture(move1, board) > get_move_score_capture(move2, board);
+	insertion_sort(captures, captures + captureCount, [&board, &tt_entry](const Move& move1, const Move& move2) {
+		return get_move_score_capture(move1, board, tt_entry) > get_move_score_capture(move2, board, tt_entry);
 		});
 
 	// Copy sorted captures back
@@ -810,7 +817,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	MoveList moveList;
 	Generate_Legal_Moves(moveList, board, true);
 
-	sort_moves_captures(moveList, board);
+	sort_moves_captures(moveList, board, ttEntry);
 
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
