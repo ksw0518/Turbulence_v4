@@ -834,7 +834,10 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		{
 			continue;
 		}
-
+		if (legal_moves >= 3)//qs lmp
+		{
+			break;
+		}
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
