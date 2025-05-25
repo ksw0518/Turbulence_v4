@@ -12,6 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstdlib>
+#include <fstream> 
 #include <bit>
 std::vector<std::string> option_name = {
     "RFP_MULTIPLIER",
@@ -387,7 +388,7 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
     //std::string input = "This  is   a  sample string";
     std::vector<std::string> Commands = splitStringBySpace(input);
     std::string main_command = Commands[0];
-
+	
     if (main_command == "uci")
     {
         
@@ -1093,6 +1094,7 @@ int main(int argc, char* argv[])
             return EXIT_SUCCESS;
         }
     }
+	std::ofstream logFile("debug_turbulence.txt", std::ios::app);
     while (true)
     {
         std::string input;
@@ -1100,6 +1102,8 @@ int main(int argc, char* argv[])
         std::getline(std::cin, input);
         if (input != "")
         {
+			logFile << input << '\n';
+			logFile.flush();
             ProcessUCI(input, data, heapAllocated);
         }
 
