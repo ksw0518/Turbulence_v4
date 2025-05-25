@@ -1041,7 +1041,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	if (isInCheck)
 	{
 		//Increase search depth if the side to move is in check, as such positions often involve tactic
-		depth = std::max(depth + 1, 1);
+		depth = std::max(depth, 1);
 	}
 	if (depth <= 0)
 	{
