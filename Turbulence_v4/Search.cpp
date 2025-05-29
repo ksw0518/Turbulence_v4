@@ -2335,7 +2335,7 @@ void estimate_time_remaining(uint64_t remaining_positions, int pps) {
 	std::cout << "Estimated remaining time: "
 		<< hours << "h " << minutes << "m " << seconds << "s"
 		<< "\n";
-}
+} 
 void print_progress_bar(double percentage) {
 	int barWidth = 50;  // Width of the progress bar
 	int progress = static_cast<int>(percentage / 2);  // Calculate the number of '#' to print
