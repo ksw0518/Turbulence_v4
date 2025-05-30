@@ -172,7 +172,6 @@ TranspositionEntry* TranspositionTable = nullptr;
 
 constexpr int MAX_HISTORY = 16384;
 constexpr int MAX_CONTHIST = 16384;
-constexpr int MAX_CAPTHIST = 1024;
 
 constexpr int MIN_LMR_DEPTH = 3;
 
@@ -193,25 +192,17 @@ double SOFT_LIMIT_MULTIPLIER = 0.76;
 
 uint64_t hardNodeBound;
 
-static int MVVLVA[6][6] = {
-	{105, 205, 305, 405, 505, 605},
-	{104, 204, 304, 404, 504, 604},
-	{103, 203, 303, 403, 503, 603},
-	{102, 202, 302, 402, 502, 602},
-	{101, 201, 301, 401, 501, 601},
-	{100, 200, 300, 400, 500, 600}
-};
-bool isMoveQuiet(int type)
+inline bool isMoveCapture(int type)
 {
-	if (((type & captureFlag) == 0) && ((type & promotionFlag) == 0)) //noisy move = promotion or capture
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-
+	return (type & captureFlag) != 0;
+}
+inline bool isMovePromotion(int type)
+{
+	return (type & promotionFlag) != 0;
+}
+inline bool isMoveQuiet(int type)
+{
+	return !isMoveCapture(type) && !isMovePromotion(type);
 }
 void initializeLMRTable(ThreadData& data)
 {
@@ -243,17 +234,12 @@ void initializeLMRTable(ThreadData& data)
 	memset(data.mainHistory, 0, sizeof(data.mainHistory));
 
 	LoadNetwork(EVALFILE);
-	//for (size_t i = 0; i < TTSize; i++)
-	//{
-	//	TranspositionTable[i] = TranspositionEntry();
-	//}
-
 }
-int scaledBonus(int score, int bonus)
+inline int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
 }
-void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
+inline void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
 {
 	uint64_t minorKey = board.MinorKey;
 	int& entry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
@@ -262,7 +248,7 @@ void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadDa
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
+inline void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
 {
 	uint64_t pawnKey = board.PawnKey;
 	int& entry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
@@ -271,7 +257,7 @@ void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadDat
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-void updateCounterCorrHist(Move prevMove, const int depth, const int diff, ThreadData& data)
+inline void updateCounterCorrHist(Move prevMove, const int depth, const int diff, ThreadData& data)
 {
 	//uint64_t pawnKey = board.PawnKey;
 	int& entry = data.counterMoveCorrHist[prevMove.Piece][prevMove.To];
@@ -280,7 +266,7 @@ void updateCounterCorrHist(Move prevMove, const int depth, const int diff, Threa
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
+inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
 {
 	uint64_t whiteKey = board.WhiteNonPawnKey;
 	uint64_t blackKey = board.BlackNonPawnKey;
@@ -298,7 +284,7 @@ void updateNonPawnCorrHist(Board& board, const int depth, const int diff, Thread
 	blackEntry = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	blackEntry = std::clamp(blackEntry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove, ThreadData& data)
+inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove, ThreadData& data)
 {
 	uint64_t pawnKey = board.PawnKey;
 	const int& pawnEntry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
@@ -327,17 +313,17 @@ int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove, Threa
 
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
-void updateCaptureHistory(int piece_attacking, int to, int piece_captured, int bonus, ThreadData& data)
+inline void updateCaptureHistory(int piece_attacking, int to, int piece_captured, int bonus, ThreadData& data)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 	data.CaptureHistory[piece_attacking][to][piece_captured] += clampedBonus - data.CaptureHistory[piece_attacking][to][piece_captured] * abs(clampedBonus) / MAX_HISTORY;
 }
-void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat, ThreadData& data)
+inline void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat, ThreadData& data)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
 	data.mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - data.mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
 }
-int getSingleContinuationHistoryScore(Move move, const int offSet, ThreadData& data)
+inline int getSingleContinuationHistoryScore(Move move, const int offSet, ThreadData& data)
 {
 	if (data.ply >= offSet)
 	{
@@ -351,11 +337,10 @@ int getSingleContinuationHistoryScore(Move move, const int offSet, ThreadData& d
 		{
 			return data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
 		}
-
 	}
 	return 0;
 }
-int getContinuationHistoryScore(Move& move, ThreadData& data)
+inline int getContinuationHistoryScore(Move& move, ThreadData& data)
 {
 	if (data.ply >= 1)
 	{
@@ -368,7 +353,7 @@ int getContinuationHistoryScore(Move& move, ThreadData& data)
 	}
 	return 0;
 }
-void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet, ThreadData& data)
+inline void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet, ThreadData& data)
 {
 	if (data.ply >= offSet) {
 		Move previousMove = data.searchStack[data.ply - offSet].move;
@@ -385,15 +370,14 @@ void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int
 		{
 			data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
 		}
-
 	}
 }
-void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& data)
+inline void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& data)
 {
 	updateSingleContinuationHistoryScore(move, bonus, 1, data);
 	updateSingleContinuationHistoryScore(move, bonus, 2, data);
 }
-bool isInsufficientMaterial(const Board& board) {
+inline bool isInsufficientMaterial(const Board& board) {
 
 	int whiteBishops = count_bits(board.bitboards[B]); 
 	int blackBishops = count_bits(board.bitboards[b]);
@@ -444,7 +428,6 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		// If the best move from TT matches the current move, return a high score
 		if (entry.bestMove == move)
 		{
-			//make sure TT move isn't included in search, because it is already searched before generating move
 			return 99999999;
 		}
 	}
@@ -461,7 +444,6 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		}
 		int attacker = get_piece(move.Piece, White);
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
-		//int score = MVVLVA[attacker][victim];
 		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		score += SEE(board, move, -100) ? 200000 : -10000000;
 		return score;
@@ -507,9 +489,7 @@ static inline int get_move_score_capture(Move move, Board& board, ThreadData& da
 		}
 		int attacker = get_piece(move.Piece, White);
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
-		//int score = MVVLVA[attacker][victim];
 		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
-		//score += SEE(board, move, -100) ? 200000 : -10000000;
 		return score;
 	}
 	else
@@ -517,11 +497,7 @@ static inline int get_move_score_capture(Move move, Board& board, ThreadData& da
 		return -999;
 	}
 }
-bool is_promotion(int type)
-{
-	return  (type & promotionFlag) != 0;
-}
-int getPiecePromoting(int type, int side)
+inline int getPiecePromoting(int type, int side)
 {
 	int return_piece = 0;
 	if ((type == queen_promo) || (type == queen_promo_capture))
@@ -540,10 +516,9 @@ int getPiecePromoting(int type, int side)
 	{
 		return_piece = N;
 	}
-
 	return get_piece(return_piece, side);
 }
-int move_estimated_value(Board& board, Move move)
+inline int move_estimated_value(Board& board, Move move)
 {
 	// Start with the value of the piece on the target square
 	int target_piece = board.mailbox[move.To] > 5
@@ -775,6 +750,42 @@ bool is_checking(Board& board)
 	}
 	return false;
 }
+inline void refresh_if_cross(Move& move, Board& board)
+{
+	if (get_piece(move.Piece, White) == K)//king has moved
+	{
+		if (getFile(move.From) <= 3)//king was left before
+		{
+			if (getFile(move.To) >= 4)//king moved to right 
+			{
+				//fully refresh the stm accumulator, and change that to start mirroring
+				if (board.side == White)
+				{
+					resetWhiteAccumulator(board, board.accumulator, true);
+				}
+				else
+				{
+					resetBlackAccumulator(board, board.accumulator, true);
+				}
+			}
+		}
+		else//king was right before
+		{
+			if (getFile(move.To) <= 3)//king moved to left 
+			{
+				//fully refresh the stm accumulator, and change that to stop mirroring
+				if (board.side == White)
+				{
+					resetWhiteAccumulator(board, board.accumulator, false);
+				}
+				else
+				{
+					resetBlackAccumulator(board, board.accumulator, false);
+				}
+			}
+		}
+	}
+}
 static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data)
 {
 	auto now = std::chrono::steady_clock::now();
@@ -811,7 +822,6 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	{
 		ttAdjustedEval = ttEntry.score;
 	}
-
 	if (ttAdjustedEval >= beta)
 	{
 		return ttAdjustedEval;
@@ -828,10 +838,6 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
-	//PrintBoards(board);
-
-	//int pvNode = beta - alpha > 1;
-	//int futilityMargin = evaluation + 120;
 
 	uint64_t lastZobrist = board.zobristKey;
 	uint64_t lastPawnKey = board.PawnKey;
@@ -861,39 +867,8 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		{
 			data.selDepth = data.ply;
 		}
-		if (get_piece(move.Piece, White) == K)//king has moved
-		{
-			if (getFile(move.From) <= 3)//king was left before
-			{
-				if (getFile(move.To) >= 4)//king moved to right 
-				{
-					//fully refresh the stm accumulator, and change that to start mirroring
-					if (board.side == White)
-					{
-						resetWhiteAccumulator(board, board.accumulator, true);
-					}
-					else
-					{
-						resetBlackAccumulator(board, board.accumulator, true);
-					}
-				}
-			}
-			else//king was right before
-			{
-				if (getFile(move.To) <= 3)//king moved to left 
-				{
-					//fully refresh the stm accumulator, and change that to stop mirroring
-					if (board.side == White)
-					{
-						resetWhiteAccumulator(board, board.accumulator, false);
-					}
-					else
-					{
-						resetBlackAccumulator(board, board.accumulator, false);
-					}
-				}
-			}
-		}
+
+		refresh_if_cross(move, board);
 		MakeMove(board, move);
 		data.searchStack[data.ply - 1].move = move;
 
@@ -1229,40 +1204,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			data.selDepth = data.ply;
 		}
 
-		if (get_piece(move.Piece, White) == K)//king has moved
-		{
-			if (getFile(move.From) <= 3)//king was left before
-			{
-				if (getFile(move.To) >= 4)//king moved to right 
-				{
-					//fully refresh the stm accumulator, and change that to start mirroring
-					if (board.side == White)
-					{
-						resetWhiteAccumulator(board, board.accumulator, true);
-					}
-					else
-					{
-						resetBlackAccumulator(board, board.accumulator, true);
-					}
-				}
-			}
-			else//king was right before
-			{
-				if (getFile(move.To) <= 3)//king moved to left 
-				{
-					//fully refresh the stm accumulator, and change that to stop mirroring
-					if (board.side == White)
-					{
-						resetWhiteAccumulator(board, board.accumulator, false);
-					}
-					else
-					{
-						resetBlackAccumulator(board, board.accumulator, false);
-					}
-				}
-			}
-		}
-		//AccumulatorPair ueacc = board.accumulator;
+		refresh_if_cross(move, board);
 		MakeMove(board, move);
 
 		data.searchNodeCount++;
@@ -1347,39 +1289,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				extensions -= 2;
 			}
 
-			if (get_piece(move.Piece, White) == K)//king has moved
-			{
-				if (getFile(move.From) <= 3)//king was left before
-				{
-					if (getFile(move.To) >= 4)//king moved to right 
-					{
-						//fully refresh the stm accumulator, and change that to start mirroring
-						if (board.side == White)
-						{
-							resetWhiteAccumulator(board, board.accumulator, true);
-						}
-						else
-						{
-							resetBlackAccumulator(board, board.accumulator, true);
-						}
-					}
-				}
-				else//king was right before
-				{
-					if (getFile(move.To) <= 3)//king moved to left 
-					{
-						//fully refresh the stm accumulator, and change that to stop mirroring
-						if (board.side == White)
-						{
-							resetWhiteAccumulator(board, board.accumulator, false);
-						}
-						else
-						{
-							resetBlackAccumulator(board, board.accumulator, false);
-						}
-					}
-				}
-			}
+			refresh_if_cross(move, board);
 			MakeMove(board, move);
 			data.ply++;
 		}
@@ -2092,13 +2002,15 @@ inline void Initialize_TT(int size)
 
 	TranspositionTable = new TranspositionEntry[TTSize]();
 }
-int randBool() {
+int randBool() 
+{
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	static std::uniform_int_distribution<int> dist(0, 1);
 	return dist(gen);
 }
-int randBetween(int n) {
+int randBetween(int n) 
+{
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> dist(1, n); // Range 1 to n
@@ -2107,7 +2019,8 @@ int randBetween(int n) {
 
 
 // Function to get the castling rights part of the FEN
-std::string getCastlingRights(const Board& board) {
+std::string getCastlingRights(const Board& board)
+{
 	std::string rights = "";
 	if (board.castle & WhiteKingCastle) rights += "K"; // White kingside castling
 	if (board.castle & WhiteQueenCastle) rights += "Q"; // White queenside castling
@@ -2115,7 +2028,8 @@ std::string getCastlingRights(const Board& board) {
 	if (board.castle & BlackQueenCastle) rights += "q"; // Black queenside castling
 	return (rights.empty()) ? "-" : rights;
 }
-std::string boardToFEN(const Board& board) {
+std::string boardToFEN(const Board& board) 
+{
 	// Step 1: Construct the piece placement part (ranks 8 to 1)
 	std::string piecePlacement = "";
 	for (int rank = 7; rank >= 0; --rank) {  // Fix: Iterate from 7 down to 0
@@ -2292,11 +2206,13 @@ struct GameData
 	GameData(Board b, int e, int r) : board(b), eval(e), result(r) {}
 };
 
-int flipResult(int res) {
+int flipResult(int res) 
+{
 	return 2 - res;
 }
 
-void appendToFile(const std::string& filename, const std::string& data) {
+void appendToFile(const std::string& filename, const std::string& data) 
+{
 	std::ofstream file(filename, std::ios::app | std::ios::out); // Open file in append mode, create if not exists
 	if (!file) {
 		std::cerr << "Error opening file: " << filename << std::endl;
@@ -2320,7 +2236,8 @@ std::string convertWDL(int wdl)
 		return "0.0";
 	}
 }
-void estimate_time_remaining(uint64_t remaining_positions, int pps) {
+void estimate_time_remaining(uint64_t remaining_positions, int pps) 
+{
 	if (pps <= 0) {
 		std::cout << "Invalid PPS value!" << std::endl;
 		return;
@@ -2336,26 +2253,32 @@ void estimate_time_remaining(uint64_t remaining_positions, int pps) {
 		<< hours << "h " << minutes << "m " << seconds << "s"
 		<< "\n";
 } 
-void print_progress_bar(double percentage) {
+void print_progress_bar(double percentage) 
+{
 	int barWidth = 50;  // Width of the progress bar
 	int progress = static_cast<int>(percentage / 2);  // Calculate the number of '#' to print
 
 	std::cout << "\n[";
-	for (int i = 0; i < barWidth; ++i) {
-		if (i < progress) {
+	for (int i = 0; i < barWidth; ++i)
+	{
+		if (i < progress)
+		{
 			std::cout << "#";  // Print filled part of the progress bar
 		}
-		else {
+		else 
+		{
 			std::cout << "-";  // Print empty part of the progress bar
 		}
 	}
 	std::cout << "] " << static_cast<int>(percentage) << "%";
 }
-bool fileExists(const std::string& filename) {
+bool fileExists(const std::string& filename)
+{
 	std::ifstream file(filename);
 	return file.good();
 }
-std::vector<std::string> splitByPipe(const std::string& input) {
+std::vector<std::string> splitByPipe(const std::string& input) 
+{
 	std::vector<std::string> tokens;
 	std::stringstream ss(input);
 	std::string token;
@@ -2377,7 +2300,8 @@ void Datagen(int targetPos, std::string output_name)
 	gameData.reserve(256);
 
 	std::ofstream file(output_name + ".txt", std::ios::app | std::ios::out); // Open file once
-	if (!file) {
+	if (!file) 
+	{
 		std::cerr << "Error opening file: " << output_name << std::endl;
 		return;
 	}
@@ -2386,7 +2310,8 @@ void Datagen(int targetPos, std::string output_name)
 	SearchLimitations searchLimits;
 	searchLimits.SoftNodeLimit = 5000;
 	searchLimits.HardNodeLimit = 10000;
-	while (totalPositions < targetPositions) {
+	while (totalPositions < targetPositions) 
+	{
 		gameData.clear();
 		Board board;
 		PickRandomPos(board, data);
@@ -2394,7 +2319,8 @@ void Datagen(int targetPos, std::string output_name)
 		int result = -1;
 
 		int moves = 0;
-		while (!isGameOver) {
+		while (!isGameOver) 
+		{
 			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
@@ -2403,31 +2329,34 @@ void Datagen(int targetPos, std::string output_name)
 			MoveList moveList;
 			Generate_Legal_Moves(moveList, board, false);
 
-			if (isNoLegalMoves(board, moveList)) {
+			if (isNoLegalMoves(board, moveList)) 
+			{
 				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
 				break;
 			}
-			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.history.size() - board.lastIrreversiblePly >= 100) {
+			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.history.size() - board.lastIrreversiblePly >= 100) 
+			{
 				result = DRAW;
 				break;
 			}
-			if (isDecisive(eval)) {
+			if (isDecisive(eval)) 
+			{
 				result = (eval > 48000) ? (board.side == White ? WHITEWIN : BLACKWIN) : (board.side == White ? BLACKWIN : WHITEWIN);
 			}
 
 			MakeMove(board, bestMove);
 			moves++;
-			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) {
+			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) 
+			{
 				gameData.push_back(GameData(board, eval, -1));
 				totalPositions++;
 			}
-			//std::cout << moves << "\n";
-
 		}
 
 		// **Batch write game data to file instead of writing each line separately**
 		std::ostringstream buffer;
-		for (int i = 0; i < gameData.size(); i++) {
+		for (int i = 0; i < gameData.size(); i++) 
+		{
 			gameData[i].result = result;
 			buffer << boardToFEN(gameData[i].board) << " | " << gameData[i].eval << " | " << convertWDL(gameData[i].result) << "\n";
 		}
