@@ -626,93 +626,95 @@ int16_t total_mat(const Board& board) {
 int Evaluate(Board& board)
 {
 
-	//	for (int i = 0; i < 16; i++)
-	//{
-	//	std::cout<< eval_accumulator.white.values[i]<<" ";
-	//}
-		//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
-	int NN_score;
-	if (board.side == White)
-		NN_score = forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
-	else
-		NN_score = forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+//	//	for (int i = 0; i < 16; i++)
+//	//{
+//	//	std::cout<< eval_accumulator.white.values[i]<<" ";
+//	//}
+//		//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+//	int NN_score;
+//	if (board.side == White)
+//		NN_score = forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+//	else
+//		NN_score = forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+//
+//	float multiplier = ((float)750 + (float)total_mat(board) / 25) / 1024;
+//	NN_score *= multiplier;
+//
+//	return NN_score;
+////
+////	if (board.side == White)
+////		std::cout<< forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+////	else
+////		std::cout<< forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+////
+////	//if (board.side == White)
+////	//	return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
+////	//else
+////	//	return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
+////
+////	AccumulatorPair eval_accumulator;
+////	resetAccumulators(board, eval_accumulator);
+//////	for (int i = 0; i < 16; i++)
+//////{
+//////	std::cout<< eval_accumulator.white.values[i]<<" ";
+//////}
+////	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+////	if (board.side == White)
+////		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
+////	else
+////		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
+//
 
+
+
+    int mg[2];
+    int eg[2];
+
+    mg[White] = 0;
+    mg[Black] = 0;
+    eg[White] = 0;
+    eg[Black] = 0;
+
+    //int eval = 0;
+    int gamePhase = 0;
+
+    int evalSide = board.side;
+
+    for (int sq = 0; sq < 64; ++sq) {
+        int pc = board.mailbox[sq];
+        if (pc != NO_PIECE) {
+            int col = getSide(pc);
+            mg[col] += mg_table[pc][sq];
+            eg[col] += eg_table[pc][sq];
+            gamePhase += gamephaseInc[pc];
+        }
+    }
+    int mgScore = mg[evalSide] + mg[1 - evalSide];
+    int egScore = eg[evalSide] + eg[1 - evalSide];
+    int mgPhase = gamePhase;
+    if (mgPhase > 24) mgPhase = 24; /* in case of early promotion */
+    int egPhase = 24 - mgPhase;
+
+    int Whiteeval = (mgScore * mgPhase + egScore * egPhase) / 24;
+
+    int WhiteBishops = count_bits(board.bitboards[B]);
+    int BlackBishops = count_bits(board.bitboards[b]);
+
+    int white_bishoppair = 0;
+    int black_bishoppair = 0;
+
+    if (WhiteBishops >= 2)
+    {
+        white_bishoppair = 50;
+    }
+    if (BlackBishops >= 2)
+    {
+        black_bishoppair = 50;
+    }
+    Whiteeval += white_bishoppair;
+    Whiteeval -= black_bishoppair;
 	float multiplier = ((float)750 + (float)total_mat(board) / 25) / 1024;
-	NN_score *= multiplier;
-
-	return NN_score;
-//
-//	if (board.side == White)
-//		std::cout<< forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
-//	else
-//		std::cout<< forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
-//
-//	//if (board.side == White)
-//	//	return forward(&Eval_Network, &board.accumulator.white, &board.accumulator.black);
-//	//else
-//	//	return forward(&Eval_Network, &board.accumulator.black, &board.accumulator.white);
-//
-//	AccumulatorPair eval_accumulator;
-//	resetAccumulators(board, eval_accumulator);
-////	for (int i = 0; i < 16; i++)
-////{
-////	std::cout<< eval_accumulator.white.values[i]<<" ";
-////}
-//	//return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
-//	if (board.side == White)
-//		return forward(&Eval_Network, &eval_accumulator.white, &eval_accumulator.black);
-//	else
-//		return forward(&Eval_Network, &eval_accumulator.black, &eval_accumulator.white);
-
-
-
-
-    //int mg[2];
-    //int eg[2];
-
-    //mg[White] = 0;
-    //mg[Black] = 0;
-    //eg[White] = 0;
-    //eg[Black] = 0;
-
-    ////int eval = 0;
-    //int gamePhase = 0;
-
-    //int evalSide = board.side;
-
-    //for (int sq = 0; sq < 64; ++sq) {
-    //    int pc = board.mailbox[sq];
-    //    if (pc != NO_PIECE) {
-    //        int col = getSide(pc);
-    //        mg[col] += mg_table[pc][sq];
-    //        eg[col] += eg_table[pc][sq];
-    //        gamePhase += gamephaseInc[pc];
-    //    }
-    //}
-    //int mgScore = mg[evalSide] + mg[1 - evalSide];
-    //int egScore = eg[evalSide] + eg[1 - evalSide];
-    //int mgPhase = gamePhase;
-    //if (mgPhase > 24) mgPhase = 24; /* in case of early promotion */
-    //int egPhase = 24 - mgPhase;
-
-    //int Whiteeval = (mgScore * mgPhase + egScore * egPhase) / 24;
-
-    //int WhiteBishops = count_bits(board.bitboards[B]);
-    //int BlackBishops = count_bits(board.bitboards[b]);
-
-    //int white_bishoppair = 0;
-    //int black_bishoppair = 0;
-
-    //if (WhiteBishops >= 2)
-    //{
-    //    white_bishoppair = 50;
-    //}
-    //if (BlackBishops >= 2)
-    //{
-    //    black_bishoppair = 50;
-    //}
-    //Whiteeval += white_bishoppair;
-    //Whiteeval -= black_bishoppair;
-    //return Whiteeval * side_multiply[evalSide];
+	//	NN_score *= multiplier;
+    return Whiteeval * side_multiply[evalSide] * multiplier;
 
 }
