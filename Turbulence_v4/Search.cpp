@@ -123,13 +123,17 @@ std::string benchFens[] = { // fens from alexandria, ultimately from bitgenie
 	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
 	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
 };
+
+
 int RFP_MULTIPLIER = 89;
 int RFP_IMPROVING_MULTIPLIER = 60;
 int RFP_BASE = -42;
 int RFP_IMPROVING_BASE = -35;
 
-int LMP_BASE = 1;
-int LMP_MULTIPLIER = 2;
+int LMP_BASE = 50;
+int LMP_MULTIPLIER = 100;
+int LMP_IMPROVING_BASE = 100;
+int LMP_IMPROVING_MULTIPLIER = 200;
 
 int PVS_QUIET_BASE = -3;
 int PVS_QUIET_MULTIPLIER = 62;
@@ -141,6 +145,8 @@ int HISTORY_BASE = 130;
 int HISTORY_MULTIPLIER = 87;
 int CONTHIST_BASE = 64; 
 int CONTHIST_MULTIPLIER = 48;
+int CAPTHIST_BASE = 130;
+int CAPTHIST_MULTIPLIER = 87;
 
 int ASP_WINDOW_INITIAL = 25;
 int ASP_WINDOW_MAX = 306;
@@ -150,7 +156,7 @@ int MINOR_CORRHIST_MULTIPLIER = 156;// divide by 5 later
 int NONPAWN_CORRHIST_MULTIPLIER = 183;// divide by 5 later
 int COUNTERMOVE_CORRHIST_MULTIPLIER = 150;// divide by 5 later
 
-int QS_SEE_PRUNING_MARGIN = -2;
+
 int HISTORY_PRUNING_MULTIPLIER = 1320;
 int HISTORY_PRUNING_BASE = 62;
 int HISTORY_LMR_MULTIPLIER = 772;
@@ -160,6 +166,19 @@ int NMP_DEPTH_DIVISER = 3;
 int MAX_NMP_EVAL_R = 3;
 
 int DEXT_MARGIN = 21;
+
+int RAZORING_MARGIN = 200;
+int RAZORING_BASE = 0;
+
+int LMR_NONPV_ADD = 1024;
+int LMR_INCHECK_SUB = 1024;
+int LMR_IMPROVING_SUB = 1024;
+int LMR_HISTORY_ADD = 1024;
+int LMR_NOISY_SUB = 1024;
+int LMR_KILLER_SUB = 1024;
+int LMR_TTPV_SUB = 1024;
+int LMR_CUTNODE_ADD = 1024;
+int LMR_TTDEPTH_SUB = 1024;
 
 int pvLengths[99];
 Move pvTable[99][99];
@@ -1080,7 +1099,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-	if (depth <= 3 && ttAdjustedEval + 200 * depth <= alpha)
+	if (depth <= 3 && ttAdjustedEval + RAZORING_MARGIN * depth + RAZORING_BASE<= alpha)
 	{
 		int razor_score = Quiescence(board, alpha, alpha + 1, data);
 		if (razor_score <= alpha)
@@ -1133,7 +1152,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	depth = std::min(depth, 98);
 
-	int lmpThreshold = (LMP_BASE + (LMP_MULTIPLIER)*depth * depth) / (2 - improving);
+	int lmp_base = improving ? LMP_IMPROVING_BASE : LMP_BASE;
+	int lmp_mult = improving ? LMP_IMPROVING_MULTIPLIER : LMP_MULTIPLIER;
+	
+
+	int lmpThreshold = (lmp_base + (lmp_mult)*depth * depth) / 100;
 	int quietSEEMargin = PVS_QUIET_BASE - PVS_QUIET_MULTIPLIER * depth;
 	int noisySEEMargin = PVS_NOISY_BASE - PVS_NOISY_MULTIPLIER * depth * depth;
 	int historyPruningMargin = HISTORY_PRUNING_BASE - HISTORY_PRUNING_MULTIPLIER * depth;
@@ -1299,50 +1322,54 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//LMR
 			//Save search by reducing moves that are ordered closer to the end
 			reduction = lmrTable[depth][searchedMoves];
+
+			int reduction_bonus = 0;
 			//reduce more if we are not in pv node
 			if (!isPvNode && quietMoves >= 4)
 			{
-				reduction++;
+				reduction_bonus+= LMR_NONPV_ADD;
 			}
 			//reduce less if we the move is giving check
 			if (is_in_check(board))
 			{
-				reduction--;
+				reduction_bonus-= LMR_INCHECK_SUB;
 			}
 			//reduce less if the position is improving
 			if (improving)
 			{
-				reduction--;
+				reduction_bonus-= LMR_IMPROVING_SUB;
 			}
 			//reduce more if the history score is bad
 			if (historyScore < (-HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE) 
 			{
-				reduction++;
+				reduction_bonus+= LMR_HISTORY_ADD;
 			}
 			//reduce less if the move is a capture
 			if (!isQuiet)
 			{
-				reduction--;
+				reduction_bonus-= LMR_NOISY_SUB;
 			}
 			//reduce less killer moves
 			if ((move == data.killerMoves[0][data.ply - 1]))
 			{
-				reduction--;
+				reduction_bonus-= LMR_KILLER_SUB;
 			}
 			//if the node has been in a pv node in the past, reduce less
 			if (tt_pv)
 			{
-				reduction--;
+				reduction_bonus-= LMR_TTPV_SUB;
 			}
 			//reduce more cutnode
 			if (cutnode)
 			{
-				reduction++;
+				reduction_bonus+= LMR_CUTNODE_ADD;
 			}
 			if (tt_hit && ttEntry.depth >= depth) 
 			{
-				reduction--;
+				reduction_bonus-= LMR_TTDEPTH_SUB;
 			}
+			reduction_bonus /= 1024;
+			reduction += reduction_bonus;
 		}
 		//Prevent from accidently extending the move
 		if (reduction < 0) reduction = 0;
@@ -1455,7 +1482,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 						}
 					}
 				}
-				int captHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
+				int captHistBonus = std::min(2400, CAPTHIST_BASE + CAPTHIST_MULTIPLIER * depth * depth);
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
@@ -1464,7 +1491,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else
 			{
-				int captHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
+				int captHistBonus = std::min(2400, CAPTHIST_BASE + CAPTHIST_MULTIPLIER * depth * depth);
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
