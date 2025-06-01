@@ -15,6 +15,8 @@ extern int RFP_IMPROVING_BASE;
 
 extern int LMP_BASE;
 extern int LMP_MULTIPLIER;
+extern int LMP_IMPROVING_BASE;
+extern int LMP_IMPROVING_MULTIPLIER;
 
 extern int PVS_QUIET_BASE;
 extern int PVS_QUIET_MULTIPLIER;
@@ -24,6 +26,10 @@ extern int PVS_NOISY_MULTIPLIER;
 
 extern int HISTORY_BASE;
 extern int HISTORY_MULTIPLIER;
+extern int CONTHIST_BASE;
+extern int CONTHIST_MULTIPLIER;
+extern int CAPTHIST_BASE;
+extern int CAPTHIST_MULTIPLIER;
 
 extern int ASP_WINDOW_INITIAL;
 extern int ASP_WINDOW_MAX;
@@ -31,16 +37,31 @@ extern int ASP_WINDOW_MAX;
 extern int PAWN_CORRHIST_MULTIPLIER; // divide by 5 later
 extern int MINOR_CORRHIST_MULTIPLIER; // divide by 5 later
 extern int NONPAWN_CORRHIST_MULTIPLIER; // divide by 5 later
+extern int COUNTERMOVE_CORRHIST_MULTIPLIER; // divide by 5 later
 
-extern int QS_SEE_PRUNING_MARGIN;
 extern int HISTORY_PRUNING_MULTIPLIER;
 extern int HISTORY_PRUNING_BASE;
 extern int HISTORY_LMR_MULTIPLIER;
 extern int HISTORY_LMR_BASE;
+
 extern int NMP_EVAL_DIVISER;
 extern int NMP_DEPTH_DIVISER;
 extern int MAX_NMP_EVAL_R;
+
 extern int DEXT_MARGIN;
+
+extern int RAZORING_MARGIN;
+extern int RAZORING_BASE;
+
+extern int LMR_NONPV_ADD;
+extern int LMR_INCHECK_SUB;
+extern int LMR_IMPROVING_SUB;
+extern int LMR_HISTORY_ADD;
+extern int LMR_NOISY_SUB;
+extern int LMR_KILLER_SUB;
+extern int LMR_TTPV_SUB;
+extern int LMR_CUTNODE_ADD;
+extern int LMR_TTDEPTH_SUB;
 
 extern uint64_t TTSize;
 
