@@ -211,6 +211,8 @@ double SOFT_LIMIT_MULTIPLIER = 0.76;
 
 uint64_t hardNodeBound;
 
+bool stop_signal = false;
+
 inline bool isMoveCapture(int type)
 {
 	return (type & captureFlag) != 0;
@@ -809,7 +811,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 {
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - data.clockStart).count();
-	if (elapsedMS > data.Searchtime_MS || data.searchNodeCount > hardNodeBound)
+	if (elapsedMS > data.Searchtime_MS || data.searchNodeCount > hardNodeBound || stop_signal)
 	{
 		data.isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
@@ -971,7 +973,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	auto now = std::chrono::steady_clock::now();
 	float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(now - data.clockStart).count();
-	if (elapsedMS > data.Searchtime_MS || data.searchNodeCount > hardNodeBound) {
+	if (elapsedMS > data.Searchtime_MS || data.searchNodeCount > hardNodeBound || stop_signal) {
 		data.isSearchStop = true;
 		return 0; // Return a neutral score if time is exceeded
 	}
@@ -1905,7 +1907,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			int64_t MS = static_cast<int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(end - data.clockStart).count());
 			if (softLimit != NOLIMIT)
 			{
-				if (MS > softLimit * nodesTmScale)
+				if ((MS > softLimit * nodesTmScale) || stop_signal)
 				{
 					break;
 				}
@@ -1913,7 +1915,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			}
 			else
 			{
-				if (searchLimits.HardTimeLimit != NOLIMIT && MS > searchLimits.HardTimeLimit)
+				if ((searchLimits.HardTimeLimit != NOLIMIT && MS > searchLimits.HardTimeLimit) || stop_signal)
 				{
 					break;
 				}
@@ -1983,21 +1985,21 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		}
 		if (searchLimits.SoftNodeLimit != NOLIMIT)
 		{
-			if (data.searchNodeCount > searchLimits.SoftNodeLimit)
+			if ((data.searchNodeCount > searchLimits.SoftNodeLimit)|| stop_signal)
 			{
 				break;
 			}
 		}
 		if (softLimit != NOLIMIT)
 		{
-			if (elapsedMS > softLimit * nodesTmScale)
+			if ((elapsedMS > softLimit * nodesTmScale)|| stop_signal)
 			{
 				break;
 			}
 		}
 		else
 		{
-			if (searchLimits.HardTimeLimit != NOLIMIT && elapsedMS > searchLimits.HardTimeLimit)
+			if ((searchLimits.HardTimeLimit != NOLIMIT && elapsedMS > searchLimits.HardTimeLimit)|| stop_signal)
 			{
 				break;
 			}
@@ -2009,8 +2011,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 	{
 		std::cout << "bestmove ";
 		printMove(bestmove);
-		std::cout << "\n";
+		std::cout << "\n"<< std::flush;
 	}
+	
 	return std::pair<Move, int>(bestmove, bestScore);
 }
 inline void Initialize_TT(int size)
