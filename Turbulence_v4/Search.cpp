@@ -246,6 +246,7 @@ void initializeLMRTable(ThreadData& data)
 	memset(data.nonPawnCorrHist, 0, sizeof(data.nonPawnCorrHist));
 	memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
 	memset(data.counterMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
+	memset(data.twoPlyMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
 
 	isPrettyPrinting = true;
 	for (int ply = 0; ply < 99; ply++)
@@ -287,6 +288,15 @@ inline void updateCounterCorrHist(Move prevMove, const int depth, const int diff
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
+inline void updateTwoPlyCorrHist(Move prevMove, const int depth, const int diff, ThreadData& data)
+{
+	//uint64_t pawnKey = board.PawnKey;
+	int& entry = data.twoPlyMoveCorrHist[prevMove.Piece][prevMove.To];
+	const int scaledDiff = diff * CORRHIST_GRAIN;
+	const int newWeight = std::min(depth + 1, 16);
+	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
+	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
+}
 inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
 {
 	uint64_t whiteKey = board.WhiteNonPawnKey;
@@ -307,6 +317,7 @@ inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff,
 }
 inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove, ThreadData& data)
 {
+	
 	uint64_t pawnKey = board.PawnKey;
 	const int& pawnEntry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
 
@@ -320,6 +331,7 @@ inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove
 	const int& blackNPEntry = data.nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
 
 	const int& contEntry = data.counterMoveCorrHist[prevMove.Piece][prevMove.To];
+	const int& twoContEntry = data.counterMoveCorrHist[data.searchStack[data.ply - 2].move.Piece][prevMove.To];
 
 	int mate_found = 49000 - 99;
 
@@ -328,7 +340,9 @@ inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove
 	adjust += pawnEntry * PAWN_CORRHIST_MULTIPLIER;
 	adjust += minorEntry * MINOR_CORRHIST_MULTIPLIER;
 	adjust += contEntry * COUNTERMOVE_CORRHIST_MULTIPLIER;
+	adjust += twoContEntry * COUNTERMOVE_CORRHIST_MULTIPLIER;
 	adjust += (whiteNPEntry + blackNPEntry) * NONPAWN_CORRHIST_MULTIPLIER;
+	
 
 	adjust /= 128;
 
@@ -1542,7 +1556,14 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		updatePawnCorrHist(board, depth, bestValue - staticEval, data);
 		updateMinorCorrHist(board, depth, bestValue - staticEval, data);
 		updateNonPawnCorrHist(board, depth, bestValue - staticEval, data);
-		updateCounterCorrHist(data.searchStack[data.ply - 1].move, depth, bestValue - staticEval, data);
+		if (data.ply >= 1)
+		{
+			updateCounterCorrHist(data.searchStack[data.ply - 1].move, depth, bestValue - staticEval, data);
+		}
+		if (data.ply >= 2)
+		{
+			updateCounterCorrHist(data.searchStack[data.ply - 2].move, depth, bestValue - staticEval, data);
+		}
 	}
 	if (!isSingularSearch)
 	{
@@ -1590,6 +1611,7 @@ void bench()
 		memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
 		memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
 		memset(data.counterMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
+		memset(data.twoPlyMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
 
 		parse_fen(benchFens[i], board);
 		board.zobristKey = generate_hash_key(board);
@@ -1598,7 +1620,7 @@ void bench()
 		search_start = std::chrono::steady_clock::now();
 		IterativeDeepening(board, 11, searchLimits, data, false);
 		search_end = std::chrono::steady_clock::now();
-
+		
 		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
 
 		nodecount += data.searchNodeCount;
@@ -1619,6 +1641,7 @@ void bench()
 	memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
 	memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
 	memset(data.counterMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
+	memset(data.twoPlyMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
 
 
 	delete heapAllocated;

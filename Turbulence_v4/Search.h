@@ -99,6 +99,7 @@ struct ThreadData
 
 
 	int counterMoveCorrHist[12][64];
+	int twoPlyMoveCorrHist[12][64];
 
 	int nonPawnCorrHist[2][2][CORRHIST_SIZE];
 
