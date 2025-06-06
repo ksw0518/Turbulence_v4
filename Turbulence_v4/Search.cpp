@@ -1356,7 +1356,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else
 			{
-				reduction_bonus -= capthistScore * 16384 / 5000;
+				reduction_bonus -= capthistScore * 1024 / 5000;
 			}
 	
 			//reduce less if the move is a capture
