@@ -1206,7 +1206,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
 		int conthist = getContinuationHistoryScore(move, data) * 2;
-		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece] * 5;
+		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
@@ -1356,10 +1356,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else
 			{
-				if (capthistScore < (-HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
-				{
-					reduction_bonus += 1024;
-				}
+				reduction_bonus -= capthistScore * 16384 / 5000;
 			}
 	
 			//reduce less if the move is a capture
