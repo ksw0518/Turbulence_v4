@@ -89,7 +89,7 @@ struct ThreadData
 	int mainHistory[2][64][64][2][2];
 
 	//[piece][to][captured piece]
-	int CaptureHistory[12][64][12]; 
+	int CaptureHistory[12][64][12][2]; 
 
 	int onePlyContHist[12][64][12][64];
 	int twoPlyContHist[12][64][12][64];
