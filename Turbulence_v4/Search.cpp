@@ -871,7 +871,12 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		Move& move = moveList.moves[i];
 		if (isMoveQuiet(move.Type)) continue; //skip non capture moves
 
-		if (!SEE(board, move, 1))
+
+		if (staticEval + 100 < alpha && !SEE(board, move, 1))
+		{
+			continue;
+		}
+		if (!SEE(board, move, -20))
 		{
 			continue;
 		}
