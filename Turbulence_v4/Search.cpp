@@ -1198,10 +1198,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				continue;
 			}
 		}
+		int captured_piece = board.mailbox[move.To];
+
+
+
 		bool isNotMated = bestValue > -49000 + 99;
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
 		int conthist = getContinuationHistoryScore(move, data) * 2;
+		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
@@ -1219,7 +1224,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
-		int captured_piece = board.mailbox[move.To];
+		
 		int last_irreversible = board.lastIrreversiblePly;
 		int last_halfmove = board.halfmove;
 		data.ply++;
@@ -1342,10 +1347,18 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				reduction_bonus-= LMR_IMPROVING_SUB;
 			}
 			//reduce more if the history score is bad
-			if (historyScore < (-HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE) 
+			if (isQuiet)
 			{
-				reduction_bonus+= LMR_HISTORY_ADD;
+				if (historyScore < (-HISTORY_LMR_MULTIPLIER * depth) + HISTORY_LMR_BASE)
+				{
+					reduction_bonus += LMR_HISTORY_ADD;
+				}
 			}
+			else
+			{
+				reduction_bonus -= capthistScore * 1024 / 10000;
+			}
+	
 			//reduce less if the move is a capture
 			if (!isQuiet)
 			{
