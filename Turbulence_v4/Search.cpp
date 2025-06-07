@@ -1204,7 +1204,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		bool isNotMated = bestValue > -49000 + 99;
 
-		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)] * 4;
+		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)] * 3;
 		int conthist = getContinuationHistoryScore(move, data);
 		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
 		int historyScore = main_history + conthist;
