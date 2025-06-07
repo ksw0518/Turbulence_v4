@@ -1154,7 +1154,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	depth = std::min(depth, 98);
 
-	bool eval_beta_condition = staticEval >= beta - 29 * depth + 19;
+	bool eval_beta_condition = staticEval >= beta + 29 * depth - 19;
 	int lmp_base = (improving || eval_beta_condition) ? LMP_IMPROVING_BASE : LMP_BASE;
 	int lmp_mult = (improving || eval_beta_condition) ? LMP_IMPROVING_MULTIPLIER : LMP_MULTIPLIER;
 	
