@@ -2115,7 +2115,7 @@ std::string boardToFEN(const Board& board)
 	return fen;
 }
 
-bool isNoLegalMoves(Board board, MoveList& moveList)
+bool isNoLegalMoves(Board& board, MoveList& moveList)
 {
 	int searchedMoves = 0;
 
@@ -2137,6 +2137,7 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 		if (!isLegal(move, board))
 		{
 			UnmakeMove(board, move, captured_piece);
+			
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
 			board.zobristKey = last_zobrist;
@@ -2162,6 +2163,8 @@ bool isNoLegalMoves(Board board, MoveList& moveList)
 		board.MinorKey = last_minorKey;
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
+		break;
+
 	}
 	if (searchedMoves == 0)
 	{
@@ -2332,6 +2335,17 @@ std::vector<std::string> splitByPipe(const std::string& input)
 
 	return tokens;
 }
+bool isBoardFine(Board& board)
+{
+	if (board.bitboards[K] != 0 && board.bitboards[k] != 0ULL)
+	{
+		if (((board.bitboards[p] & board.bitboards[P]) & 0xff000000000000ff) == 0ULL)
+		{
+			return true;
+		}
+	}
+	return false;
+}
 void Datagen(int targetPos, std::string output_name)
 {
 	ThreadData* heapAllocated = new ThreadData(); // Allocate safely on heap
@@ -2357,11 +2371,19 @@ void Datagen(int targetPos, std::string output_name)
 	{
 		gameData.clear();
 		Board board;
+
 		PickRandomPos(board, data);
+		while (!isBoardFine(board))
+		{
+			PickRandomPos(board, data);
+		}
+		
+
+		
 		bool isGameOver = false;
 		int result = -1;
 
-		int moves = 0;
+		//int moves = 0;
 		while (!isGameOver) 
 		{
 			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
@@ -2388,7 +2410,11 @@ void Datagen(int targetPos, std::string output_name)
 			}
 
 			MakeMove(board, bestMove);
-			moves++;
+			if (!isBoardFine(board))
+			{
+				break;
+			}
+			//moves++;
 			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) 
 			{
 				gameData.push_back(GameData(board, eval, -1));

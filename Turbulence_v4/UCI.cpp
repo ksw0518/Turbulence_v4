@@ -294,7 +294,10 @@ static uint64_t Perft(Board& board, int depth)
     uint64_t nodes = 0;
 
     Generate_Legal_Moves(move_list, board, false);
-
+	//if (depth > 0 && isNoLegalMoves(board, move_list))
+	//{
+	//	return 0;
+	//}
     for (int i = 0; i < move_list.count; ++i)
     {
         Move& move = move_list.moves[i];

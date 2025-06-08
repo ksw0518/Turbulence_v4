@@ -147,3 +147,5 @@ inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversi
 	return false;
 }
 void Datagen(int targetPos, std::string output_name);
+struct MoveList;
+bool isNoLegalMoves(Board& board, MoveList& moveList);
