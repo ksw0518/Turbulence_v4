@@ -1349,7 +1349,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//reduce more if the history score is bad
 			if (isQuiet)
 			{
-				reduction_bonus -= historyScore * 1024 / 50000;
+				reduction_bonus -= historyScore * 1024 / 65536;
 			}
 			else
 			{
