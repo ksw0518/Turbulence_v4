@@ -857,7 +857,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 
 	sort_moves_captures(moveList, board, data);
 
-	int bestValue = MINUS_INFINITY;
+	int bestValue = staticEval;
 	int legal_moves = 0;
 
 	uint64_t lastZobrist = board.zobristKey;
@@ -871,12 +871,13 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		Move& move = moveList.moves[i];
 		if (isMoveQuiet(move.Type)) continue; //skip non capture moves
 
-
-		if (staticEval + 100 < alpha && !SEE(board, move, 1))
+		int futilityScore = staticEval + 100;
+		if (!isInCheck && futilityScore <= alpha && !SEE(board, move, 1))
 		{
+			bestValue = std::max(bestValue, futilityScore);
 			continue;
 		}
-		if (!SEE(board, move, -20))
+		if (!SEE(board, move, -35))
 		{
 			continue;
 		}
