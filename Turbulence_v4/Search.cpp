@@ -1691,10 +1691,11 @@ void print_UCI(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedM
 		printMove(pvTable[0][count]);
 		std::cout << " ";
 	}
-	std::cout << "\n";
+	std::cout << "\n" << std::flush;;
 }
 void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps, int window_change, int asp_alpha, int asp_beta, ThreadData data)
 {
+	bestmove = pvTable[0][0];
 	setColor(ConsoleColor::White);
 	std::cout << "depth ";
 	setColor(ConsoleColor::BrightBlue);
@@ -1849,7 +1850,7 @@ void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elaps
 	}
 
 	setColor(ConsoleColor::White);
-	std::cout << "\n";
+	std::cout << "\n" << std::flush;
 }
 void scaleTime(int64_t& softLimit, uint8_t bestMoveStability, int64_t baseSoft, int64_t maxTime) {
 	int bestMoveScale[5] = { 2430, 1350, 1090, 880, 680 };
@@ -1981,11 +1982,17 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			nodesTmScale = (1.5 - ((double)data.node_count[bestmove.From][bestmove.To] / data.searchNodeCount)) * 1.35;
 			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime); 
 		}
+		if (!data.isSearchStop)
+		{
+			bestmove = pvTable[0][0];
+			bestScore = score;
+		}
 
 		if (print_info)
 		{
 			if (!data.isSearchStop)
 			{
+		
 				if (isPrettyPrinting && isOnWindow)
 				{
 					print_Pretty(pvTable, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val, data);
@@ -2017,8 +2024,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 				break;
 			}
 		}
-		bestmove = pvTable[0][0];
-		bestScore = score;
+
 	}
 	if (print_info)
 	{
@@ -2106,7 +2112,7 @@ std::string boardToFEN(const Board& board)
 	std::string sideToMove = (board.side == 0) ? "w" : "b"; // White or Black to move
 	std::string castlingRights = getCastlingRights(board); // Castling rights
 	std::string enPassant = (board.enpassent == NO_SQ) ? "-" : CoordinatesToChessNotation(board.enpassent); // En passant square
-	std::string halfmove = std::to_string(board.history.size() - board.lastIrreversiblePly); // Halfmove clock
+	std::string halfmove = std::to_string(board.halfmove); // Halfmove clock
 	std::string fullmove = std::to_string(board.history.size() / 2 + 1); // Fullmove number
 
 	// Step 3: Combine all parts into the final FEN string
@@ -2124,6 +2130,7 @@ bool isNoLegalMoves(Board& board, MoveList& moveList)
 	uint64_t last_minorKey = board.MinorKey;
 	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
 	uint64_t last_blacknpKey = board.BlackNonPawnKey;
+	AccumulatorPair last_accumulator = board.accumulator;
 	for (int i = 0; i < moveList.count; ++i)
 	{
 		Move& move = moveList.moves[i];
@@ -2132,7 +2139,9 @@ bool isNoLegalMoves(Board& board, MoveList& moveList)
 		int lastside = board.side;
 		int captured_piece = board.mailbox[move.To];
 		int last_irreversible = board.lastIrreversiblePly;
+		int last_halfmove = board.halfmove;
 
+		refresh_if_cross(move, board);
 		MakeMove(board, move);
 		if (!isLegal(move, board))
 		{
@@ -2148,6 +2157,8 @@ bool isNoLegalMoves(Board& board, MoveList& moveList)
 			board.MinorKey = last_minorKey;
 			board.WhiteNonPawnKey = last_whitenpKey;
 			board.BlackNonPawnKey = last_blacknpKey;
+			board.halfmove = last_halfmove;
+			board.accumulator = last_accumulator;
 			continue;
 		}
 
@@ -2163,6 +2174,9 @@ bool isNoLegalMoves(Board& board, MoveList& moveList)
 		board.MinorKey = last_minorKey;
 		board.WhiteNonPawnKey = last_whitenpKey;
 		board.BlackNonPawnKey = last_blacknpKey;
+		board.halfmove = last_halfmove;
+		board.accumulator = last_accumulator;
+
 		break;
 
 	}
@@ -2184,12 +2198,15 @@ randomPos:int randomMovesNum = 8 + randBool();
 	board.history.push_back(board.zobristKey);
 	initializeLMRTable(data);
 	Initialize_TT(16);
+	//return;
+	
 	//std::cout << randomMovesNum;
 	for (int i = 0; i < randomMovesNum; i++)
 	{
 		MoveList moveList;
 		moveList.count = 0;
 		Generate_Legal_Moves(moveList, board, false);
+		AccumulatorPair last_accumulator = board.accumulator;
 		//goto randomPos;
 		if (moveList.count == 0 || isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
 		{
@@ -2210,6 +2227,9 @@ randomPos:int randomMovesNum = 8 + randBool();
 			int lastside = board.side;
 			int captured_piece = board.mailbox[move.To];
 			int last_irreversible = board.lastIrreversiblePly;
+			int last_halfmove = board.halfmove;
+
+			refresh_if_cross(move, board);
 			MakeMove(board, move);
 			if (((move.Type & captureFlag) != 0) || move.Piece == p || move.Piece == P)
 			{
@@ -2232,6 +2252,8 @@ randomPos:int randomMovesNum = 8 + randBool();
 				board.MinorKey = last_minorKey;
 				board.WhiteNonPawnKey = last_whitenpKey;
 				board.BlackNonPawnKey = last_blacknpKey;
+				board.halfmove = last_halfmove;
+				board.accumulator = last_accumulator;
 			}
 		}
 	}
@@ -2372,9 +2394,11 @@ void Datagen(int targetPos, std::string output_name)
 		gameData.clear();
 		Board board;
 
+
 		PickRandomPos(board, data);
 		while (!isBoardFine(board))
 		{
+			std::cout << "fuck";
 			PickRandomPos(board, data);
 		}
 		
@@ -2391,33 +2415,41 @@ void Datagen(int targetPos, std::string output_name)
 			int eval = searchResult.second;
 			if (board.side == Black) eval = -eval;
 
+	
+
+			Board prevBoard = board;
+
+			refresh_if_cross(bestMove, board);
+			MakeMove(board, bestMove);
+
+
 			MoveList moveList;
 			Generate_Legal_Moves(moveList, board, false);
-
-			if (isNoLegalMoves(board, moveList)) 
+			if (isNoLegalMoves(board, moveList))
 			{
 				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
 				break;
 			}
-			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.history.size() - board.lastIrreversiblePly >= 100) 
+			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.halfmove >= 100)
 			{
 				result = DRAW;
 				break;
 			}
-			if (isDecisive(eval)) 
+			if (isDecisive(eval))
 			{
 				result = (eval > 48000) ? (board.side == White ? WHITEWIN : BLACKWIN) : (board.side == White ? BLACKWIN : WHITEWIN);
 			}
 
-			MakeMove(board, bestMove);
 			if (!isBoardFine(board))
 			{
+				std::cout << "fuck";
+
 				break;
 			}
 			//moves++;
-			if (!is_in_check(board) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval)) 
+			if (!is_in_check(prevBoard) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
 			{
-				gameData.push_back(GameData(board, eval, -1));
+				gameData.push_back(GameData(prevBoard, eval, -1));
 				totalPositions++;
 			}
 		}

@@ -850,6 +850,20 @@ void ProcessUCI(std::string input, ThreadData& data, ThreadData* data_heap)
 				-1
 			);
 		}
+		else if (Commands[1] == "soft")
+		{
+			int64_t node = std::stoll(Commands[2]);
+			searchLimits.SoftNodeLimit = node;
+			search_thread = std::thread(
+				search_thread_func,
+				std::ref(main_board),
+				99,
+				std::ref(searchLimits),
+				std::ref(data),
+				true,
+				-1
+			);
+		}
 		else if (Commands[1] == "movetime")
 		{
 			int64_t movetime = std::stoll(Commands[2]);
