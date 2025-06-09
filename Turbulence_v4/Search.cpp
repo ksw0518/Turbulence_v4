@@ -2198,6 +2198,10 @@ randomPos:int randomMovesNum = 8 + randBool();
 	board.history.push_back(board.zobristKey);
 	initializeLMRTable(data);
 	Initialize_TT(16);
+
+
+
+
 	//return;
 	
 	//std::cout << randomMovesNum;
@@ -2257,6 +2261,30 @@ randomPos:int randomMovesNum = 8 + randBool();
 			}
 		}
 	}
+	resetAccumulators(board, board.accumulator);
+
+	int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
+	if (whiteKingFile >= 4)//king is on right now, have to flip
+	{
+		resetWhiteAccumulator(board, board.accumulator, true);
+	}
+	if (whiteKingFile <= 3)//king is on left now, have to flip
+	{
+		resetWhiteAccumulator(board, board.accumulator, false);
+	}
+
+
+
+	int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
+	if (blackKingFile >= 4)//king is on right now, have to flip
+	{
+		resetBlackAccumulator(board, board.accumulator, true);
+	}
+	if (blackKingFile <= 3)//king is on left now, have to flip
+	{
+		resetBlackAccumulator(board, board.accumulator, false);
+	}
+
 }
 bool isDecisive(int score)
 {
@@ -2410,6 +2438,29 @@ void Datagen(int targetPos, std::string output_name)
 		//int moves = 0;
 		while (!isGameOver) 
 		{
+			//resetAccumulators(board, board.accumulator);
+
+			//int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
+			//if (whiteKingFile >= 4)//king is on right now, have to flip
+			//{
+			//	resetWhiteAccumulator(board, board.accumulator, true);
+			//}
+			//if (whiteKingFile <= 3)//king is on left now, have to flip
+			//{
+			//	resetWhiteAccumulator(board, board.accumulator, false);
+			//}
+
+
+
+			//int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
+			//if (blackKingFile >= 4)//king is on right now, have to flip
+			//{
+			//	resetBlackAccumulator(board, board.accumulator, true);
+			//}
+			//if (blackKingFile <= 3)//king is on left now, have to flip
+			//{
+			//	resetBlackAccumulator(board, board.accumulator, false);
+			//}
 			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
 			Move bestMove = searchResult.first;
 			int eval = searchResult.second;
