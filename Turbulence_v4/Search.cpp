@@ -1881,7 +1881,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 
 	
 	data.searchNodeCount = 0;
-	Move bestmove;
+	Move bestmove = Move(0,0,0,0);
 	data.clockStart = std::chrono::steady_clock::now();
 
 	int score = 0;
@@ -2120,16 +2120,30 @@ std::string boardToFEN(const Board& board)
 
 	return fen;
 }
-
+bool isBoardFine(Board& board)
+{
+	if (board.bitboards[K] != 0ULL && board.bitboards[k] != 0ULL)
+	{
+		if (count_bits(board.bitboards[K] | board.bitboards[k]) != 2)
+		{
+			if (((board.bitboards[p] | board.bitboards[P]) & 0xff000000000000ff) == 0ULL)
+			{
+				return true;
+			}
+		}
+	
+	}
+	return false;
+}
 bool isNoLegalMoves(Board& board, MoveList& moveList)
 {
 	int searchedMoves = 0;
 
-	uint64_t last_zobrist = board.zobristKey;
-	uint64_t last_pawnKey = board.PawnKey;
-	uint64_t last_minorKey = board.MinorKey;
-	uint64_t last_whitenpKey = board.WhiteNonPawnKey;
-	uint64_t last_blacknpKey = board.BlackNonPawnKey;
+	uint64_t lastZobrist = board.zobristKey;
+	uint64_t lastPawnKey = board.PawnKey;
+	uint64_t lastMinorKey = board.MinorKey;
+	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
+	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
 	AccumulatorPair last_accumulator = board.accumulator;
 	for (int i = 0; i < moveList.count; ++i)
 	{
@@ -2147,36 +2161,35 @@ bool isNoLegalMoves(Board& board, MoveList& moveList)
 		{
 			UnmakeMove(board, move, captured_piece);
 			
+			board.accumulator = last_accumulator;
 			board.history.pop_back();
 			board.lastIrreversiblePly = last_irreversible;
-			board.zobristKey = last_zobrist;
 			board.enpassent = lastEp;
 			board.castle = lastCastle;
 			board.side = lastside;
-			board.PawnKey = last_pawnKey;
-			board.MinorKey = last_minorKey;
-			board.WhiteNonPawnKey = last_whitenpKey;
-			board.BlackNonPawnKey = last_blacknpKey;
+			board.zobristKey = lastZobrist;
+			board.PawnKey = lastPawnKey;
+			board.MinorKey = lastMinorKey;
+			board.WhiteNonPawnKey = lastWhiteNPKey;
+			board.BlackNonPawnKey = lastBlackNPKey;
 			board.halfmove = last_halfmove;
-			board.accumulator = last_accumulator;
 			continue;
 		}
 
 		searchedMoves++;
 		UnmakeMove(board, move, captured_piece);
+		board.accumulator = last_accumulator;
 		board.history.pop_back();
 		board.lastIrreversiblePly = last_irreversible;
-		board.zobristKey = last_zobrist;
 		board.enpassent = lastEp;
 		board.castle = lastCastle;
 		board.side = lastside;
-		board.PawnKey = last_pawnKey;
-		board.MinorKey = last_minorKey;
-		board.WhiteNonPawnKey = last_whitenpKey;
-		board.BlackNonPawnKey = last_blacknpKey;
+		board.zobristKey = lastZobrist;
+		board.PawnKey = lastPawnKey;
+		board.MinorKey = lastMinorKey;
+		board.WhiteNonPawnKey = lastWhiteNPKey;
+		board.BlackNonPawnKey = lastBlackNPKey;
 		board.halfmove = last_halfmove;
-		board.accumulator = last_accumulator;
-
 		break;
 
 	}
@@ -2197,7 +2210,7 @@ randomPos:int randomMovesNum = 8 + randBool();
 	board.zobristKey = generate_hash_key(board);
 	board.history.push_back(board.zobristKey);
 	initializeLMRTable(data);
-	Initialize_TT(16);
+	//Initialize_TT(16);
 
 
 
@@ -2260,6 +2273,10 @@ randomPos:int randomMovesNum = 8 + randBool();
 				board.accumulator = last_accumulator;
 			}
 		}
+	}
+	if (!isBoardFine(board))
+	{
+		goto randomPos;
 	}
 	resetAccumulators(board, board.accumulator);
 
@@ -2385,17 +2402,7 @@ std::vector<std::string> splitByPipe(const std::string& input)
 
 	return tokens;
 }
-bool isBoardFine(Board& board)
-{
-	if (board.bitboards[K] != 0 && board.bitboards[k] != 0ULL)
-	{
-		if (((board.bitboards[p] & board.bitboards[P]) & 0xff000000000000ff) == 0ULL)
-		{
-			return true;
-		}
-	}
-	return false;
-}
+
 void Datagen(int targetPos, std::string output_name)
 {
 	ThreadData* heapAllocated = new ThreadData(); // Allocate safely on heap
@@ -2417,16 +2424,22 @@ void Datagen(int targetPos, std::string output_name)
 	SearchLimitations searchLimits;
 	searchLimits.SoftNodeLimit = 5000;
 	searchLimits.HardNodeLimit = 10000;
+	Board board;
+	PickRandomPos(board, data);
+	Initialize_TT(16);
+
+
 	while (totalPositions < targetPositions) 
 	{
 		gameData.clear();
-		Board board;
+		//Board board;
 
 
 		PickRandomPos(board, data);
 		while (!isBoardFine(board))
 		{
 			std::cout << "fuck";
+			Initialize_TT(16);
 			PickRandomPos(board, data);
 		}
 		
@@ -2462,20 +2475,42 @@ void Datagen(int targetPos, std::string output_name)
 			//	resetBlackAccumulator(board, board.accumulator, false);
 			//}
 			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
-			Move bestMove = searchResult.first;
+			Move bestMove;
+			//bestMove.To = -1;
+			if (searchResult.first.From == 0 && searchResult.first.To == 0)
+			{
+				searchLimits.SoftNodeLimit = 999999999;
+				searchLimits.HardNodeLimit = 999999999;
+				searchResult = IterativeDeepening(board, 1, searchLimits, data, false);
+				searchLimits.SoftNodeLimit = 5000;
+				searchLimits.HardNodeLimit = 10000;
+			}
+			bestMove = searchResult.first;
+			//Move bestMove;
 			int eval = searchResult.second;
 			if (board.side == Black) eval = -eval;
 
 	
 
 			Board prevBoard = board;
-
+			if (!isBoardFine(board))
+			{
+				std::cout << "fuckasdf";
+				Initialize_TT(16);
+				break;
+			}
 			refresh_if_cross(bestMove, board);
 			MakeMove(board, bestMove);
 
 
 			MoveList moveList;
 			Generate_Legal_Moves(moveList, board, false);
+			if (!isBoardFine(board))
+			{
+				std::cout << "fuckksw";
+				Initialize_TT(16);
+				break;
+			}
 			if (isNoLegalMoves(board, moveList))
 			{
 				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
@@ -2491,12 +2526,7 @@ void Datagen(int targetPos, std::string output_name)
 				result = (eval > 48000) ? (board.side == White ? WHITEWIN : BLACKWIN) : (board.side == White ? BLACKWIN : WHITEWIN);
 			}
 
-			if (!isBoardFine(board))
-			{
-				std::cout << "fuck";
-
-				break;
-			}
+			
 			//moves++;
 			if (!is_in_check(prevBoard) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
 			{
@@ -2537,6 +2567,6 @@ void Datagen(int targetPos, std::string output_name)
 
 	file.close(); // **Close file only once after everything is written**
 	delete heapAllocated;
-}
+} 
 
  
