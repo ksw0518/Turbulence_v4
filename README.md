@@ -59,3 +59,4 @@ https://programcidusunur.pythonanywhere.com/index/
 [0.0.4]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.4
 [0.0.5]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.5-release
 [0.0.6]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.6-release
+[0.0.7]: https://github.com/ksw0518/Turbulence_v4/releases/tag/v0.0.7-release
