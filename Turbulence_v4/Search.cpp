@@ -2124,7 +2124,7 @@ bool isBoardFine(Board& board)
 {
 	if (board.bitboards[K] != 0ULL && board.bitboards[k] != 0ULL)
 	{
-		if (count_bits(board.bitboards[K] | board.bitboards[k]) != 2)
+		if (count_bits(board.bitboards[K] | board.bitboards[k]) == 2)
 		{
 			if (((board.bitboards[p] | board.bitboards[P]) & 0xff000000000000ff) == 0ULL)
 			{
@@ -2227,6 +2227,7 @@ randomPos:int randomMovesNum = 8 + randBool();
 		//goto randomPos;
 		if (moveList.count == 0 || isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
 		{
+			std::cout << "b";
 			goto randomPos;
 		}
 		int randomN;
@@ -2276,6 +2277,7 @@ randomPos:int randomMovesNum = 8 + randBool();
 	}
 	if (!isBoardFine(board))
 	{
+		//std::cout << "a";
 		goto randomPos;
 	}
 	resetAccumulators(board, board.accumulator);
@@ -2431,6 +2433,7 @@ void Datagen(int targetPos, std::string output_name)
 
 	while (totalPositions < targetPositions) 
 	{
+		
 		gameData.clear();
 		//Board board;
 
@@ -2451,6 +2454,7 @@ void Datagen(int targetPos, std::string output_name)
 		//int moves = 0;
 		while (!isGameOver) 
 		{
+			//std::cout << "asdf";
 			//resetAccumulators(board, board.accumulator);
 
 			//int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
