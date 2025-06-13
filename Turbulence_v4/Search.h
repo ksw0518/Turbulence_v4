@@ -73,6 +73,8 @@ struct Search_data
 {
 	Move move;
 	int staticEval;
+	uint64_t oppThreat;
+	int historyScore;
 };
 struct ThreadData
 {

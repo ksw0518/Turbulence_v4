@@ -1075,9 +1075,13 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	}
 
 	data.searchStack[data.ply].staticEval = staticEval;
+	
 
 	//If current static evaluation is greater than static evaluation from 2 plies ago
 	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
+
+	Move prevMove = data.searchStack[data.ply - 1].move;
+	int prevHist = data.searchStack[data.ply - 1].historyScore;
 
 	int canPrune = !isInCheck && !isPvNode;
 	//RFP 
@@ -1094,6 +1098,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
 		}
+		rfpMargin += prevHist / 800;
 		int rfpThreshold = rfpMargin;
 
 		if (ttAdjustedEval - rfpThreshold >= beta)
@@ -1144,7 +1149,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//Calculate all squares opponent is controlling
 	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
-
+	data.searchStack[data.ply].oppThreat = oppThreats;
 	//Sort moves from best to worst(by approximation)
 	sort_moves(moveList, board, ttEntry, oppThreats, data);
 
@@ -1208,6 +1213,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int conthist = getContinuationHistoryScore(move, data) * 2;
 		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
 		int historyScore = main_history + conthist;
+
+		data.searchStack[data.ply].historyScore = main_history;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
 			//Skip late moves, as good moves are typically found among the earlier moves due to move ordering
