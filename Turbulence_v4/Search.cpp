@@ -1098,7 +1098,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
 		}
-		rfpMargin += prevHist / 800;
+		rfpMargin += prevHist / 400;
 		int rfpThreshold = rfpMargin;
 
 		if (ttAdjustedEval - rfpThreshold >= beta)
