@@ -1324,7 +1324,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			data.ply++;
 		}
 		data.searchStack[data.ply - 1].move = move;
-		if (depth > MIN_LMR_DEPTH && searchedMoves > 1 + 2 * (data.ply == 0))
+		if (depth > MIN_LMR_DEPTH && searchedMoves > 1 + 2 * (data.ply == 1))
 		{
 			//LMR
 			//Save search by reducing moves that are ordered closer to the end
