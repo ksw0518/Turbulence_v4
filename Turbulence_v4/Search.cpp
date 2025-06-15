@@ -1982,9 +1982,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 			nodesTmScale = (1.5 - ((double)data.node_count[bestmove.From][bestmove.To] / data.searchNodeCount)) * 1.35;
 			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime); 
 		}
+		bestmove = pvTable[0][0];
 		if (!data.isSearchStop)
 		{
-			bestmove = pvTable[0][0];
 			bestScore = score;
 		}
 
