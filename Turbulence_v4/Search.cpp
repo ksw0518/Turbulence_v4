@@ -1385,7 +1385,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			if (SEE(board, move, 200))
 			{
-				reduction_bonus -= 1024;
+				reduction_bonus -= 512;
 			}
 			reduction_bonus /= 1024;
 			reduction += reduction_bonus;
