@@ -1078,6 +1078,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//If current static evaluation is greater than static evaluation from 2 plies ago
 	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
+	bool opponent_worsening = !isInCheck && staticEval +  data.searchStack[data.ply - 1].staticEval > 1;
 
 	int canPrune = !isInCheck && !isPvNode;
 	//RFP 
@@ -1094,6 +1095,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			rfpMargin = RFP_BASE + RFP_MULTIPLIER * depth;
 		}
+		rfpMargin -= 12 * opponent_worsening;
 		int rfpThreshold = rfpMargin;
 
 		if (ttAdjustedEval - rfpThreshold >= beta)
