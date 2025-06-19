@@ -1390,7 +1390,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (reduction < 0) reduction = 0;
 		is_reduced = reduction > 0;
 		bool isChildCutNode;
-		uint64_t nodesBefore = data.searchNodeCount;
+		uint64_t nodesBefore = data.searchNodeCount; 
 		if (searchedMoves <= 1)
 		{
 			if (isPvNode)
