@@ -1023,18 +1023,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (!isPvNode && !isSingularSearch && data.ply != 0 && ttEntry.depth >= depth)
 		{
 			// Return immediately if exact score is found
-			if (ttEntry.bound == ExactFlag)
+			if ((ttEntry.bound == ExactFlag) || (ttEntry.bound == LowerBound && ttEntry.score >= beta) || (ttEntry.bound == UpperBound && ttEntry.score <= alpha))
 			{
-				return ttEntry.score;
+				return ttEntry.score >= beta ? (ttEntry.score * 3 + beta)/4 : ttEntry.score;
 			}
-			else if (ttEntry.bound == LowerBound && ttEntry.score >= beta)
-			{
-				return ttEntry.score;
-			}
-			else if (ttEntry.bound == UpperBound && ttEntry.score <= alpha)
-			{
-				return ttEntry.score;
-			}
+
 		}
 	}
 	//Internal Iterative Reduction
