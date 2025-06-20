@@ -1541,7 +1541,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			bestMove = ttEntry.bestMove;
 		}
 	}
-	if (ttEntry.bound == ExactFlag || ttEntry.zobristKey != board.zobristKey || ttEntry.depth > depth - 2 * isPvNode)
+	if (ttFlag == ExactFlag || ttEntry.zobristKey != board.zobristKey || depth > ttEntry.depth - 4)
 	{
 		ttEntry.score = bestValue;
 		ttEntry.bound = ttFlag;
