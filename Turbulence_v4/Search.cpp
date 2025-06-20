@@ -1549,6 +1549,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		ttEntry.zobristKey = board.zobristKey;
 		ttEntry.ttPv = tt_pv;
 		ttEntry.bestMove = bestMove;
+		if (!isSingularSearch)
+	        {
+		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
+	        }
 	}
 
 
@@ -1561,10 +1565,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		updateNonPawnCorrHist(board, depth, bestValue - staticEval, data);
 		updateCounterCorrHist(data.searchStack[data.ply - 1].move, depth, bestValue - staticEval, data);
 	}
-	if (!isSingularSearch)
-	{
-		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
-	}
+	
 	return bestValue;
 }
 int get_hashfull()
