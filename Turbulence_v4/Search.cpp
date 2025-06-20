@@ -1211,9 +1211,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
 			//Skip late moves, as good moves are typically found among the earlier moves due to move ordering
-			if (searchedMoves >= lmpThreshold)
+			if (searchedMoves > lmpThreshold)
 			{
 				skipQuiets = true;
+				break;
 			}
 			//If history score is very bad, skip the move
 			if (quietMoves > 1 && depth <= 5 && historyScore < historyPruningMargin)
