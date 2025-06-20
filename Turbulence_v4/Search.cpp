@@ -1541,12 +1541,16 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			bestMove = ttEntry.bestMove;
 		}
 	}
-	ttEntry.score = bestValue;
-	ttEntry.bound = ttFlag;
-	ttEntry.depth = depth;
-	ttEntry.zobristKey = board.zobristKey;
-	ttEntry.ttPv = tt_pv;
-	ttEntry.bestMove = bestMove;
+	if (ttEntry.bound == ExactFlag || ttEntry.zobristKey != board.zobristKey || depth + 4 + 2 * isPvNode > depth)
+	{
+		ttEntry.score = bestValue;
+		ttEntry.bound = ttFlag;
+		ttEntry.depth = depth;
+		ttEntry.zobristKey = board.zobristKey;
+		ttEntry.ttPv = tt_pv;
+		ttEntry.bestMove = bestMove;
+	}
+
 
 	int bound = bestValue >= beta ? HFLOWER : alpha != orgAlpha ? HFEXACT : HFUPPER;
 	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || isMoveQuiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
