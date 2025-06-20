@@ -1550,9 +1550,9 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		ttEntry.ttPv = tt_pv;
 		ttEntry.bestMove = bestMove;
 		if (!isSingularSearch)
-	        {
-		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
-	        }
+	    {
+		    TranspositionTable[board.zobristKey % TTSize] = ttEntry;
+	    }
 	}
 
 
