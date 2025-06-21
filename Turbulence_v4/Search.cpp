@@ -334,10 +334,10 @@ inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove
 
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
 }
-inline void updateCaptureHistory(int piece_attacking, int to, int piece_captured, int bonus, ThreadData& data)
+inline void updateCaptureHistory(int piece_attacking, int to, int piece_captured, int bonus, uint64_t opp_threat, ThreadData& data)
 {
 	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	data.CaptureHistory[piece_attacking][to][piece_captured] += clampedBonus - data.CaptureHistory[piece_attacking][to][piece_captured] * abs(clampedBonus) / MAX_HISTORY;
+	data.CaptureHistory[piece_attacking][to][piece_captured][Get_bit(opp_threat, to)] += clampedBonus - data.CaptureHistory[piece_attacking][to][piece_captured][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
 }
 inline void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat, ThreadData& data)
 {
@@ -465,7 +465,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		}
 		int attacker = get_piece(move.Piece, White);
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
-		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
+		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]][Get_bit(opp_threat, move.To)] * 2;
 		score += SEE(board, move, -100) ? 200000 : -10000000;
 		return score;
 	}
@@ -495,7 +495,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 
 	return 0;
 }
-static inline int get_move_score_capture(Move move, Board& board, ThreadData& data)
+static inline int get_move_score_capture(Move move, Board& board, ThreadData& data, uint64_t opp_threat)
 {
 	if ((move.Type & captureFlag) != 0) // if a move is a capture move
 	{
@@ -510,7 +510,7 @@ static inline int get_move_score_capture(Move move, Board& board, ThreadData& da
 		}
 		int attacker = get_piece(move.Piece, White);
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
-		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
+		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]][Get_bit(opp_threat, move.To)] * 2;
 		return score;
 	}
 	else
@@ -688,8 +688,7 @@ constexpr void insertion_sort(I first, I last, C const&& comp) {
 	}
 }
 
-static inline void sort_moves_captures(MoveList& moveList, Board& board, ThreadData& data)
-{
+static inline void sort_moves_captures(MoveList& moveList, Board& board, ThreadData& data, uint64_t opp_threat) {
 	// Temporary array for captures
 	Move captures[256];
 	int captureCount = 0;
@@ -704,8 +703,8 @@ static inline void sort_moves_captures(MoveList& moveList, Board& board, ThreadD
 	}
 
 	// Sort only the capture moves
-	insertion_sort(captures, captures + captureCount, [&board, &data](const Move& move1, const Move& move2) {
-		return get_move_score_capture(move1, board, data) > get_move_score_capture(move2, board, data);
+	insertion_sort(captures, captures + captureCount, [&board, &data, &opp_threat](const Move& move1, const Move& move2) {
+		return get_move_score_capture(move1, board, data, opp_threat) > get_move_score_capture(move2, board, data, opp_threat);
 		});
 
 	// Copy sorted captures back
@@ -855,7 +854,8 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	MoveList moveList;
 	Generate_Legal_Moves(moveList, board, true);
 
-	sort_moves_captures(moveList, board, data);
+	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
+	sort_moves_captures(moveList, board, data, oppThreats);
 
 	int bestValue = MINUS_INFINITY;
 	int legal_moves = 0;
@@ -1206,7 +1206,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
 		int conthist = getContinuationHistoryScore(move, data) * 2;
-		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
+		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece][Get_bit(oppThreats, move.To)] * 2;
 		int historyScore = main_history + conthist;
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
@@ -1501,7 +1501,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
-					updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, data);
+					updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, oppThreats, data);
 				}
 			}
 			else
@@ -1512,11 +1512,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					Move& move_noisy = noisyList.moves[i];
 					if (move_noisy == move)
 					{
-						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], captHistBonus, data);
+						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], captHistBonus, oppThreats, data);
 					}
 					else
 					{
-						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, data);
+						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, oppThreats, data);
 					}
 				}
 			}
