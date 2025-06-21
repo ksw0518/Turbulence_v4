@@ -1098,7 +1098,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (ttAdjustedEval - rfpThreshold >= beta)
 		{
-			return (ttAdjustedEval + beta) / 2;
+			 return (ttAdjustedEval * 3 + beta) / 4;
 		}
 	}
 	if (depth <= 3 && ttAdjustedEval + RAZORING_MARGIN * depth + RAZORING_BASE<= alpha)
