@@ -1475,7 +1475,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if ((move.Type & capture) == 0)
 			{
 				data.killerMoves[0][data.ply] = move;
-				int mainHistBonus = std::min(2400, HISTORY_BASE + HISTORY_MULTIPLIER * depth * depth);
+				int mainHistBonus = std::min(2400, HISTORY_BASE + 420 * depth);
 				int contHistBonus = std::min(2400, CONTHIST_BASE + CONTHIST_MULTIPLIER * depth * depth);
 				for (int i = 0; i < quietsList.count; ++i)
 				{
