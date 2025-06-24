@@ -265,7 +265,7 @@ inline void updateMinorCorrHist(Board& board, const int depth, const int diff, T
 	uint64_t minorKey = board.MinorKey;
 	int& entry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = 2 * std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
@@ -274,7 +274,7 @@ inline void updatePawnCorrHist(Board& board, const int depth, const int diff, Th
 	uint64_t pawnKey = board.PawnKey;
 	int& entry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = 2 * std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
@@ -283,7 +283,7 @@ inline void updateCounterCorrHist(Move prevMove, const int depth, const int diff
 	//uint64_t pawnKey = board.PawnKey;
 	int& entry = data.counterMoveCorrHist[prevMove.Piece][prevMove.To];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = 2 * std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
@@ -293,7 +293,7 @@ inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff,
 	uint64_t blackKey = board.BlackNonPawnKey;
 
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = 2 * std::min(depth + 1, 16);
 
 	int& whiteEntry = data.nonPawnCorrHist[White][board.side][whiteKey % CORRHIST_SIZE];
 
