@@ -260,40 +260,40 @@ inline int scaledBonus(int score, int bonus)
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
 }
-inline void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
+inline void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadData& data, bool pv)
 {
 	uint64_t minorKey = board.MinorKey;
 	int& entry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = (1 + pv) * std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-inline void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
+inline void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data, bool pv)
 {
 	uint64_t pawnKey = board.PawnKey;
 	int& entry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = (1 + pv) * std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-inline void updateCounterCorrHist(Move prevMove, const int depth, const int diff, ThreadData& data)
+inline void updateCounterCorrHist(Move prevMove, const int depth, const int diff, ThreadData& data, bool pv)
 {
 	//uint64_t pawnKey = board.PawnKey;
 	int& entry = data.counterMoveCorrHist[prevMove.Piece][prevMove.To];
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = (1 + pv) * std::min(depth + 1, 16);
 	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
 	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
 }
-inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
+inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data, bool pv)
 {
 	uint64_t whiteKey = board.WhiteNonPawnKey;
 	uint64_t blackKey = board.BlackNonPawnKey;
 
 	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
+	const int newWeight = (1 + pv) * std::min(depth + 1, 16);
 
 	int& whiteEntry = data.nonPawnCorrHist[White][board.side][whiteKey % CORRHIST_SIZE];
 
@@ -1553,10 +1553,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	if (!isSingularSearch && !is_in_check(board) && (bestMove == Move(0, 0, 0, 0) || isMoveQuiet(bestMove.Type)) && !(bound == HFLOWER && bestValue <= staticEval) && !(bound == HFUPPER && bestValue >= staticEval))
 	{
 		//Save difference between static eval and search score, to get more accurate static eval in the future
-		updatePawnCorrHist(board, depth, bestValue - staticEval, data);
-		updateMinorCorrHist(board, depth, bestValue - staticEval, data);
-		updateNonPawnCorrHist(board, depth, bestValue - staticEval, data);
-		updateCounterCorrHist(data.searchStack[data.ply - 1].move, depth, bestValue - staticEval, data);
+		updatePawnCorrHist(board, depth, bestValue - staticEval, data, isPvNode);
+		updateMinorCorrHist(board, depth, bestValue - staticEval, data, isPvNode);
+		updateNonPawnCorrHist(board, depth, bestValue - staticEval, data, isPvNode);
+		updateCounterCorrHist(data.searchStack[data.ply - 1].move, depth, bestValue - staticEval, data, isPvNode);
 	}
 	if (!isSingularSearch)
 	{
