@@ -329,7 +329,6 @@ inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove
 	adjust += minorEntry * MINOR_CORRHIST_MULTIPLIER;
 	adjust += contEntry * COUNTERMOVE_CORRHIST_MULTIPLIER;
 	adjust += (whiteNPEntry + blackNPEntry) * NONPAWN_CORRHIST_MULTIPLIER;
-
 	adjust /= 128;
 
 	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
