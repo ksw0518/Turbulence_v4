@@ -1311,18 +1311,15 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				return s_beta;
 			}
-			else if (ttEntry.score >= beta)
+			else if (ttEntry.score >= beta || ttEntry.score <= alpha)
 			{
-				extensions -= 3;
+				extensions -= 1;
 			}
 			else if (cutnode)
 			{
 				extensions -= 2;
 			}
-			else if (ttEntry.score <= alpha)
-			{
-				extensions -= 1;
-			}
+
 	
 
 			refresh_if_cross(move, board);
