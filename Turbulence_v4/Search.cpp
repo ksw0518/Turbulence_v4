@@ -1384,6 +1384,10 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction_bonus-= LMR_TTDEPTH_SUB;
 			}
+			if (std::abs(staticEval - rawEval) > 80)
+			{
+				reduction_bonus-= 1024
+			}
 			reduction_bonus /= 1024;
 			reduction += reduction_bonus;
 		}
