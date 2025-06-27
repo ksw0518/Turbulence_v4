@@ -1386,7 +1386,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			if (std::abs(staticEval - rawEval) > 80)
 			{
-				reduction_bonus-= 1024
+				reduction_bonus-= 1024;
 			}
 			reduction_bonus /= 1024;
 			reduction += reduction_bonus;
