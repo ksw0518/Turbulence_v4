@@ -957,7 +957,7 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 		int nodeType = bestValue >= beta ? UpperBound : LowerBound;
 		ttEntry.score = bestValue;
 		ttEntry.bound = nodeType;
-		ttEntry.depth = -1;
+		ttEntry.depth = 0;
 		ttEntry.zobristKey = board.zobristKey;
 		TranspositionTable[board.zobristKey % TTSize] = ttEntry;
 	}
