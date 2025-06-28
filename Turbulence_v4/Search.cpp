@@ -1476,8 +1476,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			if ((move.Type & capture) == 0)
 			{
 				data.killerMoves[0][data.ply] = move;
-				int mainHistBonus = std::min(2400, HISTORY_BASE + 420 * depth);
-				int contHistBonus = std::min(2400, CONTHIST_BASE + 290 * depth);
+				int mainHistBonus = HISTORY_BASE + 420 * depth;
+				int contHistBonus = CONTHIST_BASE + 290 * depth;
 				for (int i = 0; i < quietsList.count; ++i)
 				{
 					Move& move_quiet = quietsList.moves[i];
@@ -1498,7 +1498,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 						}
 					}
 				}
-				int captHistBonus = std::min(2400, CAPTHIST_BASE + 400 * depth);
+				int captHistBonus = CAPTHIST_BASE + 400 * depth;
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
@@ -1507,7 +1507,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			}
 			else
 			{
-				int captHistBonus = std::min(2400, CAPTHIST_BASE + 400 * depth);
+				int captHistBonus = CAPTHIST_BASE + 400 * depth;
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
