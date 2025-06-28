@@ -256,7 +256,7 @@ void initializeLMRTable(ThreadData& data)
 
 	LoadNetwork(EVALFILE);
 }
-inline int scaledBonus(int score, int bonus)
+inline int scaledBonus(int score, int bonus) 
 {
 	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
 }
