@@ -105,6 +105,8 @@ struct ThreadData
 	Search_data searchStack[99];
 
 	uint64_t node_count[64][64];
+
+	int minNmpPly;
 };
 struct SearchLimitations
 {
