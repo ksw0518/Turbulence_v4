@@ -1141,6 +1141,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 					data.minNmpPly = data.ply + (depth - R) * 3 / 4;
 					score = Negamax(board, depth - R, beta - 1, beta, false, false, data);
+					data.minNmpPly = 0;
+
 					if (score >= beta)
 					{
 						return score;
