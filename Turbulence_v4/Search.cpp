@@ -964,14 +964,16 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	return bestValue;
 }
 
-void chooseNextMove(MoveList &ml, ScoreList &sl, int start)
+inline void chooseNextMove(MoveList &ml, ScoreList &sl, int start)
 {
     int best_i = start;
+	int bestScore = sl.scores[start];
     for (int i = start + 1; i < ml.count; i++)
     {
-        if (sl.scores[i] > sl.scores[best_i])
+        if (sl.scores[i] > bestScore)
         {
             best_i = i;
+			bestScore = sl.scores[i];
         }
     }
 
