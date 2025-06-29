@@ -148,6 +148,14 @@ int CONTHIST_MULTIPLIER = 48;
 int CAPTHIST_BASE = 134;
 int CAPTHIST_MULTIPLIER = 83;
 
+
+int HISTORY_MALUS_BASE = 90;
+int HISTORY_MALUS_MULTIPLIER = 60;
+int CONTHIST_MALUS_BASE = 45;
+int CONTHIST_MALUS_MULTIPLIER = 25;
+int CAPTHIST_MALUS_BASE = 90;
+int CAPTHIST_MALUS_MULTIPLIER = 60;
+
 int ASP_WINDOW_INITIAL = 15;
 int ASP_WINDOW_MAX = 301;
 
@@ -1478,6 +1486,8 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				data.killerMoves[0][data.ply] = move;
 				int mainHistBonus = std::min(2400, HISTORY_BASE + 420 * depth);
 				int contHistBonus = std::min(2400, CONTHIST_BASE + 290 * depth);
+				int mainHistMalus = std::min(1500, HISTORY_BASE + 300 * depth);
+				int contHistMalus = std::min(1500, CONTHIST_BASE + 200 * depth);
 				for (int i = 0; i < quietsList.count; ++i)
 				{
 					Move& move_quiet = quietsList.moves[i];
@@ -1491,23 +1501,25 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 					else
 					{
-						updateHistory(board.side, move_quiet.From, move_quiet.To, -mainHistBonus, oppThreats, data);
+						updateHistory(board.side, move_quiet.From, move_quiet.To, -mainHistMalus, oppThreats, data);
 						if (data.ply >= 1)
 						{
-							updateContinuationHistoryScore(move_quiet, -contHistBonus, data);
+							updateContinuationHistoryScore(move_quiet, -contHistMalus, data);
 						}
 					}
 				}
-				int captHistBonus = std::min(2400, CAPTHIST_BASE + 400 * depth);
+				//int captHistBonus = std::min(2400, CAPTHIST_BASE + 400 * depth);
+				int captHistMalus = std::min(1500, CAPTHIST_BASE + 300 * depth);
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
-					updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, data);
+					updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistMalus, data);
 				}
 			}
 			else
 			{
 				int captHistBonus = std::min(2400, CAPTHIST_BASE + 400 * depth);
+				int captHistMalus = std::min(1500, CAPTHIST_BASE + 300 * depth);
 				for (int i = 0; i < noisyList.count; ++i)
 				{
 					Move& move_noisy = noisyList.moves[i];
@@ -1517,7 +1529,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 					}
 					else
 					{
-						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistBonus, data);
+						updateCaptureHistory(move_noisy.Piece, move_noisy.To, capturedPiece[i], -captHistMalus, data);
 					}
 				}
 			}
