@@ -187,6 +187,14 @@ struct MoveList
 	void clear() { count = 0; }  // Reset move list
 	void add(Move move) { if (count < 256) moves[count++] = move; } // Add move
 };
+struct ScoreList
+{
+	int scores[256];  // Fixed-size array
+	int count = 0;  // Number of moves currently stored
+
+	void clear() { count = 0; }  // Reset move list
+	void add(int score) { if (count < 256) scores[count++] = score; } // Add move
+};
 template<typename IntType>
 inline IntType readLittleEndian(std::istream& stream) {
 	IntType result;

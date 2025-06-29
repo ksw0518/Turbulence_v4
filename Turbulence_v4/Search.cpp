@@ -964,7 +964,21 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 	return bestValue;
 }
 
+void chooseNextMove(MoveList &ml, ScoreList &sl, int start)
+{
+	int best_i = start;
+	for (int i = start + 1; i < ml.count; i++)
+	{
+		if (sl.scores[i] > sl.scores[start])
+		{
+			best_i = i;
 
+		}
+	}
+
+	std::swap(sl.scores[best_i], sl.scores[start]);
+	std::swap(ml.moves[best_i], ml.moves[start]);
+}
 static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, ThreadData& data, Move excludedMove = NULLMOVE)
 {
 	bool isPvNode = beta - alpha > 1;
@@ -1140,14 +1154,22 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		}
 	}
 	MoveList moveList;
+	ScoreList moveScores;
 	Generate_Legal_Moves(moveList, board, false);
 	int searchedMoves = 0;
 
 	//Calculate all squares opponent is controlling
 	uint64_t oppThreats = get_attacked_squares(1 - board.side, board, board.occupancies[Both]);
 
+
+	for (int i = 0; i < moveList.count; ++i)
+	{
+		moveScores.add(getMoveScore(moveList.moves[i], board, ttEntry, oppThreats, data));
+	}
+
+
 	//Sort moves from best to worst(by approximation)
-	sort_moves(moveList, board, ttEntry, oppThreats, data);
+	//sort_moves(moveList, board, ttEntry, oppThreats, data);
 
 	int orgAlpha = alpha;
 	int depthToSearch;
@@ -1179,6 +1201,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	AccumulatorPair last_accumulator = board.accumulator;
 	for (int i = 0; i < moveList.count; ++i)
 	{
+		chooseNextMove(moveList, moveScores, i);
 		Move& move = moveList.moves[i];
 		bool isQuiet = isMoveQuiet(move.Type);
 		if (move == excludedMove)
