@@ -966,18 +966,16 @@ static inline int Quiescence(Board& board, int alpha, int beta, ThreadData& data
 
 void chooseNextMove(MoveList &ml, ScoreList &sl, int start)
 {
-	int best_i = start;
 	for (int i = start + 1; i < ml.count; i++)
 	{
 		if (sl.scores[i] > sl.scores[start])
 		{
-			best_i = i;
-
+			std::swap(sl.scores[i], sl.scores[start]);
+	                std::swap(ml.moves[i], ml.moves[start]);
 		}
 	}
 
-	std::swap(sl.scores[best_i], sl.scores[start]);
-	std::swap(ml.moves[best_i], ml.moves[start]);
+	
 }
 static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doNMP, bool cutnode, ThreadData& data, Move excludedMove = NULLMOVE)
 {
