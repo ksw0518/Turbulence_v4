@@ -1203,11 +1203,11 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		if (isMoveCapture(move.Type))
 		{
-			seeThreshold -= capthistScore / 250;
+			seeThreshold -= capthistScore / 125;
 		}
 		else
 		{
-			seeThreshold -= historyScore / 1300;
+			seeThreshold -= historyScore / 650;
 		}
 		
 		if (data.ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
