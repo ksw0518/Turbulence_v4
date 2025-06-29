@@ -1115,7 +1115,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	//if a reduced search on null move fails high over beta, return fail high score
 	if (!isSingularSearch && !isPvNode && doNMP)
 	{
-		if (!isInCheck && depth >= 2 && data.ply && ttAdjustedEval >= beta)
+		if (!isInCheck && depth >= 2 && data.ply && ttAdjustedEval >= beta && data.ply >= data.minNmpPly)
 		{
 			if ((board.occupancies[Both] & ~(board.bitboards[P] | board.bitboards[p] | board.bitboards[K] | board.bitboards[k])) != 0ULL)
 			{
@@ -1134,7 +1134,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 				if (score >= beta)
 				{
-					return score > 49000 ? beta : score;
+					if (depth <= 14 || data.minNmpPly > 0)
+					{
+						return score > 49000 ? beta : score;
+					}
+
+					data.minNmpPly = data.ply + (depth - R) * 3 / 4;
+					score = Negamax(board, depth - R, beta - 1, beta, false, false, data);
+					if (score >= beta)
+					{
+						return score;
+					}
 				}
 			}
 		}
