@@ -1203,6 +1203,25 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			continue;
 		}
 		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin; 
+
+		int captured_piece = board.mailbox[move.To];
+		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
+
+
+		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
+		int conthist = getContinuationHistoryScore(move, data) * 2;
+
+		int historyScore = main_history + conthist;
+
+		if (isMoveCapture(move.Type))
+		{
+			seeThreshold -= capthistScore / 125;
+		}
+		else
+		{
+			seeThreshold -= historyScore / 650;
+		}
+		
 		if (data.ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
 		{
 			//if Static Exchange Evaluation score is lower than certain margin, assume the move is very bad and skip the move
@@ -1211,16 +1230,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 				continue;
 			}
 		}
-		int captured_piece = board.mailbox[move.To];
 
 
 
 		bool isNotMated = bestValue > -49000 + 99;
 
-		int main_history = data.mainHistory[board.side][move.From][move.To][Get_bit(oppThreats, move.From)][Get_bit(oppThreats, move.To)];
-		int conthist = getContinuationHistoryScore(move, data) * 2;
-		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
-		int historyScore = main_history + conthist;
+	
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
 			//Skip late moves, as good moves are typically found among the earlier moves due to move ordering
