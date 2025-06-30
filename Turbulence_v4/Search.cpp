@@ -466,7 +466,7 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
 		int capthistScore = data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
 		score += capthistScore;
-		score += SEE(board, move, -100 - capthistScore / 250) ? 200000 : -10000000; 
+		score += SEE(board, move, -100 - capthistScore / 70) ? 200000 : -10000000; 
 		return score;
 	}
 	else
