@@ -464,8 +464,9 @@ static inline int getMoveScore(Move move, Board& board, TranspositionEntry& entr
 		}
 		int attacker = get_piece(move.Piece, White);
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
-		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
-		score += SEE(board, move, -100) ? 200000 : -10000000;
+		int capthistScore = data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
+		score += capthistScore;
+		score += SEE(board, move, -100 - capthistScore / 125) ? 200000 : -10000000;
 		return score;
 	}
 	else
