@@ -510,11 +510,12 @@ static inline int get_move_score_capture(Move move, Board& board, ThreadData& da
 		int attacker = get_piece(move.Piece, White);
 		int score = SEEPieceValues[victim] * 100 - SEEPieceValues[attacker];
 		score += data.CaptureHistory[move.Piece][move.To][board.mailbox[move.To]];
+		score += SEE(board, move, 100) ? 200000 : -1000000;
 		return score;
 	}
 	else
 	{
-		return -999;
+		return -10000000;
 	}
 }
 inline int getPiecePromoting(int type, int side)
