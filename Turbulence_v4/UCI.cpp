@@ -5,6 +5,8 @@
 #include "Board.h"
 #include "Search.h"
 #include "const.h"
+#include "Datagen.h"
+#include "Bench.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,6 +16,7 @@
 #include <cstdlib>
 #include <bit>
 #include <thread>
+
 
 std::thread search_thread;
 

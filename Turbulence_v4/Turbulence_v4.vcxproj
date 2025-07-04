@@ -143,19 +143,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bench.cpp" />
     <ClCompile Include="BitManipulation.cpp" />
     <ClCompile Include="Board.cpp" />
+    <ClCompile Include="Datagen.cpp" />
     <ClCompile Include="Evaluation.cpp" />
+    <ClCompile Include="History.cpp" />
     <ClCompile Include="MoveGeneration.cpp" />
     <ClCompile Include="Search.cpp" />
     <ClCompile Include="UCI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accumulator.h" />
+    <ClInclude Include="Bench.h" />
     <ClInclude Include="BitManipulation.h" />
     <ClInclude Include="Board.h" />
     <ClInclude Include="const.h" />
+    <ClInclude Include="Datagen.h" />
     <ClInclude Include="Evaluation.h" />
+    <ClInclude Include="History.h" />
     <ClInclude Include="MoveGeneration.h" />
     <ClInclude Include="Search.h" />
   </ItemGroup>
