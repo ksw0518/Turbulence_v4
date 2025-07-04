@@ -213,7 +213,7 @@ void parse_fen(std::string fen, Board& board)
     //int index = 0;
     // Console.WriteLine(fen);
     int square = 0;
-    int index = 0;
+    size_t index = 0;
     for (size_t i = 0; i < fen.length(); i++)
     {
         char text = fen[i];
@@ -357,7 +357,6 @@ void parse_fen(std::string fen, Board& board)
 }
 void PrintLegalMoves(std::vector<Move> moveList)
 {
-    int num = 0;
     for (Move move : moveList)
     {
         std::cout << (CoordinatesToChessNotation(move.From)) << (CoordinatesToChessNotation(move.To));
@@ -367,8 +366,6 @@ void PrintLegalMoves(std::vector<Move> moveList)
         if (move.Type == knight_promo || move.Type == knight_promo_capture) std::cout << ("n");
 
         std::cout << (": 1 \n");
-
-        num++;
     }
 }
 

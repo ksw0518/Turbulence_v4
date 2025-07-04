@@ -505,7 +505,7 @@ void Datagen(int targetPos, std::string output_name)
 
 		// **Batch write game data to file instead of writing each line separately**
 		std::ostringstream buffer;
-		for (int i = 0; i < gameData.size(); i++)
+		for (size_t i = 0; i < gameData.size(); i++)
 		{
 			gameData[i].result = result;
 			buffer << boardToFEN(gameData[i].board) << " | " << gameData[i].eval << " | " << convertWDL(gameData[i].result) << "\n";

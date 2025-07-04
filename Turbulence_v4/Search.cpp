@@ -1418,7 +1418,7 @@ int countDecimalPlaces(float number)
 	// Count the number of digits after the decimal point
 	return str.length() - pos - 1;
 }
-void print_UCI(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps, ThreadData& data)
+void print_UCI(Move& bestmove, int score, float elapsedMS, float nps, ThreadData& data)
 {
 	bestmove = pvTable[0][0];
 	int hashfull = get_hashfull();
@@ -1448,7 +1448,7 @@ void print_UCI(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedM
 	}
 	std::cout << "\n" << std::flush;;
 }
-void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps, int window_change, int asp_alpha, int asp_beta, ThreadData data)
+void print_Pretty(Move& bestmove, int score, float elapsedMS, float nps, ThreadData data)
 {
 	bestmove = pvTable[0][0];
 	setColor(ConsoleColor::White);
@@ -1750,11 +1750,11 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		
 				if (isPrettyPrinting && isOnWindow)
 				{
-					print_Pretty(pvTable, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val, data);
+					print_Pretty(bestmove, score, elapsedMS, nps, data);
 				}
 				else
 				{
-					print_UCI(pvTable, bestmove, score, elapsedMS, nps, data);
+					print_UCI(bestmove, score, elapsedMS, nps, data);
 				}
 			}
 		}
