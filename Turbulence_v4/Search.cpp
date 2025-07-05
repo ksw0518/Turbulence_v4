@@ -849,7 +849,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		data.killerMoves[0][data.ply + 1] = Move(0, 0, 0, 0);
 	}
 
-	int rawEval = std::clamp(Evaluate(board), -40000, 40000);
+	int rawEval = Evaluate(board);
 	int staticEval = adjustEvalWithCorrHist(board, rawEval, data.searchStack[data.ply - 1].move, data);
 	int ttAdjustedEval = staticEval;
 
