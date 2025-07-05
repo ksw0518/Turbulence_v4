@@ -1105,10 +1105,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	if (depth <= 3 && ttAdjustedEval + RAZORING_MARGIN * depth + RAZORING_BASE<= alpha)
 	{
 		int razor_score = Quiescence(board, alpha, alpha + 1, data);
-		if (razor_score <= alpha)
-		{
-			return razor_score;
-		}
+		return razor_score;
 	}
 	//NMP
 	//Since null move is worse than all the other moves in most situations,
