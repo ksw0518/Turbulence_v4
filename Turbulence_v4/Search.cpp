@@ -4,7 +4,7 @@
 #include "Search.h"
 #include "BitManipulation.h"
 #include "const.h"
-
+#include "History.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -51,78 +51,6 @@ constexpr bool isOnWindow = false;
 constexpr bool isOnWindow = false;  // Default to false (likely macOS)
 #endif
 #define NULLMOVE Move(0,0,0,0)
-
-enum class ConsoleColor {
-	Black = 0,
-	Blue = 1,
-	Green = 2,
-	Cyan = 3,
-	Red = 4,
-	Magenta = 5,
-	Yellow = 6,
-	White = 7,
-	Gray = 8,
-	BrightBlue = 9,
-	BrightGreen = 10,
-	BrightCyan = 11,
-	BrightRed = 12,
-	BrightMagenta = 13,
-	BrightYellow = 14,
-	BrightWhite = 15
-};
-
-std::string benchFens[] = { // fens from alexandria, ultimately from bitgenie
-	"r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
-	"4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
-	"r3qbrk/6p1/2b2pPp/p3pP1Q/PpPpP2P/3P1B2/2PB3K/R5R1 w - - 16 42",
-	"6k1/1R3p2/6p1/2Bp3p/3P2q1/P7/1P2rQ1K/5R2 b - - 4 44",
-	"8/8/1p2k1p1/3p3p/1p1P1P1P/1P2PK2/8/8 w - - 3 54",
-	"7r/2p3k1/1p1p1qp1/1P1Bp3/p1P2r1P/P7/4R3/Q4RK1 w - - 0 36",
-	"r1bq1rk1/pp2b1pp/n1pp1n2/3P1p2/2P1p3/2N1P2N/PP2BPPP/R1BQ1RK1 b - - 2 10",
-	"3r3k/2r4p/1p1b3q/p4P2/P2Pp3/1B2P3/3BQ1RP/6K1 w - - 3 87",
-	"2r4r/1p4k1/1Pnp4/3Qb1pq/8/4BpPp/5P2/2RR1BK1 w - - 0 42",
-	"4q1bk/6b1/7p/p1p4p/PNPpP2P/KN4P1/3Q4/4R3 b - - 0 37",
-	"2q3r1/1r2pk2/pp3pp1/2pP3p/P1Pb1BbP/1P4Q1/R3NPP1/4R1K1 w - - 2 34",
-	"1r2r2k/1b4q1/pp5p/2pPp1p1/P3Pn2/1P1B1Q1P/2R3P1/4BR1K b - - 1 37",
-	"r3kbbr/pp1n1p1P/3ppnp1/q5N1/1P1pP3/P1N1B3/2P1QP2/R3KB1R b KQkq b3 0 17",
-	"8/6pk/2b1Rp2/3r4/1R1B2PP/P5K1/8/2r5 b - - 16 42",
-	"1r4k1/4ppb1/2n1b1qp/pB4p1/1n1BP1P1/7P/2PNQPK1/3RN3 w - - 8 29",
-	"8/p2B4/PkP5/4p1pK/4Pb1p/5P2/8/8 w - - 29 68",
-	"3r4/ppq1ppkp/4bnp1/2pN4/2P1P3/1P4P1/PQ3PBP/R4K2 b - - 2 20",
-	"5rr1/4n2k/4q2P/P1P2n2/3B1p2/4pP2/2N1P3/1RR1K2Q w - - 1 49",
-	"1r5k/2pq2p1/3p3p/p1pP4/4QP2/PP1R3P/6PK/8 w - - 1 51",
-	"q5k1/5ppp/1r3bn1/1B6/P1N2P2/BQ2P1P1/5K1P/8 b - - 2 34",
-	"r1b2k1r/5n2/p4q2/1ppn1Pp1/3pp1p1/NP2P3/P1PPBK2/1RQN2R1 w - - 0 22",
-	"r1bqk2r/pppp1ppp/5n2/4b3/4P3/P1N5/1PP2PPP/R1BQKB1R w KQkq - 0 5",
-	"r1bqr1k1/pp1p1ppp/2p5/8/3N1Q2/P2BB3/1PP2PPP/R3K2n b Q - 1 12",
-	"r1bq2k1/p4r1p/1pp2pp1/3p4/1P1B3Q/P2B1N2/2P3PP/4R1K1 b - - 2 19",
-	"r4qk1/6r1/1p4p1/2ppBbN1/1p5Q/P7/2P3PP/5RK1 w - - 2 25",
-	"r7/6k1/1p6/2pp1p2/7Q/8/p1P2K1P/8 w - - 0 32",
-	"r3k2r/ppp1pp1p/2nqb1pn/3p4/4P3/2PP4/PP1NBPPP/R2QK1NR w KQkq - 1 5",
-	"3r1rk1/1pp1pn1p/p1n1q1p1/3p4/Q3P3/2P5/PP1NBPPP/4RRK1 w - - 0 12",
-	"5rk1/1pp1pn1p/p3Brp1/8/1n6/5N2/PP3PPP/2R2RK1 w - - 2 20",
-	"8/1p2pk1p/p1p1r1p1/3n4/8/5R2/PP3PPP/4R1K1 b - - 3 27",
-	"8/4pk2/1p1r2p1/p1p4p/Pn5P/3R4/1P3PP1/4RK2 w - - 1 33",
-	"8/5k2/1pnrp1p1/p1p4p/P6P/4R1PK/1P3P2/4R3 b - - 1 38",
-	"8/8/1p1kp1p1/p1pr1n1p/P6P/1R4P1/1P3PK1/1R6 b - - 15 45",
-	"8/8/1p1k2p1/p1prp2p/P2n3P/6P1/1P1R1PK1/4R3 b - - 5 49",
-	"8/8/1p4p1/p1p2k1p/P2npP1P/4K1P1/1P6/3R4 w - - 6 54",
-	"8/8/1p4p1/p1p2k1p/P2n1P1P/4K1P1/1P6/6R1 b - - 6 59",
-	"8/5k2/1p4p1/p1pK3p/P2n1P1P/6P1/1P6/4R3 b - - 14 63",
-	"8/1R6/1p1K1kp1/p6p/P1p2P1P/6P1/1Pn5/8 w - - 0 67",
-	"1rb1rn1k/p3q1bp/2p3p1/2p1p3/2P1P2N/PP1RQNP1/1B3P2/4R1K1 b - - 4 23",
-	"4rrk1/pp1n1pp1/q5p1/P1pP4/2n3P1/7P/1P3PB1/R1BQ1RK1 w - - 3 22",
-	"r2qr1k1/pb1nbppp/1pn1p3/2ppP3/3P4/2PB1NN1/PP3PPP/R1BQR1K1 w - - 4 12",
-	"2r2k2/8/4P1R1/1p6/8/P4K1N/7b/2B5 b - - 0 55",
-	"6k1/5pp1/8/2bKP2P/2P5/p4PNb/B7/8 b - - 1 44",
-	"2rqr1k1/1p3p1p/p2p2p1/P1nPb3/2B1P3/5P2/1PQ2NPP/R1R4K w - - 3 25",
-	"r1b2rk1/p1q1ppbp/6p1/2Q5/8/4BP2/PPP3PP/2KR1B1R b - - 2 14",
-	"6r1/5k2/p1b1r2p/1pB1p1p1/1Pp3PP/2P1R1K1/2P2P2/3R4 w - - 1 36",
-	"rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq c3 0 2",
-	"2rr2k1/1p4bp/p1q1p1p1/4Pp1n/2PB4/1PN3P1/P3Q2P/2RR2K1 w - f6 0 20",
-	"3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
-	"2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"
-};
 
 
 int RFP_MULTIPLIER = 89;
@@ -179,29 +107,25 @@ int LMR_KILLER_SUB = 1068;
 int LMR_TTPV_SUB = 1174;
 int LMR_CUTNODE_ADD = 1199;
 int LMR_TTDEPTH_SUB = 1099;
+constexpr int MIN_LMR_DEPTH = 3;
+constexpr int MAX_PVS_SEE_DEPTH = 8;
 
 int pvLengths[99];
 Move pvTable[99][99];
 
 int SEEPieceValues[] = { 98, 280, 295, 479, 1064, 0, 0 };
+
 static Move lastBestMoves[99];
 
 size_t TTSize = 699050;
 TranspositionEntry* TranspositionTable = nullptr;
 
-constexpr int MAX_HISTORY = 16384;
-constexpr int MAX_CONTHIST = 16384;
-
-constexpr int MIN_LMR_DEPTH = 3;
-
-constexpr int MAX_PVS_SEE_DEPTH = 8;
 int lmrTable[99][256];
 
 constexpr int HFLOWER = 0;
 constexpr int HFEXACT = 1;
 constexpr int HFUPPER = 2;
 
-bool isPrettyPrinting = true;
 
 double DEF_TIME_MULTIPLIER = 0.054;
 double DEF_INC_MULTIPLIER = 0.85;
@@ -212,6 +136,7 @@ double SOFT_LIMIT_MULTIPLIER = 0.76;
 uint64_t hardNodeBound;
 
 bool stop_signal = false;
+bool isPrettyPrinting = true;
 
 inline bool isMoveCapture(int type)
 {
@@ -256,148 +181,7 @@ void initializeLMRTable(ThreadData& data)
 
 	LoadNetwork(EVALFILE);
 }
-inline int scaledBonus(int score, int bonus) 
-{
-	return std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY) - (score * abs(bonus) / MAX_HISTORY);
-}
-inline void updateMinorCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
-{
-	uint64_t minorKey = board.MinorKey;
-	int& entry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
-	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
-	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
-}
-inline void updatePawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
-{
-	uint64_t pawnKey = board.PawnKey;
-	int& entry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
-	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
-	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
-}
-inline void updateCounterCorrHist(Move prevMove, const int depth, const int diff, ThreadData& data)
-{
-	//uint64_t pawnKey = board.PawnKey;
-	int& entry = data.counterMoveCorrHist[prevMove.Piece][prevMove.To];
-	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
-	entry = (entry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	entry = std::clamp(entry, -CORRHIST_MAX, CORRHIST_MAX);
-}
-inline void updateNonPawnCorrHist(Board& board, const int depth, const int diff, ThreadData& data)
-{
-	uint64_t whiteKey = board.WhiteNonPawnKey;
-	uint64_t blackKey = board.BlackNonPawnKey;
-
-	const int scaledDiff = diff * CORRHIST_GRAIN;
-	const int newWeight = std::min(depth + 1, 16);
-
-	int& whiteEntry = data.nonPawnCorrHist[White][board.side][whiteKey % CORRHIST_SIZE];
-
-	whiteEntry = (whiteEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	whiteEntry = std::clamp(whiteEntry, -CORRHIST_MAX, CORRHIST_MAX);
-
-	int& blackEntry = data.nonPawnCorrHist[Black][board.side][blackKey % CORRHIST_SIZE];
-
-	blackEntry = (blackEntry * (CORRHIST_WEIGHT_SCALE - newWeight) + scaledDiff * newWeight) / CORRHIST_WEIGHT_SCALE;
-	blackEntry = std::clamp(blackEntry, -CORRHIST_MAX, CORRHIST_MAX);
-}
-inline int adjustEvalWithCorrHist(Board& board, const int rawEval, Move prevMove, ThreadData& data)
-{
-	uint64_t pawnKey = board.PawnKey;
-	const int& pawnEntry = data.pawnCorrHist[board.side][pawnKey % CORRHIST_SIZE];
-
-
-	uint64_t minorKey = board.MinorKey;
-	const int& minorEntry = data.minorCorrHist[board.side][minorKey % CORRHIST_SIZE];
-
-	uint64_t whiteNPKey = board.WhiteNonPawnKey;
-	const int& whiteNPEntry = data.nonPawnCorrHist[White][board.side][whiteNPKey % CORRHIST_SIZE];
-	uint64_t blackNPKey = board.BlackNonPawnKey;
-	const int& blackNPEntry = data.nonPawnCorrHist[Black][board.side][blackNPKey % CORRHIST_SIZE];
-
-	const int& contEntry = data.counterMoveCorrHist[prevMove.Piece][prevMove.To];
-
-	int mate_found = 49000 - 99;
-
-	int adjust = 0;
-
-	adjust += pawnEntry * PAWN_CORRHIST_MULTIPLIER;
-	adjust += minorEntry * MINOR_CORRHIST_MULTIPLIER;
-	adjust += contEntry * COUNTERMOVE_CORRHIST_MULTIPLIER;
-	adjust += (whiteNPEntry + blackNPEntry) * NONPAWN_CORRHIST_MULTIPLIER;
-	adjust /= 128;
-
-	return std::clamp(rawEval + adjust / CORRHIST_GRAIN, -mate_found + 1, mate_found - 1);
-}
-inline void updateCaptureHistory(int piece_attacking, int to, int piece_captured, int bonus, ThreadData& data)
-{
-	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	data.CaptureHistory[piece_attacking][to][piece_captured] += clampedBonus - data.CaptureHistory[piece_attacking][to][piece_captured] * abs(clampedBonus) / MAX_HISTORY;
-}
-inline void updateHistory(int stm, int from, int to, int bonus, uint64_t opp_threat, ThreadData& data)
-{
-	int clampedBonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-	data.mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] += clampedBonus - data.mainHistory[stm][from][to][Get_bit(opp_threat, from)][Get_bit(opp_threat, to)] * abs(clampedBonus) / MAX_HISTORY;
-}
-inline int getSingleContinuationHistoryScore(Move move, const int offSet, ThreadData& data)
-{
-	if (data.ply >= offSet)
-	{
-		Move previousMove = data.searchStack[data.ply - offSet].move;
-
-		if (offSet == 1)
-		{
-			return data.onePlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
-		}
-		else if (offSet == 2)
-		{
-			return data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To];
-		}
-	}
-	return 0;
-}
-inline int getContinuationHistoryScore(Move& move, ThreadData& data)
-{
-	if (data.ply >= 1)
-	{
-		int onePly = getSingleContinuationHistoryScore(move, 1, data);
-		int twoPly = getSingleContinuationHistoryScore(move, 2, data);
-
-
-		int finalScore = onePly + twoPly;
-		return finalScore;
-	}
-	return 0;
-}
-inline void updateSingleContinuationHistoryScore(Move& move, const int bonus, const int offSet, ThreadData& data)
-{
-	if (data.ply >= offSet) {
-		Move previousMove = data.searchStack[data.ply - offSet].move;
-
-		int clampedBonus = std::clamp(bonus, -MAX_CONTHIST, MAX_CONTHIST);
-		const int scaledBonus = clampedBonus - getSingleContinuationHistoryScore(move, offSet, data) * abs(clampedBonus) / MAX_CONTHIST;
-		//std::cout << scaledBonus;
-
-		if (offSet == 1)
-		{
-			data.onePlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
-		}
-		else if (offSet == 2)
-		{
-			data.twoPlyContHist[previousMove.Piece][previousMove.To][move.Piece][move.To] += scaledBonus;
-		}
-	}
-}
-inline void updateContinuationHistoryScore(Move& move, const int bonus, ThreadData& data)
-{
-	updateSingleContinuationHistoryScore(move, bonus, 1, data);
-	updateSingleContinuationHistoryScore(move, bonus, 2, data);
-}
-inline bool isInsufficientMaterial(const Board& board) {
+bool isInsufficientMaterial(const Board& board) {
 
 	int whiteBishops = count_bits(board.bitboards[B]); 
 	int blackBishops = count_bits(board.bitboards[b]);
@@ -618,16 +402,19 @@ int SEE(Board& pos, Move move, int threshold)
 	// Now our opponents turn to recapture
 	colour = pos.side ^ 1;
 
-	while (1) {
+	while (1) 
+	{
 
 		// If we have no more attackers left we lose
 		myAttackers = attackers & pos.occupancies[colour];
-		if (myAttackers == 0ull) {
+		if (myAttackers == 0ull) 
+		{
 			break;
 		}
 
 		// Find our weakest piece to attack with
-		for (nextVictim = P; nextVictim <= Q; nextVictim++) {
+		for (nextVictim = P; nextVictim <= Q; nextVictim++) 
+		{
 			if (myAttackers &
 				(pos.bitboards[nextVictim] | pos.bitboards[nextVictim + 6])) {
 				break;
@@ -657,7 +444,8 @@ int SEE(Board& pos, Move move, int threshold)
 		balance = -balance - 1 - SEEPieceValues[nextVictim];
 
 		// If the balance is non negative after giving away our piece then we win
-		if (balance >= 0) {
+		if (balance >= 0)
+		{
 
 			// As a slide speed up for move legality checking, if our last attacking
 			// piece is a king, and our opponent still has attackers, then we've
@@ -747,8 +535,6 @@ static inline void sort_moves(MoveList& moveList, Board& board, TranspositionEnt
 		moveList.moves[i] = scored_moves[i].second;
 	}
 }
-
-
 inline TranspositionEntry ttLookUp(uint64_t zobrist)
 {
 	int tt_index = zobrist % TTSize;
@@ -770,7 +556,7 @@ bool is_checking(Board& board)
 	}
 	return false;
 }
-inline void refresh_if_cross(Move& move, Board& board)
+void refresh_if_cross(Move& move, Board& board)
 {
 	if (get_piece(move.Piece, White) == K)//king has moved
 	{
@@ -1604,66 +1390,7 @@ int get_hashfull()
 	return entryCount;
 }
 
-void bench()
-{
-	ThreadData* heapAllocated = new ThreadData(); //Allocate safely on heap
-	ThreadData& data = *heapAllocated;
-	auto search_start = std::chrono::steady_clock::now();
-	auto search_end = std::chrono::steady_clock::now();
-	Board board;
-	uint64_t nodecount = 0;
-	int totalsearchtime = 0;
-	SearchLimitations searchLimits;
-	for (int i = 0; i < 50; i++)
-	{
-		for (int ply = 0; ply < 99; ply++)
-		{
-			data.killerMoves[0][ply] = Move();
-		}
-		memset(data.mainHistory, 0, sizeof(data.mainHistory));
-		for (size_t i = 0; i < TTSize; i++)
-		{
-			TranspositionTable[i] = TranspositionEntry();
-		}
-		memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
-		memset(data.twoPlyContHist, 0, sizeof(data.twoPlyContHist));
-		memset(data.CaptureHistory, 0, sizeof(data.CaptureHistory));
-		memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
-		memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
-		memset(data.counterMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
 
-		parse_fen(benchFens[i], board);
-		board.zobristKey = generate_hash_key(board);
-		board.history.push_back(board.zobristKey);
-
-		search_start = std::chrono::steady_clock::now();
-		IterativeDeepening(board, 11, searchLimits, data, false);
-		search_end = std::chrono::steady_clock::now();
-
-		float elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
-
-		nodecount += data.searchNodeCount;
-		totalsearchtime += std::floor(elapsedMS);
-	}
-	std::cout << nodecount << " nodes " << nodecount / (totalsearchtime + 1) * 1000 << " nps " << "\n";
-	for (int ply = 0; ply < 99; ply++)
-	{
-		data.killerMoves[0][ply] = Move();
-	}
-	memset(data.mainHistory, 0, sizeof(data.mainHistory));
-	for (size_t i = 0; i < TTSize; i++)
-	{
-		TranspositionTable[i] = TranspositionEntry();
-	}
-	memset(data.onePlyContHist, 0, sizeof(data.onePlyContHist));
-	memset(data.CaptureHistory, 0, sizeof(data.CaptureHistory));
-	memset(data.pawnCorrHist, 0, sizeof(data.pawnCorrHist));
-	memset(data.minorCorrHist, 0, sizeof(data.minorCorrHist));
-	memset(data.counterMoveCorrHist, 0, sizeof(data.counterMoveCorrHist));
-
-
-	delete heapAllocated;
-}
 void setColor([[maybe_unused]] ConsoleColor color)
 {
 #ifdef _WIN32
@@ -1691,7 +1418,7 @@ int countDecimalPlaces(float number)
 	// Count the number of digits after the decimal point
 	return str.length() - pos - 1;
 }
-void print_UCI(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps, ThreadData& data)
+void print_UCI(Move& bestmove, int score, float elapsedMS, float nps, ThreadData& data)
 {
 	bestmove = pvTable[0][0];
 	int hashfull = get_hashfull();
@@ -1721,7 +1448,7 @@ void print_UCI(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedM
 	}
 	std::cout << "\n" << std::flush;;
 }
-void print_Pretty(Move(&PV_line)[99][99], Move& bestmove, int score, float elapsedMS, float nps, int window_change, int asp_alpha, int asp_beta, ThreadData data)
+void print_Pretty(Move& bestmove, int score, float elapsedMS, float nps, ThreadData data)
 {
 	bestmove = pvTable[0][0];
 	setColor(ConsoleColor::White);
@@ -2023,11 +1750,11 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		
 				if (isPrettyPrinting && isOnWindow)
 				{
-					print_Pretty(pvTable, bestmove, score, elapsedMS, nps, window_change, alpha_val, beta_val, data);
+					print_Pretty(bestmove, score, elapsedMS, nps, data);
 				}
 				else
 				{
-					print_UCI(pvTable, bestmove, score, elapsedMS, nps, data);
+					print_UCI(bestmove, score, elapsedMS, nps, data);
 				}
 			}
 		}
@@ -2079,526 +1806,3 @@ inline void Initialize_TT(int size)
 
 	TranspositionTable = new TranspositionEntry[TTSize]();
 }
-int randBool() 
-{
-	static std::random_device rd;
-	static std::mt19937 gen(rd());
-	static std::uniform_int_distribution<int> dist(0, 1);
-	return dist(gen);
-}
-int randBetween(int n) 
-{
-	static std::random_device rd;
-	static std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, n); // Range 1 to n
-	return dist(gen);
-}
-
-
-// Function to get the castling rights part of the FEN
-std::string getCastlingRights(const Board& board)
-{
-	std::string rights = "";
-	if (board.castle & WhiteKingCastle) rights += "K"; // White kingside castling
-	if (board.castle & WhiteQueenCastle) rights += "Q"; // White queenside castling
-	if (board.castle & BlackKingCastle) rights += "k"; // Black kingside castling
-	if (board.castle & BlackQueenCastle) rights += "q"; // Black queenside castling
-	return (rights.empty()) ? "-" : rights;
-}
-std::string boardToFEN(const Board& board) 
-{
-	// Step 1: Construct the piece placement part (ranks 8 to 1)
-	std::string piecePlacement = "";
-	for (int rank = 7; rank >= 0; --rank) {  // Fix: Iterate from 7 down to 0
-		int emptyCount = 0;
-		for (int file = 0; file < 8; ++file) {
-			int square = (7 - rank) * 8 + file;
-			int piece = board.mailbox[square];
-
-			if (piece == NO_PIECE) {
-				++emptyCount; // Empty square
-			}
-			else {
-				if (emptyCount > 0) {
-					piecePlacement += std::to_string(emptyCount); // Insert the number of empty squares
-					emptyCount = 0;
-				}
-				piecePlacement += getCharFromPiece(piece); // Add the piece (e.g., 'p', 'R')
-			}
-		}
-
-		if (emptyCount > 0) {
-			piecePlacement += std::to_string(emptyCount); // End of rank with empty squares
-		}
-
-		if (rank > 0) {  // Fix: Only add '/' if it's not the last rank (rank 1)
-			piecePlacement += "/";
-		}
-	}
-
-	// Step 2: Construct the other parts of FEN
-	std::string sideToMove = (board.side == 0) ? "w" : "b"; // White or Black to move
-	std::string castlingRights = getCastlingRights(board); // Castling rights
-	std::string enPassant = (board.enpassent == NO_SQ) ? "-" : CoordinatesToChessNotation(board.enpassent); // En passant square
-	std::string halfmove = std::to_string(board.halfmove); // Halfmove clock
-	std::string fullmove = std::to_string(board.history.size() / 2 + 1); // Fullmove number
-
-	// Step 3: Combine all parts into the final FEN string
-	std::string fen = piecePlacement + " " + sideToMove + " " + castlingRights + " " + enPassant + " " + halfmove + " " + fullmove;
-
-	return fen;
-}
-bool isBoardFine(Board& board)
-{
-	if (board.bitboards[K] != 0ULL && board.bitboards[k] != 0ULL)
-	{
-		if (count_bits(board.bitboards[K] | board.bitboards[k]) == 2)
-		{
-			if (((board.bitboards[p] | board.bitboards[P]) & 0xff000000000000ff) == 0ULL)
-			{
-				return true;
-			}
-		}
-	
-	}
-	return false;
-}
-bool isNoLegalMoves(Board& board, MoveList& moveList)
-{
-	int searchedMoves = 0;
-
-	uint64_t lastZobrist = board.zobristKey;
-	uint64_t lastPawnKey = board.PawnKey;
-	uint64_t lastMinorKey = board.MinorKey;
-	uint64_t lastWhiteNPKey = board.WhiteNonPawnKey;
-	uint64_t lastBlackNPKey = board.BlackNonPawnKey;
-	AccumulatorPair last_accumulator = board.accumulator;
-	for (int i = 0; i < moveList.count; ++i)
-	{
-		Move& move = moveList.moves[i];
-		int lastEp = board.enpassent;
-		uint64_t lastCastle = board.castle;
-		int lastside = board.side;
-		int captured_piece = board.mailbox[move.To];
-		int last_irreversible = board.lastIrreversiblePly;
-		int last_halfmove = board.halfmove;
-
-		refresh_if_cross(move, board);
-		MakeMove(board, move);
-		if (!isLegal(move, board))
-		{
-			UnmakeMove(board, move, captured_piece);
-			
-			board.accumulator = last_accumulator;
-			board.history.pop_back();
-			board.lastIrreversiblePly = last_irreversible;
-			board.enpassent = lastEp;
-			board.castle = lastCastle;
-			board.side = lastside;
-			board.zobristKey = lastZobrist;
-			board.PawnKey = lastPawnKey;
-			board.MinorKey = lastMinorKey;
-			board.WhiteNonPawnKey = lastWhiteNPKey;
-			board.BlackNonPawnKey = lastBlackNPKey;
-			board.halfmove = last_halfmove;
-			continue;
-		}
-
-		searchedMoves++;
-		UnmakeMove(board, move, captured_piece);
-		board.accumulator = last_accumulator;
-		board.history.pop_back();
-		board.lastIrreversiblePly = last_irreversible;
-		board.enpassent = lastEp;
-		board.castle = lastCastle;
-		board.side = lastside;
-		board.zobristKey = lastZobrist;
-		board.PawnKey = lastPawnKey;
-		board.MinorKey = lastMinorKey;
-		board.WhiteNonPawnKey = lastWhiteNPKey;
-		board.BlackNonPawnKey = lastBlackNPKey;
-		board.halfmove = last_halfmove;
-		break;
-
-	}
-	if (searchedMoves == 0)
-	{
-		return true;
-	}
-	return false;
-
-}
-
-void PickRandomPos(Board& board, ThreadData& data)
-{
-	const std::string start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-randomPos:int randomMovesNum = 8 + randBool();
-	board.history.clear();
-	parse_fen(start_pos, board);
-	board.zobristKey = generate_hash_key(board);
-	board.history.push_back(board.zobristKey);
-	initializeLMRTable(data);
-	//Initialize_TT(16);
-
-
-
-
-	//return;
-	
-	//std::cout << randomMovesNum;
-	for (int i = 0; i < randomMovesNum; i++)
-	{
-		MoveList moveList;
-		moveList.count = 0;
-		Generate_Legal_Moves(moveList, board, false);
-		AccumulatorPair last_accumulator = board.accumulator;
-		//goto randomPos;
-		if (moveList.count == 0 || isNoLegalMoves(board, moveList))//game is already over, restart the pos generation
-		{
-			std::cout << "b";
-			goto randomPos;
-		}
-		int randomN;
-		while (true)
-		{
-			randomN = randBetween(moveList.count) - 1;
-			Move move = moveList.moves[randomN];
-			uint64_t last_zobrist = board.zobristKey;
-			uint64_t last_pawnKey = board.PawnKey;
-			uint64_t last_minorKey = board.MinorKey;
-			uint64_t last_whitenpKey = board.WhiteNonPawnKey;
-			uint64_t last_blacknpKey = board.BlackNonPawnKey;
-			int lastEp = board.enpassent;
-			uint64_t lastCastle = board.castle;
-			int lastside = board.side;
-			int captured_piece = board.mailbox[move.To];
-			int last_irreversible = board.lastIrreversiblePly;
-			int last_halfmove = board.halfmove;
-
-			refresh_if_cross(move, board);
-			MakeMove(board, move);
-			if (((move.Type & captureFlag) != 0) || move.Piece == p || move.Piece == P)
-			{
-				board.lastIrreversiblePly = board.history.size();
-			}
-			if (isLegal(move, board))
-			{
-				break;
-			}
-			else
-			{
-				UnmakeMove(board, move, captured_piece);
-				board.history.pop_back();
-				board.lastIrreversiblePly = last_irreversible;
-				board.zobristKey = last_zobrist;
-				board.enpassent = lastEp;
-				board.castle = lastCastle;
-				board.side = lastside;
-				board.PawnKey = last_pawnKey;
-				board.MinorKey = last_minorKey;
-				board.WhiteNonPawnKey = last_whitenpKey;
-				board.BlackNonPawnKey = last_blacknpKey;
-				board.halfmove = last_halfmove;
-				board.accumulator = last_accumulator;
-			}
-		}
-	}
-	if (!isBoardFine(board))
-	{
-		//std::cout << "a";
-		goto randomPos;
-	}
-	resetAccumulators(board, board.accumulator);
-
-	int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
-	if (whiteKingFile >= 4)//king is on right now, have to flip
-	{
-		resetWhiteAccumulator(board, board.accumulator, true);
-	}
-	if (whiteKingFile <= 3)//king is on left now, have to flip
-	{
-		resetWhiteAccumulator(board, board.accumulator, false);
-	}
-
-
-
-	int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
-	if (blackKingFile >= 4)//king is on right now, have to flip
-	{
-		resetBlackAccumulator(board, board.accumulator, true);
-	}
-	if (blackKingFile <= 3)//king is on left now, have to flip
-	{
-		resetBlackAccumulator(board, board.accumulator, false);
-	}
-
-}
-bool isDecisive(int score)
-{
-	if (score > 48000 || score < -48000)
-	{
-		return true;
-	}
-	return false;
-}
-struct GameData
-{
-	Board board;
-	int eval;
-	int result;
-	GameData(Board b, int e, int r) : board(b), eval(e), result(r) {}
-};
-
-int flipResult(int res) 
-{
-	return 2 - res;
-}
-
-void appendToFile(const std::string& filename, const std::string& data) 
-{
-	std::ofstream file(filename, std::ios::app | std::ios::out); // Open file in append mode, create if not exists
-	if (!file) {
-		std::cerr << "Error opening file: " << filename << std::endl;
-		return;
-	}
-	file << data << std::endl; // Write data to file
-	file.close();
-}
-std::string convertWDL(int wdl)
-{
-	if (wdl == WHITEWIN)
-	{
-		return "1.0";
-	}
-	else if (wdl == DRAW)
-	{
-		return "0.5";
-	}
-	else
-	{
-		return "0.0";
-	}
-}
-void estimate_time_remaining(uint64_t remaining_positions, int pps) 
-{
-	if (pps <= 0) {
-		std::cout << "Invalid PPS value!" << std::endl;
-		return;
-	}
-
-	double seconds_remaining = double(remaining_positions) / pps;
-
-	int hours = static_cast<int>(seconds_remaining) / 3600;
-	int minutes = (static_cast<int>(seconds_remaining) % 3600) / 60;
-	int seconds = static_cast<int>(seconds_remaining) % 60;
-
-	std::cout << "Estimated remaining time: "
-		<< hours << "h " << minutes << "m " << seconds << "s"
-		<< "\n";
-} 
-void print_progress_bar(double percentage) 
-{
-	int barWidth = 50;  // Width of the progress bar
-	int progress = static_cast<int>(percentage / 2);  // Calculate the number of '#' to print
-
-	std::cout << "\n[";
-	for (int i = 0; i < barWidth; ++i)
-	{
-		if (i < progress)
-		{
-			std::cout << "#";  // Print filled part of the progress bar
-		}
-		else 
-		{
-			std::cout << "-";  // Print empty part of the progress bar
-		}
-	}
-	std::cout << "] " << static_cast<int>(percentage) << "%";
-}
-bool fileExists(const std::string& filename)
-{
-	std::ifstream file(filename);
-	return file.good();
-}
-std::vector<std::string> splitByPipe(const std::string& input) 
-{
-	std::vector<std::string> tokens;
-	std::stringstream ss(input);
-	std::string token;
-
-	while (std::getline(ss, token, '|')) {
-		tokens.push_back(token);
-	}
-
-	return tokens;
-}
-
-void Datagen(int targetPos, std::string output_name)
-{
-	ThreadData* heapAllocated = new ThreadData(); // Allocate safely on heap
-	ThreadData& data = *heapAllocated;
-
-	const uint64_t targetPositions = static_cast<uint64_t>(targetPos);
-	uint64_t totalPositions = 0;
-	std::vector<GameData> gameData;
-	gameData.reserve(256);
-
-	std::ofstream file(output_name + ".txt", std::ios::app | std::ios::out); // Open file once
-	if (!file) 
-	{
-		std::cerr << "Error opening file: " << output_name << std::endl;
-		return;
-	}
-
-	auto start_time = std::chrono::high_resolution_clock::now();
-	SearchLimitations searchLimits;
-	searchLimits.SoftNodeLimit = 5000;
-	searchLimits.HardNodeLimit = 10000;
-	Board board;
-	PickRandomPos(board, data);
-	Initialize_TT(16);
-
-
-	while (totalPositions < targetPositions) 
-	{
-		
-		gameData.clear();
-		//Board board;
-
-
-		PickRandomPos(board, data);
-		while (!isBoardFine(board))
-		{
-			std::cout << "fuck";
-			Initialize_TT(16);
-			PickRandomPos(board, data);
-		}
-		
-
-		
-		bool isGameOver = false;
-		int result = -1;
-
-		//int moves = 0;
-		while (!isGameOver) 
-		{
-			//std::cout << "asdf";
-			//resetAccumulators(board, board.accumulator);
-
-			//int whiteKingFile = getFile(get_ls1b(board.bitboards[K]));
-			//if (whiteKingFile >= 4)//king is on right now, have to flip
-			//{
-			//	resetWhiteAccumulator(board, board.accumulator, true);
-			//}
-			//if (whiteKingFile <= 3)//king is on left now, have to flip
-			//{
-			//	resetWhiteAccumulator(board, board.accumulator, false);
-			//}
-
-
-
-			//int blackKingFile = getFile(get_ls1b(board.bitboards[k]));
-			//if (blackKingFile >= 4)//king is on right now, have to flip
-			//{
-			//	resetBlackAccumulator(board, board.accumulator, true);
-			//}
-			//if (blackKingFile <= 3)//king is on left now, have to flip
-			//{
-			//	resetBlackAccumulator(board, board.accumulator, false);
-			//}
-			auto searchResult = IterativeDeepening(board, 99, searchLimits, data, false);
-			Move bestMove;
-			//bestMove.To = -1;
-			if (searchResult.first.From == 0 && searchResult.first.To == 0)
-			{
-				searchLimits.SoftNodeLimit = 999999999;
-				searchLimits.HardNodeLimit = 999999999;
-				searchResult = IterativeDeepening(board, 1, searchLimits, data, false);
-				searchLimits.SoftNodeLimit = 5000;
-				searchLimits.HardNodeLimit = 10000;
-			}
-			bestMove = searchResult.first;
-			//Move bestMove;
-			int eval = searchResult.second;
-			if (board.side == Black) eval = -eval;
-
-	
-
-			Board prevBoard = board;
-			if (!isBoardFine(board))
-			{
-				std::cout << "fuckasdf";
-				Initialize_TT(16);
-				break;
-			}
-			refresh_if_cross(bestMove, board);
-			MakeMove(board, bestMove);
-
-
-			MoveList moveList;
-			Generate_Legal_Moves(moveList, board, false);
-			if (!isBoardFine(board))
-			{
-				std::cout << "fuckksw";
-				Initialize_TT(16);
-				break;
-			}
-			if (isNoLegalMoves(board, moveList))
-			{
-				result = is_in_check(board) ? (board.side == White ? BLACKWIN : WHITEWIN) : DRAW;
-				break;
-			}
-			if (is_threefold(board.history, board.lastIrreversiblePly) || isInsufficientMaterial(board) || board.halfmove >= 100)
-			{
-				result = DRAW;
-				break;
-			}
-			if (isDecisive(eval))
-			{
-				result = (eval > 48000) ? (board.side == White ? WHITEWIN : BLACKWIN) : (board.side == White ? BLACKWIN : WHITEWIN);
-			}
-
-			
-			//moves++;
-			if (!is_in_check(prevBoard) && (bestMove.Type & captureFlag) == 0 && !isDecisive(eval))
-			{
-				gameData.push_back(GameData(prevBoard, eval, -1));
-				totalPositions++;
-			}
-		}
-
-		// **Batch write game data to file instead of writing each line separately**
-		std::ostringstream buffer;
-		for (int i = 0; i < gameData.size(); i++) 
-		{
-			gameData[i].result = result;
-			buffer << boardToFEN(gameData[i].board) << " | " << gameData[i].eval << " | " << convertWDL(gameData[i].result) << "\n";
-		}
-		file << buffer.str(); // **Write all at once**
-
-		auto end_time = std::chrono::high_resolution_clock::now();
-		double elapsed_seconds = std::chrono::duration<double>(end_time - start_time).count();
-		double positions_per_second = totalPositions / elapsed_seconds;
-		double percentage = (static_cast<double>(totalPositions) / targetPos) * 100;
-
-		setColor(ConsoleColor::BrightGreen);
-		std::cout << "Positions/s: " << std::fixed << std::setprecision(2) << positions_per_second;
-
-		setColor(ConsoleColor::BrightCyan);
-		std::cout << " | Total: " << totalPositions << " ("
-			<< std::fixed << std::setprecision(2) << (totalPositions / 1'000'000.0) << "M)";
-
-		setColor(ConsoleColor::BrightYellow);
-		std::cout << " | Progress: " << std::fixed << std::setprecision(4) << percentage << "% ";
-
-		setColor(ConsoleColor::White); // Reset to default
-		estimate_time_remaining(targetPositions - totalPositions, positions_per_second);
-		print_progress_bar(percentage);
-		std::cout << "\n\n" << std::flush;
-	}
-
-	file.close(); // **Close file only once after everything is written**
-	delete heapAllocated;
-} 
-
- 

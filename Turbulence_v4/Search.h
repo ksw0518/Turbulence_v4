@@ -3,6 +3,24 @@
 #include "Board.h"
 #include <utility>
 #include <chrono>
+enum class ConsoleColor {
+	Black = 0,
+	Blue = 1,
+	Green = 2,
+	Cyan = 3,
+	Red = 4,
+	Magenta = 5,
+	Yellow = 6,
+	White = 7,
+	Gray = 8,
+	BrightBlue = 9,
+	BrightGreen = 10,
+	BrightCyan = 11,
+	BrightRed = 12,
+	BrightMagenta = 13,
+	BrightYellow = 14,
+	BrightWhite = 15
+};
 
 extern int pvLengths[99];
 extern Move pvTable[99][99];
@@ -28,9 +46,10 @@ extern int HISTORY_MULTIPLIER;
 extern int ASP_WINDOW_INITIAL;
 extern int ASP_WINDOW_MAX;
 
-extern int PAWN_CORRHIST_MULTIPLIER; // divide by 5 later
-extern int MINOR_CORRHIST_MULTIPLIER; // divide by 5 later
-extern int NONPAWN_CORRHIST_MULTIPLIER; // divide by 5 later
+extern int PAWN_CORRHIST_MULTIPLIER;
+extern int MINOR_CORRHIST_MULTIPLIER;
+extern int NONPAWN_CORRHIST_MULTIPLIER;
+extern int COUNTERMOVE_CORRHIST_MULTIPLIER;
 
 extern int QS_SEE_PRUNING_MARGIN;
 extern int HISTORY_PRUNING_MULTIPLIER;
@@ -148,6 +167,12 @@ inline bool is_threefold(std::vector<uint64_t> history_table, int last_irreversi
 	}
 	return false;
 }
+void refresh_if_cross(Move& move, Board& board);
+
 void Datagen(int targetPos, std::string output_name);
 struct MoveList;
 bool isNoLegalMoves(Board& board, MoveList& moveList);
+void setColor([[maybe_unused]] ConsoleColor color);
+bool is_in_check(Board& board);
+bool isInsufficientMaterial(const Board& board);
+void Initialize_TT(int size);

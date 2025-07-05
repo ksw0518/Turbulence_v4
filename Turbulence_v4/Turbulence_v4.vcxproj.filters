@@ -33,6 +33,15 @@
     <ClCompile Include="Search.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Datagen.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Bench.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="History.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="const.h">
@@ -54,6 +63,15 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Accumulator.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Datagen.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Bench.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="History.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
