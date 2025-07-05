@@ -1080,9 +1080,12 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	bool opponent_worsening = !isInCheck && staticEval +  data.searchStack[data.ply - 1].staticEval > 1;
 
 	int canPrune = !isInCheck && !isPvNode;
+
+	bool rfp_tt_pv_decision = !tt_pv || (tt_pv && tt_hit && ttEntry.score >= beta + 30);
+
 	//RFP 
 	//If static evaluation + margin still doesn't improve alpha, prune the node
-	if (!isSingularSearch && depth < 5 && canPrune)
+	if (!isSingularSearch && depth < 5 && canPrune && rfp_tt_pv_decision)
 	{
 		int rfpMargin;
 		if (improving)
