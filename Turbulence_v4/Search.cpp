@@ -71,7 +71,7 @@ int PVS_NOISY_MULTIPLIER = 20;
 
 int HISTORY_BASE = 136;
 int HISTORY_MULTIPLIER = 87;
-int CONTHIST_BASE = 66; 
+int CONTHIST_BASE = 66;
 int CONTHIST_MULTIPLIER = 48;
 int CAPTHIST_BASE = 134;
 int CAPTHIST_MULTIPLIER = 83;
@@ -183,7 +183,7 @@ void initializeLMRTable(ThreadData& data)
 }
 bool isInsufficientMaterial(const Board& board) {
 
-	int whiteBishops = count_bits(board.bitboards[B]); 
+	int whiteBishops = count_bits(board.bitboards[B]);
 	int blackBishops = count_bits(board.bitboards[b]);
 	int whiteKnights = count_bits(board.bitboards[N]);
 	int blackKnights = count_bits(board.bitboards[n]);
@@ -402,18 +402,18 @@ int SEE(Board& pos, Move move, int threshold)
 	// Now our opponents turn to recapture
 	colour = pos.side ^ 1;
 
-	while (1) 
+	while (1)
 	{
 
 		// If we have no more attackers left we lose
 		myAttackers = attackers & pos.occupancies[colour];
-		if (myAttackers == 0ull) 
+		if (myAttackers == 0ull)
 		{
 			break;
 		}
 
 		// Find our weakest piece to attack with
-		for (nextVictim = P; nextVictim <= Q; nextVictim++) 
+		for (nextVictim = P; nextVictim <= Q; nextVictim++)
 		{
 			if (myAttackers &
 				(pos.bitboards[nextVictim] | pos.bitboards[nextVictim + 6])) {
@@ -786,7 +786,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 	{
 		return Evaluate(board);
 	}
-	
+
 	//Probe TT entry
 	TranspositionEntry ttEntry = ttLookUp(board.zobristKey);
 
@@ -863,7 +863,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	//If current static evaluation is greater than static evaluation from 2 plies ago
 	bool improving = !isInCheck && data.ply > 1 && staticEval > data.searchStack[data.ply - 2].staticEval;
-	bool opponent_worsening = !isInCheck && staticEval +  data.searchStack[data.ply - 1].staticEval > 1;
+	bool opponent_worsening = !isInCheck && staticEval + data.searchStack[data.ply - 1].staticEval > 1;
 
 	int canPrune = !isInCheck && !isPvNode;
 	//RFP 
@@ -888,7 +888,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			return (ttAdjustedEval + beta) / 2;
 		}
 	}
-	if (depth <= 3 && ttAdjustedEval + RAZORING_MARGIN * depth + RAZORING_BASE<= alpha)
+	if (depth <= 3 && ttAdjustedEval + RAZORING_MARGIN * depth + RAZORING_BASE <= alpha)
 	{
 		int razor_score = Quiescence(board, alpha, alpha + 1, data);
 		if (razor_score <= alpha)
@@ -955,7 +955,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 	int lmp_base = improving ? LMP_IMPROVING_BASE : LMP_BASE;
 	int lmp_mult = improving ? LMP_IMPROVING_MULTIPLIER : LMP_MULTIPLIER;
-	
+
 
 	int lmpThreshold = (lmp_base + (lmp_mult)*depth * depth) / 100;
 	int quietSEEMargin = PVS_QUIET_BASE - PVS_QUIET_MULTIPLIER * depth;
@@ -988,7 +988,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			continue;
 		}
-		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin; 
+		int seeThreshold = isQuiet ? quietSEEMargin : noisySEEMargin;
 
 		int captured_piece = board.mailbox[move.To];
 		int capthistScore = data.CaptureHistory[move.Piece][move.To][captured_piece];
@@ -1007,7 +1007,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		{
 			seeThreshold -= historyScore / 650;
 		}
-		
+
 		if (data.ply != 0 && depth <= MAX_PVS_SEE_DEPTH)
 		{
 			//if Static Exchange Evaluation score is lower than certain margin, assume the move is very bad and skip the move
@@ -1021,7 +1021,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		bool isNotMated = bestValue > -49000 + 99;
 
-	
+
 		if (data.ply != 0 && isQuiet && isNotMated)
 		{
 			//Skip late moves, as good moves are typically found among the earlier moves due to move ordering
@@ -1038,7 +1038,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		int lastEp = board.enpassent;
 		uint64_t lastCastle = board.castle;
 		int lastside = board.side;
-		
+
 		int last_irreversible = board.lastIrreversiblePly;
 		int last_halfmove = board.halfmove;
 		data.ply++;
@@ -1069,7 +1069,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			board.BlackNonPawnKey = last_blacknpKey;
 			board.halfmove = last_halfmove;
 			continue;
-		} 
+		}
 
 		if (isQuiet)
 		{
@@ -1148,17 +1148,17 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			//reduce more if we are not in pv node
 			if (!isPvNode && quietMoves >= 4)
 			{
-				reduction_bonus+= LMR_NONPV_ADD;
+				reduction_bonus += LMR_NONPV_ADD;
 			}
 			//reduce less if we the move is giving check
 			if (is_in_check(board))
 			{
-				reduction_bonus-= LMR_INCHECK_SUB;
+				reduction_bonus -= LMR_INCHECK_SUB;
 			}
 			//reduce less if the position is improving
 			if (improving)
 			{
-				reduction_bonus-= LMR_IMPROVING_SUB;
+				reduction_bonus -= LMR_IMPROVING_SUB;
 			}
 			//reduce more if the history score is bad
 			if (isQuiet)
@@ -1172,30 +1172,30 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				reduction_bonus -= capthistScore * 1024 / 10000;
 			}
-	
+
 			//reduce less if the move is a capture
 			if (!isQuiet)
 			{
-				reduction_bonus-= LMR_NOISY_SUB;
+				reduction_bonus -= LMR_NOISY_SUB;
 			}
 			//reduce less killer moves
 			if ((move == data.killerMoves[0][data.ply - 1]))
 			{
-				reduction_bonus-= LMR_KILLER_SUB;
+				reduction_bonus -= LMR_KILLER_SUB;
 			}
 			//if the node has been in a pv node in the past, reduce less
 			if (tt_pv)
 			{
-				reduction_bonus-= LMR_TTPV_SUB;
+				reduction_bonus -= LMR_TTPV_SUB;
 			}
 			//reduce more cutnode
 			if (cutnode)
 			{
-				reduction_bonus+= LMR_CUTNODE_ADD;
+				reduction_bonus += LMR_CUTNODE_ADD;
 			}
-			if (tt_hit && ttEntry.depth >= depth) 
+			if (tt_hit && ttEntry.depth >= depth)
 			{
-				reduction_bonus-= LMR_TTDEPTH_SUB;
+				reduction_bonus -= LMR_TTDEPTH_SUB;
 			}
 			reduction_bonus /= 1024;
 			reduction += reduction_bonus;
@@ -1204,7 +1204,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 		if (reduction < 0) reduction = 0;
 		is_reduced = reduction > 0;
 		bool isChildCutNode;
-		uint64_t nodesBefore = data.searchNodeCount; 
+		uint64_t nodesBefore = data.searchNodeCount;
 		if (searchedMoves <= 1)
 		{
 			if (isPvNode)
@@ -1231,7 +1231,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 			{
 				if (score != alpha + 1)
 				{
-					depthToSearch += (score > (bestValue + 60 + depthToSearch * 2)); 
+					depthToSearch += (score > (bestValue + 60 + depthToSearch * 2));
 					depthToSearch -= (score < bestValue + depthToSearch && data.ply != 1);
 				}
 				score = -Negamax(board, depthToSearch, -alpha - 1, -alpha, true, !cutnode, data);
@@ -1243,7 +1243,7 @@ static inline int Negamax(Board& board, int depth, int alpha, int beta, bool doN
 
 		}
 		uint64_t nodesAfter = data.searchNodeCount;
-		
+
 		board.accumulator = last_accumulator;
 		UnmakeMove(board, move, captured_piece);
 		board.history.pop_back();
@@ -1634,9 +1634,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		data.Searchtime_MS = searchLimits.HardTimeLimit;
 	}
 
-	
+
 	data.searchNodeCount = 0;
-	Move bestmove = Move(0,0,0,0);
+	Move bestmove = Move(0, 0, 0, 0);
 	data.clockStart = std::chrono::steady_clock::now();
 
 	int score = 0;
@@ -1652,7 +1652,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 	int64_t baseSoft = searchLimits.SoftTimeLimit;
 
 	int64_t softLimit = searchLimits.SoftTimeLimit;
-	
+
 	for (data.currDepth = 1; data.currDepth <= depth; data.currDepth++)
 	{
 		data.ply = 0;
@@ -1735,7 +1735,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		if (data.currDepth >= 6 && searchLimits.SoftTimeLimit != -1 && searchLimits.HardTimeLimit != -1)
 		{
 			nodesTmScale = (1.5 - ((double)data.node_count[bestmove.From][bestmove.To] / data.searchNodeCount)) * 1.35;
-			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime); 
+			scaleTime(softLimit, bestMoveStability, baseSoft, maxTime);
 		}
 		if (!data.isSearchStop)
 		{
@@ -1747,7 +1747,7 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		{
 			if (!data.isSearchStop)
 			{
-		
+
 				if (isPrettyPrinting && isOnWindow)
 				{
 					print_Pretty(bestmove, score, elapsedMS, nps, data);
@@ -1760,21 +1760,21 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 		}
 		if (searchLimits.SoftNodeLimit != NOLIMIT)
 		{
-			if ((data.searchNodeCount > searchLimits.SoftNodeLimit)|| stop_signal)
+			if ((data.searchNodeCount > searchLimits.SoftNodeLimit) || stop_signal)
 			{
 				break;
 			}
 		}
 		if (softLimit != NOLIMIT)
 		{
-			if ((elapsedMS > softLimit * nodesTmScale)|| stop_signal)
+			if ((elapsedMS > softLimit * nodesTmScale) || stop_signal)
 			{
 				break;
 			}
 		}
 		else
 		{
-			if ((searchLimits.HardTimeLimit != NOLIMIT && elapsedMS > searchLimits.HardTimeLimit)|| stop_signal)
+			if ((searchLimits.HardTimeLimit != NOLIMIT && elapsedMS > searchLimits.HardTimeLimit) || stop_signal)
 			{
 				break;
 			}
@@ -1785,9 +1785,9 @@ std::pair<Move, int> IterativeDeepening(Board& board, int depth, SearchLimitatio
 	{
 		std::cout << "bestmove ";
 		printMove(bestmove);
-		std::cout << "\n"<< std::flush;
+		std::cout << "\n" << std::flush;
 	}
-	
+
 	return std::pair<Move, int>(bestmove, bestScore);
 }
 inline void Initialize_TT(int size)
